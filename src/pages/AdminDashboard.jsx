@@ -44,14 +44,18 @@ export default function AdminDashboard() {
 
   async function loadData() {
     setLoading(true);
-    const [instrRes, wsRes, leadsRes] = await Promise.all([
+    // Only fetch lead instructors (needed for assignments tab) if user is academic_head
+    const queries = [
       supabase.from('user_profiles').select('*').in('role', ['new_joinee', 'lab_instructor']).order('created_at', { ascending: false }),
       supabase.from('worksheet_submissions').select('*'),
-      supabase.from('user_profiles').select('id, full_name, email').eq('role', 'lead_instructor'),
-    ]);
+    ];
+    if (isManager) {
+      queries.push(supabase.from('user_profiles').select('id, full_name, email').eq('role', 'lead_instructor'));
+    }
+    const [instrRes, wsRes, leadsRes] = await Promise.all(queries);
     if (instrRes.data) setInstructors(instrRes.data);
     if (wsRes.data) setAllWorksheets(wsRes.data);
-    if (leadsRes.data) setLeadInstructors(leadsRes.data);
+    if (leadsRes?.data) setLeadInstructors(leadsRes.data);
     setLoading(false);
   }
 

@@ -1,6 +1,28 @@
 // =====================================================
-// Worksheet Reviewer Assignment Config
-// Defines which role reviews each worksheet
+// Flow & Access Control Overview
+// =====================================================
+//
+// SUBMITTER → Only new_joinee / lab_instructor roles can fill & submit worksheets
+//            (enforced by ProtectedRoute requiredRoles in App.jsx)
+//
+// REVIEWER → Determined by WORKSHEET_REVIEWER map below:
+//   buddy:           Reviewed by lead_instructor (Buddy/Mentor)
+//   manager:         Reviewed by academic_head (Manager/Academic Head)
+//   onboarding_lead: Reviewed by onboarding_lead (Onboarding Lead)
+//
+// OVERRIDE → academic_head (Manager) can review ANY worksheet
+//             (enforced in WorksheetReview.jsx canReviewThisWorksheet logic)
+//
+// APPROVER → Each reviewer type can only approve/reject worksheets
+//            assigned to their type (see WORKSHEET_REVIEWER map).
+//            Exception: academic_head is a universal approver.
+//
+// Flow summary:
+//   Joinee fills & submits → status becomes 'pending_review'
+//   Correct reviewer reviews → approve ('approved') or revision ('needs_revision')
+//   If revision: Joinee sees the reviewer's comment, edits, resubmits ('revision_submitted')
+//   Reviewer reviews again → approve or revision (repeating as needed)
+//
 // =====================================================
 
 /**
