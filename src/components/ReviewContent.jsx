@@ -464,45 +464,55 @@ export default function ReviewContent({ data, worksheetId }) {
 }
 
 function renderWithLayout(data, layout) {
+  const renderedSections = layout.sections.map((sectionTitle) => {
+    const fields = layout.sectionMap[sectionTitle];
+    if (!fields) return null;
+
+    const relevantEntries = fields.filter(key => {
+      const val = data[key];
+      if (shouldSkip(key)) return false;
+      if (val === undefined || val === null) return false;
+      if (typeof val === 'string' && !val.trim()) return false;
+      if (Array.isArray(val) && val.length === 0) return false;
+      return true;
+    });
+
+    if (relevantEntries.length === 0) return null;
+
+    return (
+      <div key={sectionTitle} className="review-section" style={{
+        padding: '1rem 1.25rem',
+        borderRadius: 'var(--md-radius-xl)',
+        background: 'var(--md-surface)',
+        border: '1px solid var(--md-outline-variant)',
+      }}>
+        <h4 className="title-small" style={{
+          marginBottom: '0.75rem', fontSize: '0.85rem',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          color: 'var(--md-primary)',
+        }}>
+          <FileText size={14} />
+          {sectionTitle}
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {relevantEntries.map(key => renderField(key, data[key]))}
+        </div>
+      </div>
+    );
+  });
+
+  const hasContent = renderedSections.some(s => s !== null);
+  if (!hasContent) {
+    return (
+      <p className="body-medium text-muted" style={{ textAlign: 'center', padding: '1.5rem 0', fontStyle: 'italic', color: 'var(--md-outline)' }}>
+        No submitted content to display.
+      </p>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {layout.sections.map((sectionTitle) => {
-        const fields = layout.sectionMap[sectionTitle];
-        if (!fields) return null;
-
-        const relevantEntries = fields.filter(key => {
-          const val = data[key];
-          if (shouldSkip(key)) return false;
-          // Skip empty strings, nulls, undefined, empty arrays
-          if (val === undefined || val === null) return false;
-          if (typeof val === 'string' && !val.trim()) return false;
-          if (Array.isArray(val) && val.length === 0) return false;
-          return true;
-        });
-
-        if (relevantEntries.length === 0) return null;
-
-        return (
-          <div key={sectionTitle} className="review-section" style={{
-            padding: '1rem 1.25rem',
-            borderRadius: 'var(--md-radius-xl)',
-            background: 'var(--md-surface)',
-            border: '1px solid var(--md-outline-variant)',
-          }}>
-            <h4 className="title-small" style={{
-              marginBottom: '0.75rem', fontSize: '0.85rem',
-              display: 'flex', alignItems: 'center', gap: '8px',
-              color: 'var(--md-primary)',
-            }}>
-              <FileText size={14} />
-              {sectionTitle}
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {relevantEntries.map(key => renderField(key, data[key]))}
-            </div>
-          </div>
-        );
-      })}
+      {renderedSections}
     </div>
   );
 }

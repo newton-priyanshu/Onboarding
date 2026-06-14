@@ -241,13 +241,9 @@ export default function AdminDashboard() {
                             {s.revision > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #C62828', color: '#C62828' }}>{s.revision} revision</span>}
                           </div>
                         </div>
-                        <button onClick={() => navigate(`/admin/review/${instr.id}`)} style={{
-                          fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
-                          background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '6px 16px', cursor: 'pointer',
-                          transition: 'all 500ms ' + t.ease, alignSelf: 'center',
-                        }}>
-                          Details <ArrowRight size={12} strokeWidth={1.5} style={{ marginLeft: '4px' }} />
-                        </button>
+                        <div style={{ alignSelf: 'center', fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: t.wg }}>
+                          {s.pending > 0 ? `${s.pending} pending` : s.approved > 0 ? `${s.approved} approved` : 'No submissions'}
+                        </div>
                       </div>
                     </div>
                   );

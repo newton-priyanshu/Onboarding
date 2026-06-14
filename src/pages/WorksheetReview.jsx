@@ -59,12 +59,18 @@ export default function WorksheetReview() {
 
   async function loadData() {
     setLoading(true);
-    const [subRes, instrRes] = await Promise.all([
-      supabase.from('worksheet_submissions').select('*').eq('user_id', userId).eq('worksheet_id', worksheetId).maybeSingle(),
-      supabase.from('user_profiles').select('*').eq('id', userId).single(),
-    ]);
-    if (subRes.data) setSubmission(subRes.data);
-    if (instrRes.data) setInstructor(instrRes.data);
+    try {
+      const [subRes, instrRes] = await Promise.all([
+        supabase.from('worksheet_submissions').select('*').eq('user_id', userId).eq('worksheet_id', worksheetId).maybeSingle(),
+        supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
+      ]);
+      if (subRes.error) console.error('Error loading submission:', subRes.error);
+      else if (subRes.data) setSubmission(subRes.data);
+      if (instrRes.error) console.error('Error loading instructor:', instrRes.error);
+      else if (instrRes.data) setInstructor(instrRes.data);
+    } catch (err) {
+      console.error('Failed to load worksheet review data:', err);
+    }
     setLoading(false);
   }
 
