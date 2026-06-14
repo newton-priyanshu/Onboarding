@@ -101,6 +101,11 @@ export default function Phase1Worksheet1() {
         <BackButton to="/phase-1" label="Back to Phase 1" />
         <WorksheetHeader icon={Users} title="Team Introduction & Stakeholder Mapping Log" subtitle="Days 1-7 · Build an accurate map of every person you work with." saveStatus={saveStatus} />
 
+        {data._savedReviewStatus === 'needs_revision' && (
+          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
+            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
+          </div>
+        )}
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You">
             <FieldGrid cols={2}>

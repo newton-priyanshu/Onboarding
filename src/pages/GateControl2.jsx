@@ -46,7 +46,8 @@ export default function GateControl2() {
     if (!user?.id || data.status === 'submitted' || !loaded) return;
     const t = setTimeout(async () => {
       await supabase.from('worksheet_submissions').upsert({
-        user_id: user.id, worksheet_id: 'gc2', worksheet_data: data, phase: 'phase2', status: data.status
+        user_id: user.id, worksheet_id: 'gc2', worksheet_data: data, phase: 'phase2', status: data.status,
+        updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,worksheet_id' });
     }, 2000);
     return () => clearTimeout(t);
@@ -70,7 +71,7 @@ export default function GateControl2() {
     setData(d);
     await supabase.from('worksheet_submissions').upsert({
       user_id: user.id, worksheet_id: 'gc2', worksheet_data: d, phase: 'phase2', status: 'Submitted',
-      review_status
+      review_status, updated_at: new Date().toISOString()
     }, { onConflict: 'user_id,worksheet_id' });
     setSubmitting(false);
   };

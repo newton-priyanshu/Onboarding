@@ -52,6 +52,11 @@ export default function Phase1Worksheet4() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-1" label="Back to Phase 1" />
         <WorksheetHeader icon={Shield} title="Partner University Governance & Semester Architecture Map" subtitle="Days 1-14 · Understand how the semester and university partnership operate." saveStatus={saveStatus} />
+        {data._savedReviewStatus === 'needs_revision' && (
+          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
+            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
+          </div>
+        )}
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 

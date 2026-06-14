@@ -82,6 +82,11 @@ export default function Phase1Worksheet2() {
         <BackButton to="/phase-1" label="Back to Phase 1" />
         <WorksheetHeader icon={MessageSquare} title="Faculty Mentor Alignment & Weekly Sync Tracker" subtitle="Days 1-30 · Track weekly mentor sync sessions." saveStatus={saveStatus} />
 
+        {data._savedReviewStatus === 'needs_revision' && (
+          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
+            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
+          </div>
+        )}
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

@@ -162,8 +162,6 @@ export function ApprovedView({ msg, path, title = '✓ Worksheet Approved' }) {
   );
 }
 
-
-
 /* ─── Loading View ─────────────────────────────────────────── */
 export function LoadingView() {
   return (
