@@ -1,0 +1,97 @@
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { onToast } from '../utils/errorHandling';
+
+const ToastContext = createContext(null);
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) throw new Error('useToast must be used within ToastProvider');
+  return context;
+}
+
+const TOAST_STYLES = {
+  success: { icon: CheckCircle2, bg: '#F9F8F6', border: '#1B5E20', text: '#1B5E20' },
+  error: { icon: AlertCircle, bg: '#F9F8F6', border: '#C62828', text: '#C62828' },
+  warning: { icon: AlertTriangle, bg: '#F9F8F6', border: '#E65100', text: '#E65100' },
+  info: { icon: Info, bg: '#F9F8F6', border: '#1A1A1A', text: '#1A1A1A' },
+};
+
+let toastIdCounter = 0;
+
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const timersRef = useRef({});
+
+  const removeToast = useCallback((id) => {
+    if (timersRef.current[id]) clearTimeout(timersRef.current[id]);
+    setToasts(prev => prev.filter(t => t.id !== id));
+    delete timersRef.current[id];
+  }, []);
+
+  const showToast = useCallback((message, type = 'info', duration = 5000) => {
+    const id = ++toastIdCounter;
+    setToasts(prev => [...prev, { id, message, type, entering: true }]);
+    requestAnimationFrame(() => {
+      setToasts(prev => prev.map(t => t.id === id ? { ...t, entering: false } : t));
+    });
+    if (duration > 0) {
+      timersRef.current[id] = setTimeout(() => removeToast(id), duration);
+    }
+    return id;
+  }, [removeToast]);
+
+  const clearToasts = useCallback(() => {
+    Object.values(timersRef.current).forEach(clearTimeout);
+    timersRef.current = {};
+    setToasts([]);
+  }, []);
+
+  useEffect(() => {
+    const unsub = onToast((message, type) => showToast(message, type));
+    return () => unsub();
+  }, [showToast]);
+
+  useEffect(() => {
+    return () => { Object.values(timersRef.current).forEach(clearTimeout); };
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ showToast, removeToast, clearToasts }}>
+      {children}
+      <div style={{
+        position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+        display: 'flex', flexDirection: 'column', gap: '8px',
+        maxWidth: '400px', width: '100%', pointerEvents: 'none',
+        fontFamily: 'var(--font-body)',
+      }}>
+        {toasts.map(toast => {
+          const config = TOAST_STYLES[toast.type] || TOAST_STYLES.info;
+          const Icon = config.icon;
+          return (
+            <div key={toast.id} style={{
+              pointerEvents: 'auto',
+              display: 'flex', alignItems: 'flex-start', gap: '10px',
+              padding: '14px 16px',
+              background: config.bg,
+              borderLeft: `2px solid ${config.border}`,
+              opacity: toast.entering ? 0 : 1,
+              transform: toast.entering ? 'translateY(8px)' : 'translateY(0)',
+              transition: 'opacity 500ms var(--ease-lux), transform 500ms var(--ease-lux)',
+            }}>
+              <Icon size={16} strokeWidth={1.5} style={{ color: config.text, flexShrink: 0, marginTop: '1px' }} />
+              <span style={{ flex: 1, fontSize: '0.8rem', color: config.text, lineHeight: 1.5 }}>
+                {toast.message}
+              </span>
+              <button onClick={() => removeToast(toast.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: config.text, opacity: 0.4, flexShrink: 0 }}
+                aria-label="Dismiss">
+                <X size={14} strokeWidth={1.5} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </ToastContext.Provider>
+  );
+}

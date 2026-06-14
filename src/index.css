@@ -1,0 +1,698 @@
+@import "tailwindcss";
+
+/* ================================================
+   LUXURY / EDITORIAL — Design Token System
+   ================================================ */
+
+@theme {
+  /* ---- Colors ---- */
+  --color-alabaster: #F9F8F6;
+  --color-charcoal: #1A1A1A;
+  --color-taupe: #EBE5DE;
+  --color-warm-grey: #6C6863;
+  --color-gold: #D4AF37;
+
+  /* ---- Typography ---- */
+  --font-heading: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+
+  /* ---- Border Radius: none ---- */
+  --radius-lux: 0px;
+
+  /* ---- Shadows: Subtle Layered Depth ---- */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.02);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-image: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-image-hover: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-btn: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-btn-hover: 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-inset: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+
+  /* ---- Easing ---- */
+  --ease-lux: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --duration-slow: 700ms;
+  --duration-cinematic: 1500ms;
+}
+
+/* ================================================
+   BASE STYLES
+   ================================================ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-alabaster);
+  color: var(--color-charcoal);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { min-height: 100vh; }
+
+/* Typography defaults */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  color: var(--color-charcoal);
+}
+
+/* Links */
+a { color: inherit; text-decoration: none; }
+
+/* ================================================
+   PAPER NOISE TEXTURE
+   Subtle SVG noise overlay across the entire page
+   Creates "expensive paper" feel
+   ================================================ */
+
+.lux-noise::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ================================================
+   BUTTONS — Luxury/Editorial
+   ================================================ */
+
+.lux-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 32px;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 500ms var(--ease-lux), color 500ms var(--ease-lux), border-color 500ms var(--ease-lux), box-shadow 500ms var(--ease-lux), transform 500ms var(--ease-lux);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  height: 48px;
+}
+
+.lux-btn:active { scale: 0.97; }
+
+.lux-btn:focus-visible {
+  outline: 1px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+/* Primary — dark bg, gold hover overlay */
+.lux-btn-primary {
+  background: var(--color-charcoal);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-btn);
+}
+
+.lux-btn-primary .gold-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--color-gold);
+  transform: translateX(-100%);
+  transition: transform 500ms var(--ease-lux);
+  z-index: 0;
+}
+
+.lux-btn-primary:hover .gold-overlay {
+  transform: translateX(0);
+}
+
+.lux-btn-primary .btn-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lux-btn-primary:hover {
+  box-shadow: var(--shadow-btn-hover);
+}
+
+/* Secondary — bordered, fills on hover */
+.lux-btn-secondary {
+  background: transparent;
+  color: var(--color-charcoal);
+  border: 1px solid var(--color-charcoal);
+}
+
+.lux-btn-secondary:hover {
+  background: var(--color-charcoal);
+  color: #FFFFFF;
+}
+
+/* Ghost — text only */
+.lux-btn-ghost {
+  background: transparent;
+  color: var(--color-charcoal);
+  border: none;
+  padding: 8px 16px;
+  height: auto;
+  letter-spacing: 0.1em;
+}
+
+.lux-btn-ghost:hover {
+  color: var(--color-gold);
+}
+
+/* Small / Large variants */
+.lux-btn-sm { padding: 8px 24px; height: 40px; font-size: 0.7rem; }
+.lux-btn-lg { padding: 16px 40px; height: 56px; font-size: 0.8rem; }
+.lux-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+/* ================================================
+   INPUTS — Underline Only
+   ================================================ */
+
+.lux-input, .lux-select, .lux-textarea {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-charcoal);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--color-charcoal);
+  transition: border-color 500ms var(--ease-lux);
+  outline: none;
+  height: 48px;
+}
+
+.lux-input::placeholder, .lux-textarea::placeholder {
+  font-family: var(--font-heading);
+  font-style: italic;
+  color: var(--color-warm-grey);
+  opacity: 0.7;
+}
+
+.lux-input:focus, .lux-select:focus, .lux-textarea:focus {
+  border-bottom-color: var(--color-gold);
+}
+
+.lux-textarea {
+  min-height: 110px;
+  resize: vertical;
+  height: auto;
+}
+
+.lux-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231A1A1A' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+.lux-form-group { margin-bottom: 1.5rem; }
+
+.lux-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-warm-grey);
+  margin-bottom: 8px;
+}
+
+/* ================================================
+   CARDS — Defined by Lines + Shadows
+   ================================================ */
+
+.lux-card {
+  background: transparent;
+  border-top: 1px solid var(--color-charcoal);
+  padding: 2rem 0;
+  transition: all 500ms var(--ease-lux);
+}
+
+.lux-card-interactive {
+  cursor: pointer;
+}
+
+.lux-card-interactive:hover {
+  background: rgba(249, 248, 246, 0.5);
+}
+
+.lux-card-featured {
+  border-top-width: 4px;
+  border-top-color: var(--color-gold);
+}
+
+/* ================================================
+   BADGES / CHIPS — Editorial Style
+   ================================================ */
+
+.lux-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-charcoal);
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-charcoal);
+}
+
+.lux-badge-gold {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.lux-badge-light {
+  border-color: var(--color-taupe);
+  color: var(--color-warm-grey);
+}
+
+/* ================================================
+   DECORATIVE LINE
+   ================================================ */
+
+.lux-line {
+  width: 48px;
+  height: 1px;
+  background: var(--color-charcoal);
+}
+
+.lux-line-gold {
+  background: var(--color-gold);
+}
+
+/* ================================================
+   LUXURY GRID LINES
+   Fixed vertical lines for editorial/architectural feel
+   ================================================ */
+
+.lux-gridlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  max-width: 1600px;
+  margin: 0 auto;
+  display: none;
+}
+
+.lux-gridline {
+  width: 1px;
+  height: 100vh;
+  background: rgba(26, 26, 26, 0.02);
+}
+
+/* ================================================
+   LAYOUT
+   ================================================ */
+
+.lux-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .lux-container { padding: 0 4rem; }
+}
+
+.lux-section {
+  padding: 6rem 0;
+}
+
+@media (min-width: 1024px) {
+  .lux-section { padding: 8rem 0; }
+}
+
+/* ================================================
+   ANIMATIONS
+   ================================================ */
+
+@keyframes luxFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes luxFadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================
+   VERTICAL TEXT LABEL
+   ================================================ */
+
+.lux-vertical-label {
+  writing-mode: vertical-rl;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-warm-grey);
+  position: absolute;
+  right: -24px;
+  top: 0;
+}
+
+/* ================================================
+   DROP CAP
+   ================================================ */
+
+.lux-dropcap::first-letter {
+  float: left;
+  font-family: var(--font-heading);
+  font-size: 4.5rem;
+  line-height: 0.8;
+  font-weight: 400;
+  margin-right: 0.75rem;
+  color: var(--color-charcoal);
+}
+
+/* ================================================
+   PROGRESS BAR — Luxury Style
+   ================================================ */
+
+.lux-progress {
+  width: 100%;
+  height: 2px;
+  background: var(--color-taupe);
+  overflow: hidden;
+}
+
+.lux-progress-fill {
+  height: 100%;
+  background: var(--color-charcoal);
+  transition: width 700ms var(--ease-lux);
+}
+
+.lux-progress-fill-gold {
+  background: var(--color-gold);
+}
+
+/* ================================================
+   ALERTS
+   ================================================ */
+
+.lux-alert {
+  padding: 16px 20px;
+  border-left: 2px solid var(--color-charcoal);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.5;
+  background: var(--color-alabaster);
+}
+
+.lux-alert-error {
+  border-left-color: #C62828;
+  color: #C62828;
+}
+
+.lux-alert-success {
+  border-left-color: #1B5E20;
+  color: #1B5E20;
+}
+
+.lux-alert-info {
+  border-left-color: var(--color-gold);
+  color: var(--color-charcoal);
+}
+
+/* ================================================
+   LEGACY MD3 COMPATIBILITY ALIASES
+   Maps old Material Design 3 classes & variables to Luxury/Editorial
+   styling for untouched worksheet pages.
+   ================================================ */
+
+:root {
+  /* MD3 → Luxury color mapping for inline var(--md-*) usage */
+  --md-primary: var(--color-charcoal);
+  --md-primary-container: var(--color-alabaster);
+  --md-on-primary: #FFFFFF;
+  --md-surface: var(--color-alabaster);
+  --md-surface-variant: var(--color-taupe);
+  --md-on-surface: var(--color-charcoal);
+  --md-on-surface-variant: var(--color-warm-grey);
+  --md-outline: var(--color-warm-grey);
+  --md-outline-variant: rgba(26, 26, 26, 0.15);
+  --md-tertiary: var(--color-gold);
+  --md-tertiary-container: rgba(212, 175, 55, 0.08);
+  --md-error: #C62828;
+  --md-error-container: rgba(198, 40, 40, 0.08);
+  --md-background: var(--color-alabaster);
+  --md-easing: var(--ease-lux);
+  --md-radius-pill: 0px;
+  --md-radius-lg: 0px;
+  --md-radius-md: 0px;
+  --md-radius-xxl: 0px;
+  --md-radius-hero: 0px;
+  --md-shadow-1: none;
+  --md-shadow-2: none;
+}
+
+/* Cards */
+.md-card {
+  background: transparent;
+  border-top: 1px solid var(--color-charcoal);
+  padding: 1.25rem 1.5rem;
+  border-radius: 0;
+  font-family: var(--font-body);
+  color: var(--color-charcoal);
+  transition: all 500ms var(--ease-lux);
+}
+.md-card-interactive { cursor: pointer; }
+.md-card-interactive:hover { background: rgba(249, 248, 246, 0.5); }
+
+/* Badges */
+.md-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-charcoal);
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-charcoal);
+  border-radius: 0;
+}
+.md-badge-success { border-color: #1B5E20; color: #1B5E20; }
+.md-badge-warning { border-color: #D4AF37; color: #D4AF37; }
+.md-badge-error { border-color: #C62828; color: #C62828; }
+.md-badge-primary { border-color: var(--color-charcoal); color: var(--color-charcoal); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 32px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 500ms var(--ease-lux), color 500ms var(--ease-lux), border-color 500ms var(--ease-lux);
+  height: 48px;
+  border-radius: 0;
+  user-select: none;
+}
+.btn-primary {
+  background: var(--color-charcoal);
+  color: #FFFFFF;
+  border: none;
+}
+.btn-primary:hover {
+  background: var(--color-gold);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--color-charcoal);
+  border: 1px solid var(--color-charcoal);
+}
+.btn-outline:hover {
+  background: var(--color-charcoal);
+  color: #FFFFFF;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-charcoal);
+  border: none;
+  padding: 8px 16px;
+  height: auto;
+  letter-spacing: 0.1em;
+}
+.btn-ghost:hover { color: var(--color-gold); }
+.btn-sm { padding: 8px 24px; height: 40px; font-size: 0.7rem; }
+.btn-lg { padding: 16px 40px; height: 56px; font-size: 0.8rem; }
+
+/* Forms */
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-charcoal);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--color-charcoal);
+  transition: border-color 500ms var(--ease-lux);
+  outline: none;
+  height: 48px;
+  border-radius: 0;
+}
+.form-textarea { min-height: 110px; resize: vertical; height: auto; }
+.form-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%231A1A1A' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+.form-textarea:focus, .form-input:focus, .form-select:focus { border-bottom-color: var(--color-gold); }
+.form-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-warm-grey);
+  margin-bottom: 8px;
+}
+.form-group { margin-bottom: 1.5rem; }
+
+/* Alerts */
+.md-alert {
+  padding: 16px 20px;
+  border-left: 2px solid var(--color-charcoal);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.5;
+  font-family: var(--font-body);
+  color: var(--color-charcoal);
+  background: var(--color-alabaster);
+}
+.md-alert-error { border-left-color: #C62828; color: #C62828; }
+.md-alert-warning { border-left-color: var(--color-gold); color: var(--color-charcoal); }
+.md-alert-success { border-left-color: #1B5E20; color: #1B5E20; }
+.md-alert-info { border-left-color: var(--color-gold); color: var(--color-charcoal); }
+
+/* Typography aliases */
+.headline-medium, .title-large, .title-medium, .title-small {
+  font-family: var(--font-heading);
+  color: var(--color-charcoal);
+  font-weight: 400;
+}
+.headline-medium { font-size: 1.5rem; }
+.title-large { font-size: 1.25rem; }
+.title-medium { font-size: 1.125rem; }
+.title-small { font-size: 1rem; }
+.body-medium, .body-small, .label-medium, .label-small, .text-xs {
+  font-family: var(--font-body);
+  color: var(--color-charcoal);
+}
+.body-medium { font-size: 0.9375rem; }
+.body-small { font-size: 0.875rem; }
+.label-medium { font-size: 0.8rem; font-weight: 500; }
+.label-small { font-size: 0.75rem; font-weight: 500; }
+.text-xs { font-size: 0.7rem; }
+.text-muted { color: var(--color-warm-grey) !important; }
+
+/* Layout */
+.page-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+@media (min-width: 768px) {
+  .page-container { padding: 0 4rem; }
+}
+.page-section { padding: 6rem 0; }
+@media (max-width: 768px) {
+  .page-section { padding: 4rem 0; }
+}
+
+/* Grid 2 */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+@media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* Circles/spinners */
+.md-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+/* Loading spinner animation (also in App.css, duplicated for safety) */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Save indicator (used by worksheets) */
+.md-save-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  color: var(--color-warm-grey);
+  letter-spacing: 0.05em;
+}
+
+/* ================================================
+   RESPONSIVE
+   ================================================ */
+
+@media (max-width: 768px) {
+  .lux-section { padding: 4rem 0; }
+}
+
+@media (max-width: 1024px) {
+  .lux-gridlines { display: none !important; }
+}
+
+@media (min-width: 1025px) {
+  .lux-gridlines { display: flex; justify-content: space-between; padding: 0 4rem; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .lux-btn-primary .gold-overlay { display: none; }
+  .lux-btn-primary:hover { background: var(--color-gold); }
+}
