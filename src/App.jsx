@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
@@ -22,6 +22,24 @@ import WorksheetReview from './pages/WorksheetReview';
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './worksheetConfig';
 
 // Grid lines removed per user request. Structure preserved in CSS if re-enabled.
+
+/**
+ * Tracks the current route location and exposes it as a child render prop
+ * so ErrorBoundary can reset on route changes.
+ * 
+ * ErrorBoundary checks this.props.locationKey: when it changes, the error
+ * state is automatically cleared, allowing navigation to resolve errors.
+ */
+function ErrorBoundaryRouteResetter({ children }) {
+  const location = useLocation();
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <ErrorBoundary locationKey={location.key}>
+        {children}
+      </ErrorBoundary>
+    </div>
+  );
+}
 
 export default function App() {
   const [progress, setProgress] = useState(0);
@@ -52,57 +70,55 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ErrorBoundary>
-          <ToastProvider>
-            <div className="lux-noise" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-              <Navbar progress={progress} />
-              <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-                <Routes>
-                  {/* Auth routes */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
+        <ToastProvider>
+          <ErrorBoundaryRouteResetter>
+            <Navbar progress={progress} />
+            <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+              <Routes>
+                {/* Auth routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
 
-                  {/* Admin / Lead */}
-                  <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
-                  <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor']}><BuddyDashboard /></ProtectedRoute>} />
-                  <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
-                  <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'lead_instructor', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
-                  <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
-                  <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
+                {/* Admin / Lead */}
+                <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor']}><BuddyDashboard /></ProtectedRoute>} />
+                <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
+                <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'lead_instructor', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
+                <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
+                <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
 
-                  {/* Dashboard / Phases */}
-                  <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/dashboard" element={<Navigate to="/" replace />} />
-                  <Route path="/phase-1" element={<ProtectedRoute><Phase1 /></ProtectedRoute>} />
-                  <Route path="/phase-2" element={<ProtectedRoute><Phase2 /></ProtectedRoute>} />
-                  <Route path="/phase-3" element={<ProtectedRoute><Phase3 /></ProtectedRoute>} />
+                {/* Dashboard / Phases */}
+                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                <Route path="/phase-1" element={<ProtectedRoute><Phase1 /></ProtectedRoute>} />
+                <Route path="/phase-2" element={<ProtectedRoute><Phase2 /></ProtectedRoute>} />
+                <Route path="/phase-3" element={<ProtectedRoute><Phase3 /></ProtectedRoute>} />
 
-                  {/* Dynamic Worksheet Routes */}
-                  {worksheetRoutes}
+                {/* Dynamic Worksheet Routes */}
+                {worksheetRoutes}
 
-                  {/* Legacy */}
-                  <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-                  <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
-                </Routes>
-              </main>
+                {/* Legacy */}
+                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+                <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
+              </Routes>
+            </main>
 
-              <footer style={{
-                textAlign: 'center',
-                padding: '2rem 1rem',
-                borderTop: '1px solid rgba(26, 26, 26, 0.15)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.7rem',
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: 'var(--color-warm-grey)',
-              }}>
-                <span className="lux-line" style={{ margin: '0 auto 1rem' }} />
-                <p>Newton School of Technology · Bengaluru Campus · Faculty Onboarding Portal</p>
-              </footer>
-            </div>
-          </ToastProvider>
-        </ErrorBoundary>
+            <footer style={{
+              textAlign: 'center',
+              padding: '2rem 1rem',
+              borderTop: '1px solid rgba(26, 26, 26, 0.15)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.7rem',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'var(--color-warm-grey)',
+            }}>
+              <span className="lux-line" style={{ margin: '0 auto 1rem' }} />
+              <p>Newton School of Technology · Bengaluru Campus · Faculty Onboarding Portal</p>
+            </footer>
+          </ErrorBoundaryRouteResetter>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

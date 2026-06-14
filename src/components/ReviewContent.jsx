@@ -456,6 +456,22 @@ export default function ReviewContent({ data, worksheetId }) {
 
   // For simple worksheets without specific section layouts, do a generic render
   const layout = getSectionLayout(worksheetId);
+
+  // Dev-time check: warn if FIELD_SECTIONS is stale (new fields in data but not in layout)
+  if (process.env.NODE_ENV === 'development' && layout) {
+    const allLayoutFields = new Set(Object.values(layout.sectionMap).flat());
+    const dataKeys = Object.keys(data).filter(k => !k.startsWith('_') && k !== 'status' && k !== 'dateSubmitted');
+    const missingFields = dataKeys.filter(k => !allLayoutFields.has(k) && typeof data[k] !== 'object');
+    if (missingFields.length > 0) {
+      console.warn(
+        `[ReviewContent] FIELD_SECTIONS drift for ${worksheetId}: ` +
+        `These fields exist in submitted data but are missing from the layout config: ` +
+        missingFields.join(', ') +
+        `. Update FIELD_SECTIONS in ReviewContent.jsx to include them.`
+      );
+    }
+  }
+
   if (layout) {
     return renderWithLayout(data, layout);
   }

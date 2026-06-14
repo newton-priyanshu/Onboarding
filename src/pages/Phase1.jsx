@@ -48,14 +48,16 @@ export default function Phase1() {
 
   const completed = worksheets.filter(w => {
     const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved';
+    // Check both 'submitted' (worksheets) and 'Submitted' (gate controls) statuses
+    return s?.status === 'submitted' || s?.status === 'Submitted' || s?.review_status === 'approved';
   }).length;
 
   function getBadge(status, reviewStatus) {
     const isApproved = reviewStatus === 'approved';
     const needsRevision = reviewStatus === 'needs_revision';
-    const isSubmitted = status === 'submitted';
-    const pendingReview = reviewStatus === 'pending_review' || (status === 'submitted' && !reviewStatus);
+    // Check both 'submitted' (worksheets) and 'Submitted' (gate controls) statuses
+    const isSubmitted = status === 'submitted' || status === 'Submitted';
+    const pendingReview = reviewStatus === 'pending_review' || (isSubmitted && !reviewStatus);
     const inProgress = status === 'In Progress';
 
     if (isApproved) return { label: 'Reviewed', color: '#1B5E20' };

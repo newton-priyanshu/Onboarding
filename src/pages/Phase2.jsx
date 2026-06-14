@@ -29,12 +29,13 @@ export default function Phase2() {
     })();
   }, [user]);
 
-  const completed = worksheets.filter(w => { const s = statuses[w.id]; return s?.status === 'submitted' || s?.review_status === 'approved'; }).length;
+  const completed = worksheets.filter(w => { const s = statuses[w.id]; return s?.status === 'submitted' || s?.status === 'Submitted' || s?.review_status === 'approved'; }).length;
 
   function getBadge(status, reviewStatus) {
     if (reviewStatus === 'approved') return { label: 'Reviewed', color: '#1B5E20' };
     if (reviewStatus === 'needs_revision') return { label: 'Revise', color: '#C62828' };
-    if (status === 'submitted' || reviewStatus === 'pending_review') return { label: 'Pending', color: '#7D5260' };
+    // Check both 'submitted' (worksheets) and 'Submitted' (gate controls) statuses
+    if (status === 'submitted' || status === 'Submitted' || reviewStatus === 'pending_review') return { label: 'Pending', color: '#7D5260' };
     if (status === 'In Progress') return { label: 'In Progress', color: theme.charcoal };
     return { label: 'Not Started', color: theme.warmGrey };
   }

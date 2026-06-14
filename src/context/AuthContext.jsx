@@ -139,11 +139,15 @@ export function AuthProvider({ children }) {
 
   // ── Auth actions ──────────────────────────────────────────────
   async function signUp(email, password, fullName, role = 'new_joinee') {
+    // SECURITY: Force role to new_joinee on self-signup.
+    // Elevated roles (lead_instructor, academic_head, etc.) can only be
+    // assigned by an admin after account creation.
+    const safeRole = 'new_joinee';
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, role },
+        data: { full_name: fullName, role: safeRole },
       },
     });
     if (error) throw error;
@@ -154,7 +158,7 @@ export function AuthProvider({ children }) {
         id: data.user.id,
         email,
         full_name: fullName,
-        role,
+        role: safeRole,
       });
       if (profileError) notifyError('Profile creation error:', profileError);
     }

@@ -8,6 +8,15 @@ export default function AuthCallback() {
   const [status, setStatus] = useState('Completing sign in…');
 
   useEffect(() => {
+    // Check for OAuth error parameters in the URL
+    const params = new URLSearchParams(window.location.search);
+    const errorDesc = params.get('error_description') || params.get('error');
+    if (errorDesc) {
+      setStatus(`Sign in failed: ${errorDesc}`);
+      setTimeout(() => navigate('/login', { replace: true }), 4000);
+      return;
+    }
+
     // Supabase automatically handles the OAuth callback via the URL fragment.
     // Wait a moment for the session to be set, then redirect.
     const timer = setTimeout(() => {

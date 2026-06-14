@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData } from '../../hooks/useAutoSave';
+import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p3_w3';
@@ -26,6 +26,9 @@ export default function Phase3Worksheet3() {
         const saved = await loadWorksheetData(user.id, WS);
         if (saved?.worksheet_data) {
           setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' }));
+        } else {
+          const name = await getOAuthName();
+          if (name) setData(prev => ({ ...prev, employeeName: name }));
         }
         setLoaded(true);
       } catch (err) { console.error('Load error:', err); setLoaded(true); }

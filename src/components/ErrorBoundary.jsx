@@ -15,6 +15,13 @@ export default class ErrorBoundary extends Component {
     console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
+  // Automatically reset when route/key changes (passed from parent via locationKey prop)
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && this.props.locationKey !== prevProps.locationKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   handleReset = () => {
     this.setState({ hasError: false, error: null });
   };

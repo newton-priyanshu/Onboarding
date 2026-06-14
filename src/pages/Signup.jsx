@@ -3,12 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
+// CRITICAL: Only new_joinee is available for self-signup.
+// All other roles (lead_instructor, academic_head, onboarding_lead, acad_ops)
+// must be assigned by an admin via the Admin Dashboard after account creation.
 const roles = [
   { value: 'new_joinee', label: 'New Joinee', desc: 'I am a new instructor going through onboarding' },
-  { value: 'lead_instructor', label: 'Buddy / Mentor', desc: 'I mentor and review new instructors (Manager)' },
-  { value: 'academic_head', label: 'Academic Head', desc: 'I oversee academic operations' },
-  { value: 'onboarding_lead', label: 'Onboarding Lead', desc: 'I coordinate the onboarding process' },
-  { value: 'acad_ops', label: 'Acad Ops', desc: 'I handle academic operations' },
 ];
 
 export default function Signup() {

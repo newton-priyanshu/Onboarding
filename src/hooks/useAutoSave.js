@@ -7,11 +7,13 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
   const [saveStatus, setSaveStatus] = useState('idle');
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
+  const initialSaveDoneRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
+    initialSaveDoneRef.current = false;
     return () => { mountedRef.current = false; };
-  }, []);
+  }, [worksheetId]);
 
   const save = useCallback(async (data) => {
     if (!user?.id) return;
@@ -19,7 +21,6 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
     const reviewerType = getReviewerType(worksheetId);
     try {
       // If the worksheet is already approved, do NOT overwrite review_status
-      const shouldResetReview = data.status !== 'submitted';
       const newReviewStatus = data.status === 'submitted'
         ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'pending_review')
         : (data._savedReviewStatus === 'approved' ? 'approved' : '');
@@ -42,19 +43,36 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
       }
     } catch (err) {
       notifyError('Auto-save failed:', err);
-      if (mountedRef.current) setSaveStatus('error');
+      if (mountedRef.current) {
+        setSaveStatus('error');
+        // Retry once after 5 seconds on failure
+        setTimeout(() => {
+          if (mountedRef.current && !initialSaveDoneRef.current) {
+            save(data);
+          }
+        }, 5000);
+      }
     }
   }, [user?.id, worksheetId, phase]);
 
   useEffect(() => {
     if (!user?.id) return;
     if (timerRef.current) clearTimeout(timerRef.current);
+    // BUG-02 FIX: Skip auto-save if worksheetData contains only initial/empty values
+    // (before loadWorksheetData completes). The loaded check ensures we don't
+    // overwrite saved data with empty initial state.
+    const hasRealData = Object.keys(worksheetData).length > 2 ||
+      worksheetData.employeeName?.trim() ||
+      worksheetData._savedReviewStatus;
+    if (!hasRealData && !initialSaveDoneRef.current) return;
+    initialSaveDoneRef.current = true;
     timerRef.current = setTimeout(() => save(worksheetData), 1500);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [worksheetData, save, user?.id]);
 
   const flushSave = useCallback(async (data) => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    initialSaveDoneRef.current = true;
     await save(data);
   }, [save]);
 

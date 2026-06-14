@@ -18,7 +18,7 @@ export default function SaveIndicator({ saveStatus, status }) {
   const configs = {
     saving: { label: 'Saving…', icon: Clock, bg: '#FFF8E1', color: '#E65100' },
     saved: { label: 'Saved', icon: CheckCircle2, bg: '#E8F5E9', color: '#1B5E20' },
-    error: { label: 'Save failed', icon: AlertCircle, bg: '#FFEBEE', color: '#C62828' },
+    error: { label: 'Save failed · retrying', icon: AlertCircle, bg: '#FFEBEE', color: '#C62828' },
   };
 
   const config = configs[saveStatus];
