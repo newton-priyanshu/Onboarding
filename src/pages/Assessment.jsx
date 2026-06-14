@@ -136,11 +136,11 @@ export default function Assessment() {
 
         <form onSubmit={handleSubmit}>
           {/* Section 1: Information */}
-          <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.5rem 0', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.25rem' }}>
+          <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '2rem 0' }}>
+            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.5rem' }}>
               Assessment Information
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div className="lux-form-group">
                 <label className="lux-label" htmlFor="assess-name">Instructor Name *</label>
                 <input id="assess-name" className="lux-input" value={instructorName} onChange={(e) => setInstructorName(e.target.value)} placeholder="e.g. Jane Smith" required />
@@ -157,11 +157,11 @@ export default function Assessment() {
           </div>
 
           {/* Section 2: Readiness Level */}
-          <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.5rem 0', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.25rem' }}>
+          <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '2rem 0' }}>
+            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.5rem' }}>
               Readiness Level *
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {levels.map((level) => {
                 const isSelected = selectedLevel === level.id;
                 return (

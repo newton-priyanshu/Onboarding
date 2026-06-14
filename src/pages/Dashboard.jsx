@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabase';
 import { 
-  ArrowRight, BookOpen, Target, Sparkles, GraduationCap,
+  ArrowRight, BookOpen, Target, Sparkles,
   CheckCircle2, Clock, AlertCircle, FileText,
 } from 'lucide-react';
 import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../worksheetConfig.jsx';
@@ -223,8 +223,8 @@ export default function Dashboard() {
                         return (
                           <Link key={wsId} to={`/phase-${phase.num}/worksheet-${wsId.replace('p' + phase.num + '_w', '')}`}
                             style={{
-                              display: 'flex', alignItems: 'center', gap: '10px',
-                              padding: '7px 0',
+                              display: 'flex', alignItems: 'center', gap: '12px',
+                              padding: '10px 0 10px 12px',
                               borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
                               textDecoration: 'none',
                               fontFamily: t.body, fontSize: '0.8rem', color: t.ch,
@@ -251,8 +251,8 @@ export default function Dashboard() {
                       {phase.hasGate && (
                         <Link to={phase.gatePath}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 0',
+                            display: 'flex', alignItems: 'center', gap: '12px',
+                            padding: '12px 0 12px 12px',
                             textDecoration: 'none',
                             fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500,
                             color: t.gd,

@@ -130,7 +130,7 @@ export default function Phase1() {
               <div key={ws.id} onClick={() => navigate(ws.path)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '1rem',
-                  padding: '1rem 0',
+                  padding: '1.25rem 0',
                   borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
                   cursor: 'pointer',
                   transition: 'opacity 500ms var(--ease-lux)',
@@ -140,7 +140,7 @@ export default function Phase1() {
                 onMouseOver={e => { e.currentTarget.style.opacity = '0.6'; }}
                 onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
               >
-                <div style={{ width: '36px', height: '36px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '40px', height: '40px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={18} strokeWidth={1.5} style={{ color: theme.charcoal }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -150,7 +150,7 @@ export default function Phase1() {
                     </span>
                     <ReviewerBadge worksheetId={ws.id} />
                   </div>
-                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '2px' }}>{ws.desc}</p>
+                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5 }}>{ws.desc}</p>
                 </div>
                 <span style={{
                   fontFamily: theme.fontBody, fontSize: '0.6rem', fontWeight: 500,
