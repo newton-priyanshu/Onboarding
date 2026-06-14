@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { MessageSquare } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WORKSHEET_ID = 'p1_w2';
 
@@ -37,7 +37,7 @@ export default function Phase1Worksheet2() {
       try {
         const saved = await loadWorksheetData(user.id, WORKSHEET_ID);
         if (saved?.worksheet_data) {
-          setData((prev) => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' }));
+          setData((prev) => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
         } else {
           const name = await getOAuthName();
           if (name) setData((prev) => ({ ...prev, employeeName: name }));
@@ -71,8 +71,8 @@ export default function Phase1Worksheet2() {
     setSubmitting(false);
   }
 
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Faculty Mentor Alignment worksheet has been reviewed and approved." path="/phase-1" />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Faculty Mentor Alignment worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -81,11 +81,7 @@ export default function Phase1Worksheet2() {
         <BackButton to="/phase-1" label="Back to Phase 1" />
         <WorksheetHeader icon={MessageSquare} title="Faculty Mentor Alignment & Weekly Sync Tracker" subtitle="Days 1-30 · Track weekly mentor sync sessions." saveStatus={saveStatus} />
 
-        {data._savedReviewStatus === 'needs_revision' && (
-          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
-            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
-          </div>
-        )}
+        <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

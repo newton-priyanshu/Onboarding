@@ -141,7 +141,7 @@ export function SubmittedView({ msg, path, title = 'Worksheet Submitted', isCaps
 }
 
 /* ─── Approved View ────────────────────────────────────────── */
-export function ApprovedView({ msg, path, title = '✓ Worksheet Approved' }) {
+export function ApprovedView({ msg, path, title = '✓ Worksheet Approved', reviewerName, date }) {
   const navigate = useNavigate();
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
@@ -150,9 +150,14 @@ export function ApprovedView({ msg, path, title = '✓ Worksheet Approved' }) {
         <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#1B5E20', marginBottom: '0.75rem' }}>
           {title}
         </h1>
-        <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem', lineHeight: 1.6 }}>
+        <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '1rem', lineHeight: 1.6 }}>
           {msg}
         </p>
+        {reviewerName && (
+          <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, marginBottom: '2rem' }}>
+            Reviewed by {reviewerName}{date ? ` · ${new Date(date).toLocaleDateString()}` : ''}
+          </p>
+        )}
         <button onClick={() => navigate(path)} className="lux-btn lux-btn-primary">
           <span className="gold-overlay" />
           <span className="btn-content">Back to Phase</span>
@@ -168,6 +173,137 @@ export function LoadingView() {
     <div className="lux-section" style={{ textAlign: 'center' }}>
       <div className="lux-container">
         <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg }}>Loading…</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Review Feedback Banner ──────────────────────────────── */
+/**
+ * ReviewFeedback – Shows reviewer's comment and full review history
+ * to the joinee when a worksheet is sent back for revision.
+ * Props:
+ *   status: 'needs_revision' | 'revision_submitted' | 'approved' | null
+ *   comment: string (reviewer's comment/reason for revision)
+ *   reviewerName: string
+ *   history: array of { action, reviewer_name, comment, timestamp }
+ */
+export function ReviewFeedback({ data }) {
+  if (!data || !data._savedReviewStatus) return null;
+
+  const status = data._savedReviewStatus;
+  const comment = data._savedReviewComment;
+  const reviewerName = data._savedReviewerName;
+  const history = data._savedReviewHistory || [];
+  const submittedDate = data.dateSubmitted;
+
+  // Find the most recent 'needs_revision' entry for the latest reviewer feedback
+  const latestRevision = history.find(e => e.action === 'needs_revision');
+
+  const isRevision = status === 'needs_revision';
+  const isResubmitted = status === 'revision_submitted';
+
+  if (!isRevision && !isResubmitted) return null;
+
+  return (
+    <div style={{
+      marginBottom: '1.5rem',
+      border: '1px solid ' + (isResubmitted ? '#7D5260' : '#C62828'),
+      background: isResubmitted ? '#F8F0F5' : '#FFF5F5',
+    }}>
+      <div style={{ padding: '1.25rem' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          marginBottom: '0.75rem',
+        }}>
+          <div style={{
+            width: '6px', height: '6px',
+            background: isResubmitted ? '#7D5260' : '#C62828',
+            flexShrink: 0,
+          }} />
+          <span style={{
+            fontFamily: t.body, fontSize: '0.7rem', fontWeight: 600,
+            letterSpacing: '0.15em', textTransform: 'uppercase',
+            color: isResubmitted ? '#7D5260' : '#C62828',
+          }}>
+            {isResubmitted ? 'Resubmitted — Awaiting Review' : 'Revision Requested'}
+          </span>
+        </div>
+
+        {(comment || latestRevision?.comment) && (
+          <div style={{
+            fontFamily: t.body, fontSize: '0.85rem',
+            color: t.ch, lineHeight: 1.6,
+            marginBottom: '0.75rem',
+            whiteSpace: 'pre-wrap',
+          }}>
+            {latestRevision?.comment || comment}
+          </div>
+        )}
+
+        {reviewerName && (
+          <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>
+            — {reviewerName}
+          </div>
+        )}
+
+        {history.length > 0 && (
+          <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
+            <span style={{
+              fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+              letterSpacing: '0.15em', textTransform: 'uppercase', color: t.wg,
+              display: 'block', marginBottom: '8px',
+            }}>
+              Review History ({history.length})
+            </span>
+            {history.slice().reverse().map((entry, idx) => {
+              const isApprove = entry.action === 'approved';
+              const isRev = entry.action === 'needs_revision';
+              const date = entry.timestamp ? new Date(entry.timestamp) : null;
+              return (
+                <div key={idx} style={{
+                  display: 'flex', gap: '8px', padding: '6px 0',
+                  borderBottom: '1px solid rgba(26,26,26,0.06)',
+                  fontSize: '0.75rem',
+                }}>
+                  <span style={{
+                    color: isApprove ? '#1B5E20' : isRev ? '#C62828' : t.wg,
+                    fontWeight: 600, flexShrink: 0,
+                  }}>
+                    {isApprove ? '✓' : isRev ? '✗' : '•'}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: 500, color: t.ch }}>
+                      {isApprove ? 'Approved' : isRev ? 'Revision requested' : entry.action}
+                    </span>
+                    {entry.reviewer_name && (
+                      <span style={{ color: t.wg }}> by {entry.reviewer_name}</span>
+                    )}
+                    {entry.comment && (
+                      <p style={{ color: t.ch, margin: '2px 0 0', whiteSpace: 'pre-wrap' }}>{entry.comment}</p>
+                    )}
+                    {date && (
+                      <p style={{ color: t.wg, fontSize: '0.6rem', margin: '2px 0 0' }}>
+                        {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{
+          marginTop: '1rem', padding: '0.75rem',
+          background: isResubmitted ? 'rgba(125, 82, 96, 0.06)' : 'rgba(198, 40, 40, 0.06)',
+          fontFamily: t.body, fontSize: '0.75rem',
+          color: isResubmitted ? '#7D5260' : '#C62828',
+        }}>
+          {isResubmitted
+            ? 'You have resubmitted this worksheet after revision. The reviewer will review it again.'
+            : 'Please review the feedback above, make the necessary changes, and resubmit.'}
+        </div>
       </div>
     </div>
   );

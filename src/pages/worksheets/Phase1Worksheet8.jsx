@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { MessageCircle, AlertCircle } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p1_w8';
 const blankChan = () => ({ channel: '', dateRange: '', themes: '', pastDecisions: '' });
@@ -22,7 +22,7 @@ export default function Phase1Worksheet8() {
   useEffect(() => {
     if (!user?.id) return; (async () => {
       const saved = await loadWorksheetData(user.id, WS);
-      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' }));
+      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
       else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); }
       setLoaded(true);
     })();
@@ -40,8 +40,8 @@ export default function Phase1Worksheet8() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Slack Audit has been reviewed and approved." path="/phase-1" />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Slack audit submitted." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Slack Audit has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Slack audit submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -49,11 +49,7 @@ export default function Phase1Worksheet8() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-1" label="Back to Phase 1" />
         <WorksheetHeader icon={MessageCircle} title="Slack Historical Context & Student Bottleneck Audit" subtitle="Days 7-28 · Read subject Slack channels to understand past decisions." saveStatus={saveStatus} />
-        {data._savedReviewStatus === 'needs_revision' && (
-          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
-            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
-          </div>
-        )}
+        <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 

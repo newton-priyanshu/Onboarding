@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p3_w4';
 
@@ -25,7 +25,7 @@ export default function Phase3Worksheet4() {
       try {
         const saved = await loadWorksheetData(user.id, WS);
         if (saved?.worksheet_data) {
-          setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' }));
+          setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
         } else {
           const name = await getOAuthName();
           if (name) setData(prev => ({ ...prev, employeeName: name }));
@@ -47,9 +47,9 @@ export default function Phase3Worksheet4() {
   }
 
   if (loaded && data._savedReviewStatus === 'approved') {
-    return <ApprovedView msg="Your Resource Allocation & Budgeting worksheet has been reviewed and approved." path="/phase-3" />;
+    return <ApprovedView msg="Your Resource Allocation & Budgeting worksheet has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   }
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') {
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
     return <SubmittedView msg="Resource Allocation & Budgeting worksheet submitted for review." path="/phase-3" />;
   }
   if (!loaded) return <LoadingView />;
@@ -62,11 +62,7 @@ export default function Phase3Worksheet4() {
           icon={null} title="Resource Allocation & Budgeting"
           subtitle="Detail the resources, budget, and timeline required for execution" saveStatus={saveStatus}
         />
-        {data._savedReviewStatus === 'needs_revision' && (
-          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
-            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
-          </div>
-        )}
+        <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="Resource Requirements">
             <FieldGroup label="Human Resources" hint="What personnel and expertise are needed?" required>

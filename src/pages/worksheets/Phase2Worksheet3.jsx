@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { FileText, AlertCircle, Plus, Trash2 } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p2_w3';
 const blankEntry = () => ({ type: '', title: '', date: '', submitted: false, reviewer: '', approved: false });
@@ -22,7 +22,8 @@ export default function Phase2Worksheet3() {
   const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-2');
 
   useEffect(() => {
-    if (!user?.id) return; (async () => { const saved = await loadWorksheetData(user.id, WS); if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' })); else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); } setLoaded(true); })();
+    if (!user?.id) return; (async () => { const saved = await loadWorksheetData(user.id, WS);if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
+      else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); } setLoaded(true); })();
   }, [user?.id]);
 
   const u = (f, v) => setData(p => ({ ...p, [f]: v }));
@@ -40,8 +41,8 @@ export default function Phase2Worksheet3() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Content Ledger has been reviewed and approved." path="/phase-2" />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Content Ledger has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -49,11 +50,7 @@ export default function Phase2Worksheet3() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-2" label="Back to Phase 2" />
         <WorksheetHeader icon={FileText} title="Courseware Content Creation Ledger" subtitle="Days 31-60 · Track every content contribution." saveStatus={saveStatus} />
-        {data._savedReviewStatus === 'needs_revision' && (
-          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
-            <span>Revision requested. Please review the feedback, make changes, and resubmit.</span>
-          </div>
-        )}
+        <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 
