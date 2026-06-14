@@ -140,6 +140,30 @@ export function SubmittedView({ msg, path, title = 'Worksheet Submitted', isCaps
   );
 }
 
+/* ─── Approved View ────────────────────────────────────────── */
+export function ApprovedView({ msg, path, title = '✓ Worksheet Approved' }) {
+  const navigate = useNavigate();
+  return (
+    <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
+      <div className="lux-container" style={{ textAlign: 'center', maxWidth: '520px', margin: '0 auto' }}>
+        <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
+        <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#1B5E20', marginBottom: '0.75rem' }}>
+          {title}
+        </h1>
+        <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem', lineHeight: 1.6 }}>
+          {msg}
+        </p>
+        <button onClick={() => navigate(path)} className="lux-btn lux-btn-primary">
+          <span className="gold-overlay" />
+          <span className="btn-content">Back to Phase</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+
 /* ─── Loading View ─────────────────────────────────────────── */
 export function LoadingView() {
   return (

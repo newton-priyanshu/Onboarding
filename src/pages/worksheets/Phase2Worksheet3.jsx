@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { FileText, AlertCircle, Plus, Trash2 } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p2_w3';
 const blankEntry = () => ({ type: '', title: '', date: '', submitted: false, reviewer: '', approved: false });
@@ -40,7 +40,8 @@ export default function Phase2Worksheet3() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Content Ledger has been reviewed and approved." path="/phase-2" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;
 
   return (

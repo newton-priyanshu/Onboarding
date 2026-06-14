@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useAuth } from '../../context/AuthContext';
 

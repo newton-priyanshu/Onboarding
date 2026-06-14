@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { FileText, AlertCircle, Star } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p1_w7';
 const materialTypes = ['Lecture Slide Decks (PPTs)', 'Worksheets & Problem Sets', 'Coding Question Bank', 'MCQ Bank', 'Previous Exam / Contest Papers', 'Assignment Sets', 'Lab Exercises'];
@@ -41,7 +41,8 @@ export default function Phase1Worksheet7() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Courseware review submitted." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Courseware Review has been reviewed and approved." path="/phase-1" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Courseware review submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (

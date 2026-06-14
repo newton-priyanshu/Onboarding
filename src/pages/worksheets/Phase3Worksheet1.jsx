@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { BookText, AlertCircle } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p3_w1';
 const blankLec = () => ({ date: '', subject: '', duration: '', observer: '' });
@@ -36,7 +36,8 @@ export default function Phase3Worksheet1() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Lecture delivery log submitted." path="/phase-3" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Lecture Delivery log has been reviewed and approved." path="/phase-3" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Lecture delivery log submitted." path="/phase-3" />;
   if (!loaded) return <LoadingView />;
 
   return (

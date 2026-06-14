@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { BookText, AlertCircle, Send } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p1_w3';
 
@@ -43,7 +43,8 @@ export default function Phase1Worksheet3() {
     setData(d); await flushSave(d); setSubmitting(false);
   };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Culture & Teaching Philosophy submitted." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Culture & Teaching Philosophy reflection has been reviewed and approved." path="/phase-1" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Culture & Teaching Philosophy submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (

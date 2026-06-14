@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { MessageSquare, CheckCircle2, Clock, AlertCircle, Send, Save } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WORKSHEET_ID = 'p1_w2';
 
@@ -72,7 +72,8 @@ export default function Phase1Worksheet2() {
     setSubmitting(false);
   }
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Faculty Mentor Alignment worksheet has been reviewed and approved." path="/phase-1" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (

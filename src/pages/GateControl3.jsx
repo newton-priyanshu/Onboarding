@@ -38,7 +38,7 @@ export default function GateControl3() {
     if (!user?.id) return;
     (async () => {
       const saved = await supabase.from('worksheet_submissions').select('*').eq('user_id', user.id).eq('worksheet_id', 'gc3').maybeSingle();
-      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data }));
+      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' }));
       else setData(p => ({ ...p, employeeName: profile?.full_name || user?.email?.split('@')[0] || '' }));
       setLoaded(true);
     })();
@@ -75,7 +75,23 @@ export default function GateControl3() {
     setSubmitting(false);
   };
 
-  if (data.status === 'Submitted' && loaded) {
+  if (loaded && data._savedReviewStatus === 'approved') {
+    return (
+      <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
+        <div className="lux-container" style={{ textAlign: 'center' }}>
+          <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
+          <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#1B5E20', marginBottom: '0.5rem' }}>✓ Onboarding Complete — Approved</h1>
+          <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem' }}>
+            Your 90-day readiness assessment has been reviewed and approved. Congratulations on completing the faculty onboarding program!
+          </p>
+          <button onClick={() => navigate('/')} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content">Go to Dashboard</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (data.status === 'Submitted' && loaded && data._savedReviewStatus !== 'needs_revision') {
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
         <div className="lux-container" style={{ textAlign: 'center' }}>

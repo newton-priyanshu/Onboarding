@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { Monitor, AlertCircle } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p2_w4';
 const portalTasks = ['Create coding question with custom test cases', 'Create MCQ with answer key and explanations', 'Create subjective (essay) question', 'Create fill-in-the-blank question', 'Design and publish a structured assignment', 'Set up lab exercise with test cases', 'Create and configure a quiz/assessment', 'Set cohort-specific content release rules', 'View and export student progress reports', 'Reopen/extend deadline for individual students'];
@@ -35,7 +35,8 @@ export default function Phase2Worksheet4() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Portal ops checklist submitted." path="/phase-2" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Portal Operations checklist has been reviewed and approved." path="/phase-2" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Portal ops checklist submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;
 
   return (

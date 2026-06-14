@@ -18,6 +18,11 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
     setSaveStatus('saving');
     const reviewerType = getReviewerType(worksheetId);
     try {
+      // If the worksheet is already approved, do NOT overwrite review_status
+      const shouldResetReview = data.status !== 'submitted';
+      const newReviewStatus = data.status === 'submitted'
+        ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'pending_review')
+        : (data._savedReviewStatus === 'approved' ? 'approved' : '');
       const { error } = await supabase.from('worksheet_submissions').upsert({
         user_id: user.id,
         worksheet_id: worksheetId,
@@ -25,9 +30,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         phase,
         reviewer_type: reviewerType,
         status: data.status || 'In Progress',
-        review_status: data.status === 'submitted'
-          ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'pending_review')
-          : '',
+        review_status: newReviewStatus,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,worksheet_id' });
       if (error) throw error;

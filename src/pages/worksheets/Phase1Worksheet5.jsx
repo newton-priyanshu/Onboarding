@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { Monitor, AlertCircle } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p1_w5';
 const studentFeatures = ['Browse course dashboard and navigation', 'View and attempt a live assignment', 'Submit code through the contest / assessment interface', 'View grades and submission feedback', 'Navigate lab exercise interface', 'Access lecture schedule and session links'];
@@ -43,7 +43,8 @@ export default function Phase1Worksheet5() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Portal walkthrough submitted." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Portal Walkthrough has been reviewed and approved." path="/phase-1" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Portal walkthrough submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (

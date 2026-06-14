@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
 import { Eye, AlertCircle } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WS = 'p1_w6';
 const blankObs = () => ({ date: '', subject: '', instructor: '', sessionType: '', observations: '' });
@@ -40,7 +40,8 @@ export default function Phase1Worksheet6() {
 
   const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
 
-  if (data.status === 'submitted' && loaded) return <SubmittedView msg="Observation journal submitted." path="/phase-1" />;
+  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Observation Journal has been reviewed and approved." path="/phase-1" />;
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') return <SubmittedView msg="Observation journal submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (
