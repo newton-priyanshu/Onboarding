@@ -66,10 +66,13 @@ export default function GateControl1() {
     setError('');
     if (!data.employeeName.trim()) { setError('Please fill in your name.'); return; }
     setSubmitting(true);
-    const d = { ...data, status: 'Submitted', submittedAt: new Date().toISOString() };
+    const isResubmit = data._savedReviewStatus === 'needs_revision';
+    const review_status = isResubmit ? 'revision_submitted' : '';
+    const d = { ...data, status: 'Submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
     setData(d);
     await supabase.from('worksheet_submissions').upsert({
-      user_id: user.id, worksheet_id: 'gc1', worksheet_data: d, phase: 'phase1', status: 'Submitted', updated_at: new Date().toISOString()
+      user_id: user.id, worksheet_id: 'gc1', worksheet_data: d, phase: 'phase1', status: 'Submitted',
+      review_status, updated_at: new Date().toISOString()
     }, { onConflict: 'user_id,worksheet_id' });
     setSubmitting(false);
   };
@@ -127,6 +130,11 @@ export default function GateControl1() {
           </div>
         </div>
 
+        {data._savedReviewStatus === 'needs_revision' && (
+          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}>
+            <span>Revision requested. Please review feedback, make changes, and resubmit.</span>
+          </div>
+        )}
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Section title="Self Assessment (1–5)">
             <Slider label="Portal & System Proficiency" value={data.portalRating} onChange={v => u('portalRating', v)} />

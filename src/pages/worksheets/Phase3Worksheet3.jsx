@@ -1,110 +1,81 @@
-import { useState } from 'react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
-import { useAutoSave } from '../../hooks/useAutoSave';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useAutoSave, loadWorksheetData } from '../../hooks/useAutoSave';
+import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
+
+const WS = 'p3_w3';
 
 export default function Phase3Worksheet3() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [formData, setFormData] = useState({});
+  const [data, setData] = useState(() => ({
+    keyRisks: '', riskCategorization: '', impactAssessment: '', likelihoodAssessment: '',
+    mitigationPlans: '', contingencyMeasures: '',
+    status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
+  }));
+  const [loaded, setLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [completed, setCompleted] = useState(false);
-  const { saveStatus, saveData } = useAutoSave('phase3_worksheet3', formData);
+  const [submitError, setSubmitError] = useState('');
+  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-3');
 
-  const handleChange = (field) => (e) => {
-    const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData((prev) => ({ ...prev, [field]: val }));
-  };
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      try {
+        const saved = await loadWorksheetData(user.id, WS);
+        if (saved?.worksheet_data) {
+          setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '' }));
+        }
+        setLoaded(true);
+      } catch (err) { console.error('Load error:', err); setLoaded(true); }
+    })();
+  }, [user?.id]);
 
-  const handleSubmit = async () => {
+  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
+
+  async function handleSubmit() {
+    setSubmitError('');
+    if (!data.keyRisks?.trim()) { setSubmitError('Please fill in Key Risks.'); return; }
     setSubmitting(true);
-    setError(null);
-    try {
-      await saveData();
-      setCompleted(true);
-    } catch (err) {
-      setError(err.message || 'Failed to submit worksheet.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') };
+    setData(d); await flushSave(d);
+    setSubmitting(false);
+  }
 
-  if (completed) return <SubmittedView />;
+  if (loaded && data._savedReviewStatus === 'approved') {
+    return <ApprovedView msg="Your Risk Management & Mitigation worksheet has been reviewed and approved." path="/phase-3" />;
+  }
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision') {
+    return <SubmittedView msg="Risk Management worksheet submitted for review." path="/phase-3" />;
+  }
+  if (!loaded) return <LoadingView />;
 
   return (
-    <div style={{ padding: '3rem 1rem', maxWidth: 800, margin: '0 auto' }}>
-      <BackButton to="/phase3" />
-      <WorksheetHeader
-        title="3.3 Risk Management & Mitigation"
-        subtitle="Identify, assess, and plan mitigation strategies for key risks"
-        saveStatus={saveStatus}
-      />
-
-      <WorksheetSection title="Risk Identification">
-        <FieldGroup label="Key Risks" hint="List the top 5–7 risks to successful execution">
-          <textarea
-            className="lux-textarea"
-            rows={5}
-            value={formData.keyRisks || ''}
-            onChange={handleChange('keyRisks')}
-            placeholder="Enter key risks..."
-          />
-        </FieldGroup>
-        <FieldGroup label="Risk Categorization" hint="Categorize each risk (strategic, operational, financial, regulatory)">
-          <textarea
-            className="lux-textarea"
-            rows={3}
-            value={formData.riskCategorization || ''}
-            onChange={handleChange('riskCategorization')}
-            placeholder="Categorize your risks..."
-          />
-        </FieldGroup>
-      </WorksheetSection>
-
-      <WorksheetSection title="Risk Assessment">
-        <FieldGroup label="Impact Assessment" hint="What is the potential impact of each risk on a scale of 1–5?">
-          <textarea
-            className="lux-textarea"
-            rows={3}
-            value={formData.impactAssessment || ''}
-            onChange={handleChange('impactAssessment')}
-            placeholder="Assess the impact of each risk..."
-          />
-        </FieldGroup>
-        <FieldGroup label="Likelihood Assessment" hint="How likely is each risk to materialize? (1–5 scale)">
-          <textarea
-            className="lux-textarea"
-            rows={3}
-            value={formData.likelihoodAssessment || ''}
-            onChange={handleChange('likelihoodAssessment')}
-            placeholder="Assess the likelihood of each risk..."
-          />
-        </FieldGroup>
-      </WorksheetSection>
-
-      <WorksheetSection title="Mitigation Strategies">
-        <FieldGroup label="Mitigation Plans" hint="What are your specific plans to mitigate each risk?">
-          <textarea
-            className="lux-textarea"
-            rows={5}
-            value={formData.mitigationPlans || ''}
-            onChange={handleChange('mitigationPlans')}
-            placeholder="Describe mitigation plans..."
-          />
-        </FieldGroup>
-        <FieldGroup label="Contingency Measures" hint="What contingency measures are in place if risks materialize?">
-          <textarea
-            className="lux-textarea"
-            rows={3}
-            value={formData.contingencyMeasures || ''}
-            onChange={handleChange('contingencyMeasures')}
-            placeholder="Describe contingency measures..."
-          />
-        </FieldGroup>
-      </WorksheetSection>
-
-      {error && <ErrorAlert message={error} />}
-      <ActionBar onSubmit={handleSubmit} submitting={submitting} />
+    <div className="lux-section">
+      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
+        <BackButton to="/phase-3" label="Back to Phase 3" />
+        <WorksheetHeader icon={() => null} title="Risk Management & Mitigation" subtitle="Identify, assess, and plan mitigation strategies" saveStatus={saveStatus} />
+        {data._savedReviewStatus === 'needs_revision' && (
+          <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}><span>Revision requested. Please review the feedback, make changes, and resubmit.</span></div>
+        )}
+        <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
+          <WorksheetSection title="Risk Identification">
+            <FieldGroup label="Key Risks" hint="List the top 5-7 risks" required><textarea className="lux-textarea" rows={5} value={data.keyRisks} onChange={e => u('keyRisks', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Risk Categorization" hint="Strategic, operational, financial, regulatory"><textarea className="lux-textarea" rows={3} value={data.riskCategorization} onChange={e => u('riskCategorization', e.target.value)} /></FieldGroup>
+          </WorksheetSection>
+          <WorksheetSection title="Risk Assessment">
+            <FieldGroup label="Impact Assessment" hint="Potential impact 1-5"><textarea className="lux-textarea" rows={3} value={data.impactAssessment} onChange={e => u('impactAssessment', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Likelihood Assessment" hint="How likely 1-5"><textarea className="lux-textarea" rows={3} value={data.likelihoodAssessment} onChange={e => u('likelihoodAssessment', e.target.value)} /></FieldGroup>
+          </WorksheetSection>
+          <WorksheetSection title="Mitigation Strategies">
+            <FieldGroup label="Mitigation Plans"><textarea className="lux-textarea" rows={5} value={data.mitigationPlans} onChange={e => u('mitigationPlans', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Contingency Measures"><textarea className="lux-textarea" rows={3} value={data.contingencyMeasures} onChange={e => u('contingencyMeasures', e.target.value)} /></FieldGroup>
+          </WorksheetSection>
+          <ErrorAlert message={submitError} />
+          <ActionBar onCancel={() => navigate('/phase-3')} onSubmit={handleSubmit} submitting={submitting} />
+        </form>
+      </div>
     </div>
   );
 }
