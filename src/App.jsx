@@ -82,7 +82,7 @@ export default function App() {
 
                 {/* Admin / Lead */}
                 <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor']}><BuddyDashboard /></ProtectedRoute>} />
+                <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyDashboard /></ProtectedRoute>} />
                 <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
                 <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head']}><WorksheetReview /></ProtectedRoute>} />
                 <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />

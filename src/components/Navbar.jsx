@@ -22,7 +22,7 @@ export default function Navbar({ progress }) {
 
   // Role-specific links
   const roleLinks = [];
-  if (role === 'lead_instructor') roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
+  if (role === 'lead_instructor' || role === 'academic_head') roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
   if (role === 'onboarding_lead') roleLinks.push({ path: '/onboarding-lead', label: 'Monitoring', icon: Shield });
   if (role === 'academic_head' || role === 'onboarding_lead') roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
 
@@ -156,7 +156,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                         </span>
                       )}
                     </div>
-                    {role === 'lead_instructor' && (
+                    {(role === 'lead_instructor' || role === 'academic_head') && (
                       <button onClick={() => { navigate('/buddy'); setUserMenuOpen(false); }}
                         style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-charcoal)', fontSize: '0.8rem', transition: 'background 500ms var(--ease-lux)' }}>
                         <UserCheck size={14} strokeWidth={1.5} /> Reviews

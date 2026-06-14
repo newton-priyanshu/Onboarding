@@ -30,7 +30,7 @@ export default function BuddyDashboard() {
   const [activeTab, setActiveTab] = useState('buddy');
   const [viewMode, setViewMode] = useState('all');
 
-  const isManager = profile?.role === 'lead_instructor';
+  const isManager = profile?.role === 'lead_instructor' || profile?.role === 'academic_head';
 
   useEffect(() => { if (isManager && user) loadData(); }, [isManager, user]);
 
@@ -162,7 +162,7 @@ export default function BuddyDashboard() {
 
         {/* Queue tabs */}
         {activeTab === 'buddy' && <WorksheetQueueTab title="Buddy Queue" worksheets={buddyWorksheets} instructors={myInstructors} reviewerType="buddy" viewMode={viewMode} loading={loading} getLink={(uid, wid) => `/buddy/review/${uid}/${wid}`} />}
-        {activeTab === 'manager' && <WorksheetQueueTab title="Manager Queue" worksheets={managerWorksheets} instructors={myInstructors} reviewerType="manager" viewMode={viewMode} loading={loading} isReadOnly getLink={() => ''} />}
+        {activeTab === 'manager' && <WorksheetQueueTab title="Manager Queue" worksheets={managerWorksheets} instructors={myInstructors} reviewerType="manager" viewMode={viewMode} loading={loading} isReadOnly={profile?.role !== 'academic_head'} getLink={(uid, wid) => `/admin/review/${uid}/${wid}`} />}
         {activeTab === 'instructors' && <InstructorsTab myInstructors={myInstructors} allWorksheets={allWorksheets} />}
       </div>
     </div>
