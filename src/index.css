@@ -300,27 +300,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ================================================
-   LUXURY GRID LINES
-   Fixed vertical lines for editorial/architectural feel
-   ================================================ */
-
-.lux-gridlines {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 40;
-  max-width: 1600px;
-  margin: 0 auto;
-  display: none;
-}
-
-.lux-gridline {
-  width: 1px;
-  height: 100vh;
-  background: rgba(26, 26, 26, 0.02);
-}
-
-/* ================================================
    LAYOUT
    ================================================ */
 
@@ -677,9 +656,6 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 768px) {
   .lux-section { padding: 4rem 0; }
 }
-
-/* Grid lines permanently hidden per user request.
-   The HTML structure and base classes are kept in case re-enabled later. */
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
