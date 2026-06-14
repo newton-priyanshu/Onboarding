@@ -62,7 +62,7 @@ export default function App() {
       const Component = WORKSHEET_COMPONENTS[sheet.id];
       const routePath = `/${phasePath}/${sheet.isGate ? `gate-${phaseData.num}` : `worksheet-${sheet.id.split('_w')[1] || sheet.id.split('gc')[1]}`}`;
       return (
-        <Route key={sheet.id} path={routePath} element={<ProtectedRoute><Component /></ProtectedRoute>} />
+        <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Component /></ProtectedRoute>} />
       );
     });
   });
@@ -84,16 +84,16 @@ export default function App() {
                 <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor']}><BuddyDashboard /></ProtectedRoute>} />
                 <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
-                <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'lead_instructor', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
-                <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
-                <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
+                <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head']}><WorksheetReview /></ProtectedRoute>} />
+                <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
+                <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
 
                 {/* Dashboard / Phases */}
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
-                <Route path="/phase-1" element={<ProtectedRoute><Phase1 /></ProtectedRoute>} />
-                <Route path="/phase-2" element={<ProtectedRoute><Phase2 /></ProtectedRoute>} />
-                <Route path="/phase-3" element={<ProtectedRoute><Phase3 /></ProtectedRoute>} />
+                <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
+                <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
+                <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
 
                 {/* Dynamic Worksheet Routes */}
                 {worksheetRoutes}

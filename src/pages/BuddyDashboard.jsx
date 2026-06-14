@@ -162,14 +162,14 @@ export default function BuddyDashboard() {
 
         {/* Queue tabs */}
         {activeTab === 'buddy' && <WorksheetQueueTab title="Buddy Queue" worksheets={buddyWorksheets} instructors={myInstructors} reviewerType="buddy" viewMode={viewMode} loading={loading} getLink={(uid, wid) => `/buddy/review/${uid}/${wid}`} />}
-        {activeTab === 'manager' && <WorksheetQueueTab title="Manager Queue" worksheets={managerWorksheets} instructors={myInstructors} reviewerType="manager" viewMode={viewMode} loading={loading} getLink={(uid, wid) => `/buddy/review/${uid}/${wid}`} />}
+        {activeTab === 'manager' && <WorksheetQueueTab title="Manager Queue" worksheets={managerWorksheets} instructors={myInstructors} reviewerType="manager" viewMode={viewMode} loading={loading} isReadOnly getLink={() => ''} />}
         {activeTab === 'instructors' && <InstructorsTab myInstructors={myInstructors} allWorksheets={allWorksheets} />}
       </div>
     </div>
   );
 }
 
-function WorksheetQueueTab({ title, worksheets, instructors, reviewerType, viewMode, loading, getLink }) {
+function WorksheetQueueTab({ title, worksheets, instructors, reviewerType, viewMode, loading, getLink, isReadOnly }) {
   const navigate = useNavigate();
   const rStyle = REVIEWER_STYLES[reviewerType];
   const label = REVIEWER_LABELS[reviewerType];
@@ -196,37 +196,51 @@ function WorksheetQueueTab({ title, worksheets, instructors, reviewerType, viewM
           </p>
         </div>
       ) : (
-        filtered.map((ws, idx) => {
-          const instr = instructors.find(i => i.id === ws.user_id);
-          const isApproved = ws.review_status === 'approved';
-          return (
-            <div key={ws.id} onClick={() => navigate(getLink(ws.user_id, ws.worksheet_id))} style={{
-              display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0',
-              borderBottom: '1px solid rgba(26, 26, 26, 0.06)', cursor: 'pointer',
-              opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
-            }}>
-              <div style={{ width: '36px', height: '36px', border: '1px solid ' + (isApproved ? '#1B5E20' : rStyle.color), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: isApproved ? '#1B5E20' : rStyle.color }}>
-                {instr?.full_name?.charAt(0) || '?'}
+        <>
+          {isReadOnly && (
+            <p style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg, marginBottom: '0.75rem', fontStyle: 'italic' }}>
+              These worksheets are reviewed by managers (Academic Head). Your role can view the status but cannot review them.
+            </p>
+          )}
+          {filtered.map((ws, idx) => {
+            const instr = instructors.find(i => i.id === ws.user_id);
+            const isApproved = ws.review_status === 'approved';
+            return (
+              <div key={ws.id}
+                onClick={isReadOnly ? undefined : () => navigate(getLink(ws.user_id, ws.worksheet_id))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0',
+                  borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
+                  cursor: isReadOnly ? 'default' : 'pointer',
+                  opacity: isReadOnly ? 0.6 : 0, animation: isReadOnly ? undefined : `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
+                }}>
+                <div style={{ width: '36px', height: '36px', border: '1px solid ' + (isApproved ? '#1B5E20' : rStyle.color), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: isApproved ? '#1B5E20' : rStyle.color }}>
+                  {instr?.full_name?.charAt(0) || '?'}
+                </div>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <p style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch }}>{instr?.full_name || 'Unknown'}</p>
+                  <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{WORKSHEET_NAMES[ws.worksheet_id] || ws.worksheet_id}</p>
+                  <p style={{ fontFamily: t.body, fontSize: '0.6rem', color: t.wg }}>{ws.updated_at ? new Date(ws.updated_at).toLocaleDateString() : 'N/A'}</p>
+                </div>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + rStyle.color, color: rStyle.color }}>
+                  {label}
+                </span>
+                {isApproved ? (
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: '#1B5E20' }}>Approved</span>
+                ) : ws.review_status === 'revision_submitted' ? (
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #7D5260', color: '#7D5260' }}>Revised</span>
+                ) : (
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>Pending</span>
+                )}
+                {isReadOnly ? (
+                  <span style={{ fontFamily: t.body, fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.1em', color: '#9E9E9E' }}>Manager only</span>
+                ) : (
+                  <ArrowRight size={14} strokeWidth={1.5} style={{ color: t.wg, flexShrink: 0 }} />
+                )}
               </div>
-              <div style={{ flex: 1, minWidth: '150px' }}>
-                <p style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch }}>{instr?.full_name || 'Unknown'}</p>
-                <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{WORKSHEET_NAMES[ws.worksheet_id] || ws.worksheet_id}</p>
-                <p style={{ fontFamily: t.body, fontSize: '0.6rem', color: t.wg }}>{ws.updated_at ? new Date(ws.updated_at).toLocaleDateString() : 'N/A'}</p>
-              </div>
-              <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + rStyle.color, color: rStyle.color }}>
-                {label}
-              </span>
-              {isApproved ? (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: '#1B5E20' }}>Approved</span>
-              ) : ws.review_status === 'revision_submitted' ? (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #7D5260', color: '#7D5260' }}>Revised</span>
-              ) : (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>Pending</span>
-              )}
-              <ArrowRight size={14} strokeWidth={1.5} style={{ color: t.wg, flexShrink: 0 }} />
-            </div>
-          );
-        })
+            );
+          })}
+        </>
       )}
     </div>
   );

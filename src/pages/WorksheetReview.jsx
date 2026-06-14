@@ -46,16 +46,27 @@ export default function WorksheetReview() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
-  const isReviewer = ['lead_instructor', 'academic_head', 'onboarding_lead'].includes(profile?.role);
   const wsInfo = WORKSHEET_INFO[worksheetId] || { title: worksheetId, phase: 'Unknown' };
   const data = submission?.worksheet_data || {};
   const reviewerType = WORKSHEET_REVIEWER[worksheetId] || 'manager';
   const reviewerStyle = REVIEWER_STYLES[reviewerType];
   const reviewerLabel = REVIEWER_LABELS[reviewerType];
 
+  // Role-based review permission:
+  // - academic_head (Manager) can review EVERYTHING
+  // - lead_instructor (Buddy) can only review buddy-type worksheets
+  // - onboarding_lead can only review onboarding_lead-type worksheets
+  const isReviewer = ['lead_instructor', 'academic_head', 'onboarding_lead'].includes(profile?.role);
+  const canReviewThisWorksheet =
+    profile?.role === 'academic_head' ||
+    (reviewerType === 'buddy' && profile?.role === 'lead_instructor') ||
+    (reviewerType === 'onboarding_lead' && profile?.role === 'onboarding_lead');
+
+  const hasAccess = isReviewer && canReviewThisWorksheet;
+
   useEffect(() => {
-    if (isReviewer && userId && worksheetId) loadData();
-  }, [isReviewer, userId, worksheetId]);
+    if (hasAccess && userId && worksheetId) loadData();
+  }, [hasAccess, userId, worksheetId]);
 
   async function loadData() {
     setLoading(true);
@@ -123,13 +134,19 @@ export default function WorksheetReview() {
 
   const reviewHistory = (submission?.review_history || []).slice().reverse();
 
-  if (!isReviewer) {
+  if (!hasAccess) {
     return (
       <div className="lux-section" style={{ textAlign: 'center' }}>
         <div className="lux-container">
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.ch, marginBottom: '1rem' }}>Access Restricted</h2>
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg }}>You don't have permission to review this worksheet.</p>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg }}>
+            {profile?.role === 'lead_instructor' && reviewerType !== 'buddy'
+              ? 'This worksheet is not assigned to your role. As a Buddy/Mentor, you can only review buddy-assigned worksheets (team introductions, mentor syncs, observations, etc.).'
+              : profile?.role === 'onboarding_lead' && reviewerType !== 'onboarding_lead'
+                ? 'This worksheet is not assigned to your role. As an Onboarding Lead, you can only review procedural worksheets (governance, portal ops, etc.).'
+                : "You don't have permission to review this worksheet."}
+          </p>
         </div>
       </div>
     );

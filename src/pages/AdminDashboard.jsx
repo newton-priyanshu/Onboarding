@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const isLead = ['academic_head', 'onboarding_lead'].includes(profile?.role);
+  const isManager = profile?.role === 'academic_head';
 
   useEffect(() => { if (isLead) loadData(); }, [isLead]);
 
@@ -109,7 +110,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: 'overview', label: `Overview` },
     { id: 'pending_review', label: `Pending (${totalPending})` },
-    { id: 'assignments', label: 'Assignments' },
+    ...(isManager ? [{ id: 'assignments', label: 'Assignments' }] : []),
   ];
 
   const statusFilters = ['all', 'pending', 'approved', 'revision', 'not_started'];
