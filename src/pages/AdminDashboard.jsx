@@ -343,7 +343,9 @@ function AssignmentsTab({ instructors, leadInstructors, onRefresh }) {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    supabase.from('user_profiles').select('id, full_name, email, role').not('role', 'in', '("academic_head","onboarding_lead")').then(({ data }) => { if (data) setAllInstructors(data); });
+    // Fetch all non-joinee users as buddy/mentor candidates.
+    // onboarding_lead is included because they can also serve as a buddy/mentor.
+    supabase.from('user_profiles').select('id, full_name, email, role').not('role', 'in', '("academic_head")').then(({ data }) => { if (data) setAllInstructors(data); });
   }, []);
 
   const buddyCandidates = allInstructors.filter(i => i.id !== selectedInstructor);

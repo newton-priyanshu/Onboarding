@@ -2,26 +2,37 @@
 // Flow & Access Control Overview
 // =====================================================
 //
-// SUBMITTER → Only new_joinee / lab_instructor roles can fill & submit worksheets
-//            (enforced by ProtectedRoute requiredRoles in App.jsx)
+// ┌─────────────────────────────────────────────────────────────┐
+// │  4 ROLES (selectable at signup)                            │
+// ├─────────────────────────────────────────────────────────────┤
+// │  new_joinee        → New Joiner (fills worksheets)         │
+// │  lead_instructor   → Buddy / Mentor (reviews buddy sheets) │
+// │  onboarding_lead   → Onboarding Lead (reviews procedures)  │
+// │                     Can also be assigned as a buddy        │
+// │  academic_head     → Manager / Academic Head (reviews all) │
+// └─────────────────────────────────────────────────────────────┘
 //
-// REVIEWER → Determined by WORKSHEET_REVIEWER map below:
-//   buddy:           Reviewed by lead_instructor (Buddy/Mentor)
-//   manager:         Reviewed by academic_head (Manager/Academic Head)
-//   onboarding_lead: Reviewed by onboarding_lead (Onboarding Lead)
+// SUBMITTER  → new_joinee & lab_instructor only
+//              (enforced by ProtectedRoute in App.jsx)
 //
-// OVERRIDE → academic_head (Manager) can review ANY worksheet
-//             (enforced in WorksheetReview.jsx canReviewThisWorksheet logic)
+// REVIEWER   → Determined by WORKSHEET_REVIEWER map below:
+//   buddy:           lead_instructor (Buddy/Mentor)
+//   manager:         academic_head (Manager)
+//   onboarding_lead: onboarding_lead
 //
-// APPROVER → Each reviewer type can only approve/reject worksheets
-//            assigned to their type (see WORKSHEET_REVIEWER map).
-//            Exception: academic_head is a universal approver.
+// OVERRIDE   → academic_head (Manager) can review ANY worksheet
+//              (enforced in WorksheetReview.jsx)
 //
-// Flow summary:
-//   Joinee fills & submits → status becomes 'pending_review'
-//   Correct reviewer reviews → approve ('approved') or revision ('needs_revision')
-//   If revision: Joinee sees the reviewer's comment, edits, resubmits ('revision_submitted')
-//   Reviewer reviews again → approve or revision (repeating as needed)
+// ASSIGNMENT → Only academic_head can assign buddy/mentor to joinee
+//              (enforced in AdminDashboard.jsx)
+//              Buddy candidates include lead_instructor & onboarding_lead
+//
+// FLOW:
+//   1. Manager assigns a buddy to the new joinee
+//   2. Joinee fills worksheets & submits (→ pending_review)
+//   3. Correct reviewer approves (→ approved) or requests revision (→ needs_revision)
+//   4. If revision: Joinee sees comment, edits, resubmits (→ revision_submitted)
+//   5. Reviewer re-reviews → approve or revision (repeat as needed)
 //
 // =====================================================
 

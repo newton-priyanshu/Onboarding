@@ -108,13 +108,14 @@ export function AuthProvider({ children }) {
         user.user_metadata?.name ||
         user.email?.split('@')[0] || 'User';
 
+      // OAuth users default to new_joinee; role can be changed later by admin
       const { data: newProfile, error } = await supabase
         .from('user_profiles')
         .insert({
           id: userId,
           email: user.email,
           full_name: fullName,
-          role: 'new_joinee',
+          role: user.user_metadata?.role || 'new_joinee',
         })
         .select()
         .single();
@@ -139,15 +140,11 @@ export function AuthProvider({ children }) {
 
   // ── Auth actions ──────────────────────────────────────────────
   async function signUp(email, password, fullName, role = 'new_joinee') {
-    // SECURITY: Force role to new_joinee on self-signup.
-    // Elevated roles (lead_instructor, academic_head, etc.) can only be
-    // assigned by an admin after account creation.
-    const safeRole = 'new_joinee';
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, role: safeRole },
+        data: { full_name: fullName, role },
       },
     });
     if (error) throw error;
@@ -158,7 +155,7 @@ export function AuthProvider({ children }) {
         id: data.user.id,
         email,
         full_name: fullName,
-        role: safeRole,
+        role,
       });
       if (profileError) notifyError('Profile creation error:', profileError);
     }
