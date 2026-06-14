@@ -21,15 +21,7 @@ import WorksheetReview from './pages/WorksheetReview';
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './worksheetConfig';
 
-/* Fixed editorial grid lines — 4 vertical lines across viewport */
-const GridLines = () => (
-  <div className="lux-gridlines" aria-hidden="true">
-    <div className="lux-gridline" />
-    <div className="lux-gridline" />
-    <div className="lux-gridline" />
-    <div className="lux-gridline" />
-  </div>
-);
+// Grid lines removed per user request. Structure preserved in CSS if re-enabled.
 
 export default function App() {
   const [progress, setProgress] = useState(0);
@@ -63,7 +55,6 @@ export default function App() {
         <ErrorBoundary>
           <ToastProvider>
             <div className="lux-noise" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-              <GridLines />
               <Navbar progress={progress} />
               <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
                 <Routes>

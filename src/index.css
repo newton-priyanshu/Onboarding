@@ -678,13 +678,8 @@ a { color: inherit; text-decoration: none; }
   .lux-section { padding: 4rem 0; }
 }
 
-@media (max-width: 1024px) {
-  .lux-gridlines { display: none !important; }
-}
-
-@media (min-width: 1025px) {
-  .lux-gridlines { display: flex; justify-content: space-between; padding: 0 4rem; }
-}
+/* Grid lines permanently hidden per user request.
+   The HTML structure and base classes are kept in case re-enabled later. */
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
