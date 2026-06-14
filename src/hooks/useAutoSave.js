@@ -60,27 +60,26 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
 
   return { saveStatus, flushSave };
 }
-// ...
 
-      export async function loadWorksheetData(userId, worksheetId) {
-      if (!userId || !worksheetId) return null;
-      const { data } = await supabase
-      .from('worksheet_submissions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('worksheet_id', worksheetId)
-      .maybeSingle();
-      return data;
-      }
+export async function loadWorksheetData(userId, worksheetId) {
+  if (!userId || !worksheetId) return null;
+  const { data } = await supabase
+    .from('worksheet_submissions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('worksheet_id', worksheetId)
+    .maybeSingle();
+  return data;
+}
 
-      export async function getOAuthName() {
-      try {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user?.user_metadata?.full_name || 
-           user?.user_metadata?.name || 
-           user?.email?.split('@')[0] || '';
-      } catch {
-      return '';
-      }
-      }
+export async function getOAuthName() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.user_metadata?.full_name ||
+      user?.user_metadata?.name ||
+      user?.email?.split('@')[0] || '';
+  } catch {
+    return '';
+  }
+}
 

@@ -56,7 +56,7 @@ export default function Phase3Worksheet4() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-3" label="Back to Phase 3" />
         <WorksheetHeader
-          icon={() => null} title="Resource Allocation & Budgeting"
+          icon={null} title="Resource Allocation & Budgeting"
           subtitle="Detail the resources, budget, and timeline required for execution" saveStatus={saveStatus}
         />
         {data._savedReviewStatus === 'needs_revision' && (

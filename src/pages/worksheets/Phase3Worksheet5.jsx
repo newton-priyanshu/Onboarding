@@ -56,7 +56,7 @@ export default function Phase3Worksheet5() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-3" label="Back to Phase 3" />
         <WorksheetHeader
-          icon={() => null} title="Communication & Change Management"
+          icon={null} title="Communication & Change Management"
           subtitle="Develop a communication and change management plan to ensure adoption" saveStatus={saveStatus}
         />
         {data._savedReviewStatus === 'needs_revision' && (

@@ -55,7 +55,7 @@ export default function Phase3Worksheet3() {
     <div className="lux-section">
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-3" label="Back to Phase 3" />
-        <WorksheetHeader icon={() => null} title="Risk Management & Mitigation" subtitle="Identify, assess, and plan mitigation strategies" saveStatus={saveStatus} />
+        <WorksheetHeader icon={null} title="Risk Management & Mitigation" subtitle="Identify, assess, and plan mitigation strategies" saveStatus={saveStatus} />
         {data._savedReviewStatus === 'needs_revision' && (
           <div className="lux-alert lux-alert-info" style={{ marginBottom: '1.5rem' }}><span>Revision requested. Please review the feedback, make changes, and resubmit.</span></div>
         )}

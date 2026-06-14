@@ -1,0 +1,207 @@
+Newton School
+Faculty Onboarding Portal
+Engineering Review — Architecture, Bugs & Recommendations
+
+Prepared: June 2025  |  Stack: React 19 + Supabase + Tailwind v4
+1. Project Overview
+Newton School's Faculty Onboarding Portal is a structured, multi-phase web application designed to guide new faculty instructors through a 30–60–90 day onboarding programme. The portal replaces ad-hoc onboarding with a formalised, trackable workflow: instructors complete digital worksheets, submit them for review, and progress through gated milestones before being certified as ready to teach.
+
+1.1 High-Level Purpose
+Standardise onboarding across all faculty roles at Newton School
+Replace paper/email workflows with an auditable digital trail
+Enable reviewers (Buddies, Managers, Onboarding Leads) to approve or request revisions
+Gate progression via 3 milestone controls (30d / 60d / 90d)
+
+1.2 Tech Stack
+
+
+1.3 Application Phases & Scale
+
+
+Total: 17 worksheets + 3 gate controls = 20 submission objects per instructor. Each submission is stored as a JSONB record in worksheet_submissions.
+
+2. Architecture & Data Flow
+2.1 Folder Structure
+
+
+2.2 Core Data Flow
+The following linear flow describes how data moves from instructor input to reviewer decision:
+Instructor opens worksheet page → useAutoSave.loadWorksheetData() pulls saved JSONB + review_status from worksheet_submissions
+Instructor edits form fields → local state updates → useAutoSave debounces 1500ms → upserts row to worksheet_submissions (status stays empty or "in-progress")
+Instructor clicks Submit → handleSubmit calls flushSave with status: "submitted", review_status: "pending_review"
+Worksheet re-renders as SubmittedView (read-only) on next load
+Reviewer dashboard queries worksheet_submissions filtered by review_status = "pending_review" AND reviewer_type matching their role
+Reviewer opens WorksheetReview page → ReviewContent renders the stored JSONB using FIELD_SECTIONS layout
+Reviewer approves → review_status = "approved" OR requests revision → review_status = "needs_revision" (requires comment)
+On "needs_revision", instructor sees form again with yellow revision banner; on resubmit, review_status = "revision_submitted"
+All review actions append to review_history JSONB array (action, reviewer, comment, timestamp)
+
+2.3 Submission State Machine
+
+
+2.4 Reviewer Type Assignment
+WORKSHEET_REVIEWER in worksheetConfig.jsx maps every worksheet ID to one of three reviewer types:
+
+
+3. Roles & Permissions
+
+
+Roles are stored in user_profiles and read via JWT claims (auth.jwt() -> user_metadata ->> role) in RLS policies. This avoids recursive policy evaluation on user_profiles itself.
+
+4. Confirmed Bugs
+These are bugs confirmed from the context document, code patterns, and architectural analysis. Each is assigned a severity level: Critical (data loss / security), High (broken workflow), Medium (incorrect behaviour), Low (cosmetic / minor).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+5. Potential & Latent Bugs
+These are risks identified from architecture patterns that may not have manifested yet but are likely to cause issues in production or at scale.
+
+5.1 JSONB Worksheet Data Has No Schema Validation
+worksheet_data is stored as raw JSONB with no Postgres CHECK constraints or JSON Schema validation. If a worksheet component changes its field names between deployments, old submissions will have mismatched keys. ReviewContent will silently render nothing for those fields.
+Add a worksheet_schema_version column to worksheet_submissions.
+Store the expected field mapping in worksheetConfig.jsx alongside FIELD_SECTIONS.
+On load, migrate or warn when schema version mismatches.
+
+5.2 RLS Policies May Allow Cross-Instructor Data Leak via assigned_lead_id
+The RLS policy for reviewer access uses assigned_lead_id / assigned_buddy_id joins. If an admin accidentally assigns the wrong lead, that lead gains full read/write access to another instructor's submissions. There is no audit trail for assignment changes.
+Log all assignment changes (who assigned whom, when) to an audit_log table.
+Restrict assignment mutation to academic_head and onboarding_lead only via RLS + server-side validation.
+
+5.3 useAutoSave Has No Conflict Resolution
+If an instructor has the portal open in two browser tabs simultaneously, both tabs will auto-save independently. The last write wins, silently discarding the other tab's changes. This is especially risky during revision cycles.
+Add a last_modified_at timestamp to worksheet_submissions.
+On save, if the server-side timestamp is newer than the local snapshot, show a conflict warning before overwriting.
+
+5.4 Gate Controls Have No Dependency Check
+GC1, GC2, GC3 can theoretically be submitted without all Phase worksheets being approved first. The UI shows progress but does not block GateControl submission if worksheets are incomplete.
+Before allowing GC submission, query all phase worksheets and verify all review_status = "approved".
+Show a checklist of incomplete worksheets directly on the GateControl page.
+
+5.5 No Retry / Offline Handling in Auto-Save
+If Supabase returns an error during auto-save (network blip, rate limit, RLS denial), the error is swallowed and the SaveIndicator may show "Saved" incorrectly. The instructor believes their data is safe when it is not.
+Track save success vs failure separately in SaveIndicator state.
+Show a persistent "Save failed — retrying" warning when the last save errored.
+Implement exponential backoff retry (3 attempts) before escalating to the user.
+
+5.6 Google OAuth Redirect May Fail on Non-Production Domains
+AuthCallback.jsx handles the OAuth redirect. If the Supabase redirect URL list does not include all deployment domains (staging, PR previews, etc.), Google OAuth will fail silently or redirect to an error page with no clear message.
+Document all allowed redirect URLs in project README.
+AuthCallback should detect error params in the URL and display a human-readable error instead of a blank screen.
+
+5.7 ReviewContent FIELD_SECTIONS Layout Config Drift
+ReviewContent renders submitted data using a FIELD_SECTIONS layout config. If a worksheet adds new fields but FIELD_SECTIONS is not updated to include them, the new fields will be invisible to reviewers. No warning is emitted.
+Add a dev-time check: on mount in dev mode, compare FIELD_SECTIONS keys against the actual worksheet_data keys and log any mismatches to the console.
+
+6. User Experience Improvements
+6.1 Instructor-Facing
+
+
+6.2 Reviewer-Facing
+
+
+6.3 Admin-Facing
+
+
+7. Logic Gaps & Better Approaches
+7.1 Worksheet Routing — Dynamic vs Typed
+Current approach: App.jsx generates worksheet routes dynamically from WORKSHEET_COMPONENTS. This is elegant for scalability but means route paths are implicit — a typo in the config silently produces a 404.
+Add a route validation step at app startup (dev only) that checks every entry in WORKSHEET_COMPONENTS renders a non-null component and maps to a reachable path.
+
+7.2 Auto-Save vs Final Submit Coupling
+useAutoSave handles both continuous auto-save and the final submit flush (flushSave). These two concerns have different requirements: auto-save should be silent and non-blocking; final submit needs to be guaranteed and acknowledged. Coupling them in one hook creates the race conditions described in BUG-02 and BUG-03.
+Split into two hooks: useAutoSave (silent background) and useWorksheetSubmit (explicit, awaited, with confirmation and error handling).
+
+7.3 JSONB vs Structured Columns for Worksheet Data
+Using JSONB for all worksheet fields is flexible but makes querying individual fields impossible without jsonb operators, and makes schema migrations invisible. At 20 submissions per instructor × N instructors, analytics (e.g. average time to complete P1) become slow.
+Keep JSONB for raw form data (it's fine for submission storage).
+Add structured metadata columns: submitted_at, approved_at, revision_count (integer) for analytics queries.
+
+7.4 Role Check in RLS — JWT vs Profile Table
+Current approach uses auth.jwt() -> user_metadata ->> role to avoid RLS recursion on user_profiles. This is correct, but it means role changes require the user to log out and log back in (JWT not refreshed immediately).
+After an admin changes a user's role, call supabase.auth.admin.updateUserById() to update user_metadata.role server-side so the JWT role is updated on next token refresh.
+Document this behaviour clearly — admins need to know role changes take effect on the user's next session, not instantly.
+
+7.5 GateControl vs Worksheet Inconsistency
+GateControls manage their own Supabase queries directly (not via useAutoSave). This means they duplicate the save/load/status logic and will diverge over time as useAutoSave is updated. Bug fixes to useAutoSave will not apply to GateControls.
+Refactor GateControls to use useAutoSave with a gc flag or a config option that adjusts the submit behaviour (e.g. includes manager_sign_off field handling).
+
+8. Production Readiness Checklist
+8.1 Security
+Fix BUG-03 (role self-selection on signup) before any real deployment — this is a critical security gap
+Audit all RLS policies: ensure no policy uses auth.uid() in a way that could be spoofed via service-role key misuse
+Set Supabase project to production mode (disable email confirmations bypass, enable CAPTCHA on auth)
+Store VITE_ env vars only in CI/CD secrets — never commit .env to git
+Review Google OAuth scopes — request only profile and email; reject any openid expansions not needed
+
+8.2 Performance
+Add Postgres indexes: worksheet_submissions(user_id), worksheet_submissions(review_status), worksheet_submissions(reviewer_type)
+Paginate reviewer dashboard queries — do not fetch all pending submissions in one query as count grows
+Memoize worksheet components with React.memo or useMemo for form field arrays to reduce re-renders during auto-save
+
+8.3 Observability
+Integrate Sentry (or similar) for frontend error tracking — ErrorBoundary should report caught errors
+Add Supabase DB log alerts for high error rates on RLS denials (indicates misconfigured access)
+Track key user events: worksheet_submitted, worksheet_approved, revision_requested using a lightweight analytics call
+
+8.4 Testing
+useAutoSave.test.js exists — expand to cover: (a) race condition on first load, (b) approved-status preservation, (c) revision_submitted path
+Add integration tests for the full submit → review → approve flow using Supabase local dev (supabase start)
+Add Playwright E2E tests for the critical happy paths: new joinee submits, reviewer approves, instructor sees ApprovedView
+
+8.5 Deployment
+Currently no remote git automation — push requires manual git push to origin main. Add GitHub Actions CI: lint → test → build on every PR
+Add a pre-deploy check that validates all WORKSHEET_COMPONENTS entries are non-null
+Use Vercel or Netlify preview deployments for each PR so reviewers can test UI changes without local setup
+
+9. Quick Wins (Low Effort, High Impact)
+
+
+10. Recommended Implementation Order
+Sprint 1 — Security & Critical Fixes (Week 1)
+[BUG-03] Disable role self-selection on signup; default to new_joinee
+[BUG-01] Fix GateControl status case mismatch (submitted vs Submitted)
+[BUG-04] Add revision_submitted to all reviewer dashboard queries
+[BUG-02] Add isLoaded guard in useAutoSave before first save fires
+Add Postgres indexes on worksheet_submissions
+
+Sprint 2 — Workflow Completeness (Week 2)
+Render review_history timeline on WorksheetReview page
+Show reviewer's comment inline on revision banner
+Add phase worksheet completion gate before GC submission
+[BUG-07] Fix getOAuthName fallback chain; add DB trigger for OAuth name population
+Fix ErrorBoundary reset on route change
+
+Sprint 3 — UX & Observability (Week 3–4)
+Add per-worksheet status chips on Phase list pages
+Add SaveIndicator timestamp ("Saved 2 min ago") + failure state
+Add loading skeletons to all dashboard query screens
+Integrate Sentry for error tracking
+Add GitHub Actions CI pipeline
+
+Sprint 4 — Scale & Hardening
+Paginate reviewer dashboard queries
+Refactor GateControls to use useAutoSave
+Split useAutoSave into auto-save + explicit submit hooks
+Add offline detection and queued save retry
+Write Playwright E2E tests for the submit → approve flow
+
+Appendix: Database Schema Summary
+
+
+End of Document — Newton School Faculty Onboarding Portal Engineering Review

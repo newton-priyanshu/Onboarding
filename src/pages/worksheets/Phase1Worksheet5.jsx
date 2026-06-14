@@ -92,7 +92,7 @@ export default function Phase1Worksheet5() {
               <FieldGroup label="Demo conducted on (date)"><input type="date" className="lux-input" value={data.demoDate} onChange={e => u('demoDate', e.target.value)} /></FieldGroup>
               <FieldGroup label="Tasks demonstrated"><input className="lux-input" placeholder="List tasks shown" value={data.demoTasks} onChange={e => u('demoTasks', e.target.value)} /></FieldGroup>
             </div>
-            <FieldGroup label="Gap areas to revisit (if any)"><textarea className="lux-textarea" rows={1} value={data.demoGaps} onChange={e => u('demoGaps', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Gap areas to revisit (if any)"><textarea className="lux-textarea" rows={2} value={data.demoGaps} onChange={e => u('demoGaps', e.target.value)} /></FieldGroup>
             <FieldGroup label="Faculty Lead Signature"><input className="lux-input" value={data.demoSignature} onChange={e => u('demoSignature', e.target.value)} /></FieldGroup>
           </WorksheetSection>
 

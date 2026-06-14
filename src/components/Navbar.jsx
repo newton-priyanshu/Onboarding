@@ -12,14 +12,6 @@ const roleLabels = {
   acad_ops: 'Acad Ops',
 };
 
-const navLinks = [
-  { path: '/', label: 'Dashboard' },
-  { path: '/phase-1', label: 'Phase 1' },
-  { path: '/phase-2', label: 'Phase 2' },
-  { path: '/phase-3', label: 'Phase 3' },
-  { path: '/stakeholders', label: 'Stakeholders' },
-];
-
 export default function Navbar({ progress }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +26,16 @@ export default function Navbar({ progress }) {
   if (role === 'onboarding_lead') roleLinks.push({ path: '/onboarding-lead', label: 'Monitoring', icon: Shield });
   if (role === 'academic_head' || role === 'onboarding_lead') roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
 
-  const allLinks = [...roleLinks, ...navLinks];
+  const baseLinks = [
+  { path: '/', label: 'Dashboard' },
+  { path: '/stakeholders', label: 'Stakeholders' },
+];
+const joineeLinks = ['new_joinee', 'lab_instructor'].includes(role) ? [
+  { path: '/phase-1', label: 'Phase 1' },
+  { path: '/phase-2', label: 'Phase 2' },
+  { path: '/phase-3', label: 'Phase 3' },
+] : [];
+const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
 
   const handleSignOut = async () => {
     try { await signOut(); } catch (e) { console.error(e); }
@@ -203,7 +204,7 @@ export default function Navbar({ progress }) {
         </div>
 
         {/* Progress bar - only for instructors */}
-        {(role === 'lab_instructor' || role === 'new_joinee') && (
+        {(role === 'lab_instructor' || role === 'new_joinee') && progress > 0 && (
           <div style={{ padding: '0 0 12px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="lux-progress" style={{ flex: 1 }}>

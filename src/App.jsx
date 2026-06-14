@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
@@ -73,6 +73,7 @@ export default function App() {
 
                   {/* Dashboard / Phases */}
                   <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<Navigate to="/" replace />} />
                   <Route path="/phase-1" element={<ProtectedRoute><Phase1 /></ProtectedRoute>} />
                   <Route path="/phase-2" element={<ProtectedRoute><Phase2 /></ProtectedRoute>} />
                   <Route path="/phase-3" element={<ProtectedRoute><Phase3 /></ProtectedRoute>} />

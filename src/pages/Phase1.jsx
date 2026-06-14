@@ -54,8 +54,8 @@ export default function Phase1() {
   function getBadge(status, reviewStatus) {
     const isApproved = reviewStatus === 'approved';
     const needsRevision = reviewStatus === 'needs_revision';
-    const isSubmitted = status === 'Submitted';
-    const pendingReview = reviewStatus === 'pending_review' || (status === 'Submitted' && !reviewStatus);
+    const isSubmitted = status === 'submitted';
+    const pendingReview = reviewStatus === 'pending_review' || (status === 'submitted' && !reviewStatus);
     const inProgress = status === 'In Progress';
 
     if (isApproved) return { label: 'Reviewed', color: '#1B5E20' };

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import SI from '../../components/SaveIndicator';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
-import { MessageSquare, CheckCircle2, Clock, AlertCircle, Send, Save } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert } from '../../worksheetComponents';
 
 const WORKSHEET_ID = 'p1_w2';

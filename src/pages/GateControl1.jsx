@@ -44,7 +44,7 @@ export default function GateControl1() {
   }, [user?.id, profile]);
 
   useEffect(() => {
-    if (!user?.id || data.status === 'submitted' || !loaded) return;
+    if (!user?.id || data.status === 'Submitted' || !loaded) return;
     const t = setTimeout(async () => {
       await supabase.from('worksheet_submissions').upsert({
         user_id: user.id, worksheet_id: 'gc1', worksheet_data: data, phase: 'phase1', status: data.status, updated_at: new Date().toISOString()
