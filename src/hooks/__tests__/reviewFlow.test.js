@@ -1,14 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-// Mock supabase because worksheetConfig.jsx's component imports trigger it
-vi.mock('../../supabase', () => ({}));
-
+// Import from worksheetConfig.js (pure functions, no React/Supabase dependency)
 import {
   getPhaseReviewStatus,
   getBuddyApprovedSheets,
   getPhaseWorksheetsByStatus,
   PHASE_WORKSHEETS_MAP,
-} from '../../worksheetConfig';
+} from '../../worksheetConfigData.js';
 
 /**
  * Helper: build a mock submission object for testing.
