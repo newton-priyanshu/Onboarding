@@ -5,6 +5,7 @@ import { supabase } from '../supabase';
 import { CheckCircle2, XCircle, MessageSquare, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES } from '../worksheetConfig.jsx';
 import ReviewContent from '../components/ReviewContent.jsx';
+import { triggerNotification } from '../hooks/useNotifications';
 
 const WORKSHEET_INFO = {
   p1_w1: { title: 'Team Introduction & Stakeholder Mapping Log', phase: 'Phase 1' },
@@ -86,6 +87,23 @@ export default function WorksheetReview() {
   }
 
   async function handleReview(action) {
+    // ── State Machine Guard ───────────────────────────────────────────────
+    const currentStatus = submission?.review_status;
+    const allowedStatuses = ['pending_review', 'revision_submitted'];
+    if (!allowedStatuses.includes(currentStatus)) {
+      setActionMessage(
+        `Cannot review this worksheet in its current state ("${currentStatus || 'not submitted'}"). ` +
+        `Only worksheets with status "${allowedStatuses.join('" or "')}" can be reviewed.`
+      );
+      return;
+    }
+
+    // ── Already approved guard ────────────────────────────────────────────
+    if (currentStatus === 'approved') {
+      setActionMessage('This worksheet has already been approved and cannot be reviewed again.');
+      return;
+    }
+
     if (action === 'revision' && !comment.trim()) {
       setActionMessage('Please add a comment explaining what needs revision.');
       return;
@@ -127,6 +145,18 @@ export default function WorksheetReview() {
         review_history: [...(prev?.review_history || []), historyEntry],
       }));
       setComment('');
+
+      // ── Send notification to the joinee ─────────────────────────────────
+      await triggerNotification({
+        userId,
+        fromUserId: profile?.id,
+        worksheetId,
+        type: action === 'approve' ? 'approved' : 'needs_revision',
+        message: action === 'approve'
+          ? `Your worksheet (${worksheetId}) has been approved by ${profile?.full_name || 'a reviewer'}.`
+          : `Your worksheet (${worksheetId}) needs revision. Comment: ${comment.trim()}`,
+      });
+
       setTimeout(() => navigate(-1), 2000);
     }
     setActionLoading(false);

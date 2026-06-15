@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabase';
 import { Shield, CheckCircle2, AlertCircle, Send, ArrowLeft, Star } from 'lucide-react';
+import { Section, Slider } from '../worksheetComponents';
 
 const milestones = [
   ['Independent lecture delivery (min. 2 full sessions)', 'Faculty Lead lecture observation'],
@@ -45,7 +46,7 @@ export default function GateControl3() {
   }, [user?.id, profile]);
 
   useEffect(() => {
-    if (!user?.id || data.status === 'Submitted' || !loaded) return;
+    if (!user?.id || data.status === 'submitted' || !loaded) return;
     const t = setTimeout(async () => {
       await supabase.from('worksheet_submissions').upsert({
         user_id: user.id, worksheet_id: 'gc3', worksheet_data: data, phase: 'phase3', status: data.status,
@@ -70,10 +71,10 @@ export default function GateControl3() {
     setSubmitting(true);
     const isResubmit = data._savedReviewStatus === 'needs_revision';
     const review_status = isResubmit ? 'revision_submitted' : '';
-    const d = { ...data, status: 'Submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
+    const d = { ...data, status: 'submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
     setData(d);
     await supabase.from('worksheet_submissions').upsert({
-      user_id: user.id, worksheet_id: 'gc3', worksheet_data: d, phase: 'phase3', status: 'Submitted',
+      user_id: user.id, worksheet_id: 'gc3', worksheet_data: d, phase: 'phase3', status: 'submitted',
       review_status, updated_at: new Date().toISOString()
     }, { onConflict: 'user_id,worksheet_id' });
     setSubmitting(false);
@@ -95,7 +96,7 @@ export default function GateControl3() {
       </div>
     );
   }
-  if (data.status === 'Submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
         <div className="lux-container" style={{ textAlign: 'center' }}>
@@ -245,38 +246,4 @@ export default function GateControl3() {
   );
 }
 
-function Section({ title, subtitle, children }) {
-  return (
-    <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.25rem 0' }}>
-      <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.ch, marginBottom: subtitle ? '4px' : '0.75rem' }}>{title}</h3>
-      {subtitle && <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, marginBottom: '0.75rem' }}>{subtitle}</p>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>{children}</div>
-    </div>
-  );
-}
 
-function Slider({ label, value, onChange }) {
-  return (
-    <div style={{ marginBottom: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>{label}</span>
-        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 600, color: t.gd }}>{value}/5</span>
-      </div>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {[1, 2, 3, 4, 5].map(n => (
-          <button key={n} type="button" onClick={() => onChange(n)}
-            style={{
-              flex: 1, padding: '10px', border: value >= n ? '1px solid var(--color-charcoal)' : '1px solid rgba(26,26,26,0.15)',
-              background: value >= n ? 'var(--color-charcoal)' : 'transparent',
-              color: value >= n ? '#F9F8F6' : t.wg,
-              fontWeight: 500, cursor: 'pointer', fontFamily: t.body, fontSize: '0.85rem',
-              transition: 'all 300ms var(--ease-lux)',
-            }}
-            onMouseOver={e => { if (value < n) e.currentTarget.style.borderColor = 'var(--color-gold)'; }}
-            onMouseOut={e => { if (value < n) e.currentTarget.style.borderColor = 'rgba(26,26,26,0.15)'; }}
-          >{n}</button>
-        ))}
-      </div>
-    </div>
-  );
-}

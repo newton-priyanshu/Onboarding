@@ -370,43 +370,36 @@ const FIELD_SECTIONS = {
     }
   },
   p3_w2: {
-    sections: ['About You', 'Cohort Overview', 'Student Profiles', 'Reflection', 'Verification'],
+    sections: ['About You', 'Cohort Profile', 'Teaching Adaptations'],
     sectionMap: {
       'About You': ['employeeName'],
-      'Cohort Overview': ['totalStudents', 'cohortNames', 'subjects', 'dateKnowNames'],
-      'Student Profiles': ['students'],
-      'Reflection': ['supportStruggling', 'utilizeHighPerformers'],
-      'Verification': ['employeeSignature'],
+      'Cohort Profile': ['cohortSize', 'performanceRange', 'learningNeeds', 'highPerformers', 'lowPerformers'],
+      'Teaching Adaptations': ['teachingAdaptations', 'relationshipApproach'],
     }
   },
   p3_w3: {
-    sections: ['About You', 'Assessment Registry', "Bloom's Taxonomy", 'Difficulty Balance', 'Reflection', 'Verification'],
+    sections: ['About You', "Bloom's Taxonomy Grid", 'Assessment Design Decisions'],
     sectionMap: {
       'About You': ['employeeName'],
-      'Assessment Registry': ['assessments'],
-      "Bloom's Taxonomy": ['bloomsGrid'],
-      'Difficulty Balance': ['easyActual', 'mediumActual', 'hardActual'],
-      'Reflection': ['reflection'],
-      'Verification': ['employeeSignature'],
+      "Bloom's Taxonomy Grid": ['bloomGrid'],
+      'Assessment Design Decisions': ['blueprintAssessmentType', 'blueprintDifficultyDistribution', 'blueprintFeedbackLoop'],
     }
   },
   p3_w4: {
-    sections: ['About You', 'Framework Application', 'Self-Assessment', 'Verification'],
+    sections: ['About You', 'Framework Application', 'Growth as an Educator'],
     sectionMap: {
       'About You': ['employeeName'],
-      'Framework Application': ['frameworks'],
-      'Self-Assessment': ['selfNatural', 'selfEffort', 'selfMoment'],
-      'Verification': ['employeeSignature'],
+      'Framework Application': ['frameworksApplied', 'activeLearningExample', 'theoryPracticeGap'],
+      'Growth as an Educator': ['iterationNotes', 'frameworkGrowth'],
     }
   },
   p3_w5: {
-    sections: ['About You', 'Proposal', 'Problem & Solution', 'Faculty Review', 'Verification'],
+    sections: ['About You', 'Problem Identification', 'Proposed Improvement', 'Implementation & Success Metrics'],
     sectionMap: {
       'About You': ['employeeName'],
-      'Proposal': ['proposalTitle', 'areaOfImprovement', 'subjectAffected', 'dateSubmitted'],
-      'Problem & Solution': ['problemStatement', 'evidence', 'proposedSolution', 'expectedImpact', 'implementationEffort'],
-      'Faculty Review': ['leadDecision', 'leadComments', 'leadTimeline', 'leadSignature'],
-      'Verification': ['employeeSignature'],
+      'Problem Identification': ['problemIdentified'],
+      'Proposed Improvement': ['proposedChange', 'expectedImpact'],
+      'Implementation & Success Metrics': ['implementationPlan', 'successCriteria'],
     }
   },
 };

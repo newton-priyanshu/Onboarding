@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
-import { BookText, AlertCircle } from 'lucide-react';
+import { useWorksheet } from '../../hooks/useWorksheet';
+import { BookText } from 'lucide-react';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p3_w1';
@@ -10,34 +9,30 @@ const blankLec = () => ({ date: '', subject: '', duration: '', observer: '' });
 
 export default function Phase3Worksheet1() {
   const n = useNavigate(); const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    employeeName: '',
-    lectures: Array(4).fill(null).map(() => blankLec()),
-    postMortemFlow: '', postMortemParticipation: '', postMortemQuestions: '', postMortemTime: '',
-    feedbackSummary: '', improvementTarget: '',
-    employeeSignature: '', status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false); const [submitting, setSubmitting] = useState(false); const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-3');
 
-  useEffect(() => {
-    if (!user?.id) return; (async () => { const saved = await loadWorksheetData(user.id, WS); if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' })); else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); } setLoaded(true); })();
-  }, [user?.id]);
+  const {
+    data, setData, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-3',
+    defaultData: {
+      employeeName: '',
+      lectures: Array(3).fill(null).map(() => blankLec()),
+      postMortemFlow: '', postMortemParticipation: '', postMortemQuestions: '', postMortemTime: '',
+      feedbackSummary: '', improvementTarget: '',
+      employeeSignature: '',
+    },
+    requiredFields: [{ key: 'employeeName', label: 'Full Name' }],
+    redirectPath: '/phase-3',
+    approvedMsg: 'Your Lecture Delivery log has been reviewed and approved.',
+    submittedMsg: 'Lecture delivery log submitted.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
   const uL = (i, f, v) => setData(p => { const arr = [...p.lectures]; arr[i] = { ...arr[i], [f]: v }; return { ...p, lectures: arr }; });
-  const requiredFields = [{ key: 'employeeName', label: 'Full Name' }];
 
-  function validateRequired() {
-    const missing = requiredFields.filter(f => !data[f.key]?.trim());
-    if (missing.length > 0) { setSubmitError(`Please fill in: ${missing.map(f => f.label).join(', ')}`); return false; }
-    return true;
-  }
-
-  const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
-
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Lecture Delivery log has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Lecture delivery log submitted." path="/phase-3" />;
+  if (isApproved) return <ApprovedView msg="Your Lecture Delivery log has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Lecture delivery log submitted." path="/phase-3" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -47,7 +42,7 @@ export default function Phase3Worksheet1() {
         <WorksheetHeader icon={BookText} title="Independent Lecture Delivery Log & Pacing Post-Mortem" subtitle="Days 61-90 · Min. 2 full lectures independently delivered and observed." saveStatus={saveStatus} />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 
           <WorksheetSection title="Lecture Delivery Log">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 0.8fr 1.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
@@ -64,20 +59,20 @@ export default function Phase3Worksheet1() {
           </WorksheetSection>
 
           <WorksheetSection title="Post-Mortem (Complete Within 24 Hours of Each Lecture)">
-            <FieldGroup label="Class flow and pacing — did you introduce concepts progressively? What would you change?"><textarea className="lux-textarea" rows={2} value={data.postMortemFlow} onChange={e => u('postMortemFlow', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Student participation — which techniques did you use? How effective were they?"><textarea className="lux-textarea" rows={2} value={data.postMortemParticipation} onChange={e => u('postMortemParticipation', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Unexpected questions — how did you handle uncertainty while keeping the class moving?"><textarea className="lux-textarea" rows={2} value={data.postMortemQuestions} onChange={e => u('postMortemQuestions', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Time management — did you cover planned content? What was cut or rushed?"><textarea className="lux-textarea" rows={2} value={data.postMortemTime} onChange={e => u('postMortemTime', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Class flow and pacing — did you introduce concepts progressively? What would you change?"><textarea className="lux-textarea" rows={2} value={data.postMortemFlow} onChange={e => updateField('postMortemFlow', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Student participation — which techniques did you use? How effective were they?"><textarea className="lux-textarea" rows={2} value={data.postMortemParticipation} onChange={e => updateField('postMortemParticipation', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Unexpected questions — how did you handle uncertainty while keeping the class moving?"><textarea className="lux-textarea" rows={2} value={data.postMortemQuestions} onChange={e => updateField('postMortemQuestions', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Time management — did you cover planned content? What was cut or rushed?"><textarea className="lux-textarea" rows={2} value={data.postMortemTime} onChange={e => updateField('postMortemTime', e.target.value)} /></FieldGroup>
           </WorksheetSection>
 
           <WorksheetSection title="Faculty Lead Observation Debrief">
-            <FieldGroup label="Faculty Lead feedback summary:"><textarea className="lux-textarea" rows={2} value={data.feedbackSummary} onChange={e => u('feedbackSummary', e.target.value)} /></FieldGroup>
-            <FieldGroup label="One specific improvement target for the next lecture:"><textarea className="lux-textarea" rows={1} value={data.improvementTarget} onChange={e => u('improvementTarget', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Faculty Lead feedback summary:"><textarea className="lux-textarea" rows={2} value={data.feedbackSummary} onChange={e => updateField('feedbackSummary', e.target.value)} /></FieldGroup>
+            <FieldGroup label="One specific improvement target for the next lecture:"><textarea className="lux-textarea" rows={1} value={data.improvementTarget} onChange={e => updateField('improvementTarget', e.target.value)} /></FieldGroup>
           </WorksheetSection>
 
-          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => u('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
           <ErrorAlert message={submitError} />
-          <ActionBar onCancel={() => n('/phase-3')} onSubmit={hSub} submitting={submitting} />
+          <ActionBar onCancel={() => n('/phase-3')} onSubmit={handleSubmit} submitting={submitting} />
         </form>
       </div>
     </div>

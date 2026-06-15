@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
+import { useWorksheet } from '../../hooks/useWorksheet';
 import { MessageSquare } from 'lucide-react';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
@@ -13,66 +12,35 @@ export default function Phase1Worksheet2() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [data, setData] = useState(() => ({
-    employeeName: '',
-    mentorName: '',
-    weeks: Array(4).fill(null).map(() => ({ ...blankWeek(), mentorSignoff: false })),
-    mentorStrengths: '',
-    mentorAreasForGrowth: '',
-    mentorReadiness: '',
-    status: 'In Progress',
-    dateSubmitted: '',
-    _savedReviewStatus: '',
-  }));
+  const {
+    data, setData, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user,
+    worksheetId: WORKSHEET_ID,
+    phase: 'phase-1',
+    defaultData: {
+      employeeName: '',
+      mentorName: '',
+      weeks: Array(4).fill(null).map(() => ({ ...blankWeek(), mentorSignoff: false })),
+      mentorStrengths: '',
+      mentorAreasForGrowth: '',
+      mentorReadiness: '',
+    },
+    requiredFields: [
+      { key: 'employeeName', label: 'Full Name' },
+      { key: 'mentorName', label: 'Mentor Name' },
+    ],
+    redirectPath: '/phase-1',
+    approvedMsg: 'Your Faculty Mentor Alignment worksheet has been reviewed and approved.',
+    submittedMsg: 'Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review.',
+  });
 
-  const [loaded, setLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-
-  const { saveStatus, flushSave } = useAutoSave(user, data, WORKSHEET_ID, 'phase-1');
-
-  useEffect(() => {
-    if (!user?.id) return;
-    (async () => {
-      try {
-        const saved = await loadWorksheetData(user.id, WORKSHEET_ID);
-        if (saved?.worksheet_data) {
-          setData((prev) => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-        } else {
-          const name = await getOAuthName();
-          if (name) setData((prev) => ({ ...prev, employeeName: name }));
-        }
-        setLoaded(true);
-      } catch (err) { console.error('Load error:', err); setLoaded(true); }
-    })();
-  }, [user?.id]);
-
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
   const updateWeek = (i, f, v) => setData(p => { const arr = [...p.weeks]; arr[i] = { ...arr[i], [f]: v }; return { ...p, weeks: arr }; });
 
-  const requiredFields = [
-    { key: 'employeeName', label: 'Full Name' },
-    { key: 'mentorName', label: 'Mentor Name' },
-  ];
-
-  function validateRequired() {
-    const missing = requiredFields.filter(f => !data[f.key]?.trim());
-    if (missing.length > 0) { setSubmitError(`Please fill in: ${missing.map(f => f.label).join(', ')}`); return false; }
-    return true;
-  }
-
-  async function handleSubmit() {
-    setSubmitError('');
-    if (!validateRequired()) return;
-    setSubmitting(true);
-    const submitData = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') };
-    setData(submitData);
-    await flushSave(submitData);
-    setSubmitting(false);
-  }
-
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Faculty Mentor Alignment worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
+  if (isApproved) return <ApprovedView msg="Your Faculty Mentor Alignment worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -85,8 +53,8 @@ export default function Phase1Worksheet2() {
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
           <WorksheetSection title="About You">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup>
-              <FieldGroup label="Mentor Name" required><input className="lux-input" placeholder="Your mentor's name" value={data.mentorName} onChange={e => u('mentorName', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Mentor Name" required><input className="lux-input" placeholder="Your mentor's name" value={data.mentorName} onChange={e => updateField('mentorName', e.target.value)} /></FieldGroup>
             </div>
           </WorksheetSection>
 
@@ -108,10 +76,10 @@ export default function Phase1Worksheet2() {
             ))}
           </WorksheetSection>
 
-          <WorksheetSection title="Mentor Feedback Summary (End of Phase 1)" subtitle="Filled by Mentor — summarize strengths, growth areas, and readiness.">
-            <FieldGroup label="Strengths observed so far:"><textarea className="lux-textarea" rows={2} value={data.mentorStrengths} onChange={e => u('mentorStrengths', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Areas needing development:"><textarea className="lux-textarea" rows={2} value={data.mentorAreasForGrowth} onChange={e => u('mentorAreasForGrowth', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Mentor overall readiness assessment:"><textarea className="lux-textarea" rows={2} value={data.mentorReadiness} onChange={e => u('mentorReadiness', e.target.value)} /></FieldGroup>
+          <WorksheetSection title="Mentor Feedback Summary (End of Phase 1)" subtitle="To be filled by your mentor — a brief assessment of your progress.">
+            <FieldGroup label="What strengths has the mentee demonstrated so far?"><textarea className="lux-textarea" rows={1} value={data.mentorStrengths} onChange={e => updateField('mentorStrengths', e.target.value)} /></FieldGroup>
+            <FieldGroup label="What areas need focused development?"><textarea className="lux-textarea" rows={1} value={data.mentorAreasForGrowth} onChange={e => updateField('mentorAreasForGrowth', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Overall readiness to proceed to Phase 2?"><textarea className="lux-textarea" rows={1} value={data.mentorReadiness} onChange={e => updateField('mentorReadiness', e.target.value)} /></FieldGroup>
           </WorksheetSection>
 
           <ErrorAlert message={submitError} />

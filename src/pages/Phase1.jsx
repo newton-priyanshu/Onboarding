@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Users, MessageSquare, BookText, Monitor, Eye, FileText, MessageCircle, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Users, MessageSquare, BookText, Monitor, Eye, FileText, MessageCircle, Shield, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../worksheetConfig.jsx';
+import { getDueDateInfo, formatDueDate } from '../hooks/useDueDates';
 
 const worksheets = [
   { id: 'p1_w1', num: 1, path: '/phase-1/worksheet-1', title: 'Team Introduction & Stakeholder Mapping Log', icon: Users, desc: 'Meet key people across teams and understand how they collaborate.' },
@@ -48,15 +49,13 @@ export default function Phase1() {
 
   const completed = worksheets.filter(w => {
     const s = statuses[w.id];
-    // Check both 'submitted' (worksheets) and 'Submitted' (gate controls) statuses
-    return s?.status === 'submitted' || s?.status === 'Submitted' || s?.review_status === 'approved';
+    return s?.status === 'submitted' || s?.review_status === 'approved';
   }).length;
 
   function getBadge(status, reviewStatus) {
     const isApproved = reviewStatus === 'approved';
     const needsRevision = reviewStatus === 'needs_revision';
-    // Check both 'submitted' (worksheets) and 'Submitted' (gate controls) statuses
-    const isSubmitted = status === 'submitted' || status === 'Submitted';
+    const isSubmitted = status === 'submitted';
     const pendingReview = reviewStatus === 'pending_review' || (isSubmitted && !reviewStatus);
     const inProgress = status === 'In Progress';
 
@@ -154,6 +153,22 @@ export default function Phase1() {
                   </div>
                   <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5 }}>{ws.desc}</p>
                 </div>
+                {(badge.label === 'Not Started' || badge.label === 'In Progress') && (() => {
+                  const due = getDueDateInfo(ws.id);
+                  if (!due.dueDate) return null;
+                  return (
+                    <span style={{
+                      fontFamily: theme.fontBody, fontSize: '0.55rem', fontWeight: 500,
+                      letterSpacing: '0.1em',
+                      color: due.isOverdue ? '#C62828' : due.isDueSoon ? '#E65100' : theme.warmGrey,
+                      whiteSpace: 'nowrap',
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                    }}>
+                      {due.isOverdue && <AlertTriangle size={10} strokeWidth={1.5} />}
+                      {due.statusLabel}
+                    </span>
+                  );
+                })()}
                 <span style={{
                   fontFamily: theme.fontBody, fontSize: '0.6rem', fontWeight: 500,
                   letterSpacing: '0.1em',

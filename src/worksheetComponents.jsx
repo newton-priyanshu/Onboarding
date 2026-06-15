@@ -1,4 +1,4 @@
-import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle, Save } from 'lucide-react';
+import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const t = {
@@ -119,7 +119,7 @@ export function ActionBar({ onCancel, onSubmit, submitting, submitLabel = 'Submi
 }
 
 /* ─── Submitted View ───────────────────────────────────────── */
-export function SubmittedView({ msg, path, title = 'Worksheet Submitted', isCapstone = false }) {
+export function SubmittedView({ msg, path, title = 'Worksheet Submitted' }) {
   const navigate = useNavigate();
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
@@ -347,6 +347,46 @@ export function GridTable({ headers, rows, renderCell }) {
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ─── GateControl Section ──────────────────────────────────── */
+export function Section({ title, subtitle, children }) {
+  const t = { body: 'var(--font-body)', heading: 'var(--font-heading)', ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)' };
+  return (
+    <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.25rem 0' }}>
+      <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.ch, marginBottom: subtitle ? '4px' : '0.75rem' }}>{title}</h3>
+      {subtitle && <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, marginBottom: '0.75rem' }}>{subtitle}</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>{children}</div>
+    </div>
+  );
+}
+
+/* ─── GateControl Slider (1-5 rating) ──────────────────────── */
+export function Slider({ label, value, onChange }) {
+  const t = { body: 'var(--font-body)', ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)', ease: 'var(--ease-lux)' };
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>{label}</span>
+        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 600, color: t.gd }}>{value}/5</span>
+      </div>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} type="button" onClick={() => onChange(n)}
+            style={{
+              flex: 1, padding: '10px', border: value >= n ? '1px solid var(--color-charcoal)' : '1px solid rgba(26,26,26,0.15)',
+              background: value >= n ? 'var(--color-charcoal)' : 'transparent',
+              color: value >= n ? '#F9F8F6' : t.wg,
+              fontWeight: 500, cursor: 'pointer', fontFamily: t.body, fontSize: '0.85rem',
+              transition: 'all 300ms var(--ease-lux)',
+            }}
+            onMouseOver={e => { if (value < n) e.currentTarget.style.borderColor = 'var(--color-gold)'; }}
+            onMouseOut={e => { if (value < n) e.currentTarget.style.borderColor = 'rgba(26,26,26,0.15)'; }}
+          >{n}</button>
+        ))}
+      </div>
     </div>
   );
 }

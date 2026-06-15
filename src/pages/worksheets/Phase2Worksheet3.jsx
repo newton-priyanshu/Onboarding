@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
-import { FileText, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { useWorksheet } from '../../hooks/useWorksheet';
+import { FileText, Plus, Trash2 } from 'lucide-react';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p2_w3';
@@ -11,38 +10,33 @@ const qualityItems = ['All questions have unambiguous problem statements', 'Codi
 
 export default function Phase2Worksheet3() {
   const n = useNavigate(); const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    employeeName: '',
-    entries: Array(9).fill(null).map(() => blankEntry()),
-    qualityChecks: qualityItems.map(() => false),
-    reflection: '',
-    employeeSignature: '', status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false); const [submitting, setSubmitting] = useState(false); const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-2');
 
-  useEffect(() => {
-    if (!user?.id) return; (async () => { const saved = await loadWorksheetData(user.id, WS);if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-      else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); } setLoaded(true); })();
-  }, [user?.id]);
+  const {
+    data, setData, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-2',
+    defaultData: {
+      employeeName: '',
+      entries: Array(6).fill(null).map(() => blankEntry()),
+      qualityChecks: qualityItems.map(() => false),
+      reflection: '',
+      employeeSignature: '',
+    },
+    requiredFields: [{ key: 'employeeName', label: 'Full Name' }],
+    redirectPath: '/phase-2',
+    approvedMsg: 'Your Content Ledger has been reviewed and approved.',
+    submittedMsg: 'Content ledger submitted.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
   const uE = (i, f, v) => setData(p => { const arr = [...p.entries]; arr[i] = { ...arr[i], [f]: v }; return { ...p, entries: arr }; });
   const toggleQuality = (i) => setData(p => { const arr = [...p.qualityChecks]; arr[i] = !arr[i]; return { ...p, qualityChecks: arr }; });
   const addEntry = () => setData(p => ({ ...p, entries: [...p.entries, blankEntry()] }));
   const removeEntry = (i) => { if (data.entries.length > 1) setData(p => ({ ...p, entries: p.entries.filter((_, idx) => idx !== i) })); };
-  const requiredFields = [{ key: 'employeeName', label: 'Full Name' }];
 
-  function validateRequired() {
-    const missing = requiredFields.filter(f => !data[f.key]?.trim());
-    if (missing.length > 0) { setSubmitError(`Please fill in: ${missing.map(f => f.label).join(', ')}`); return false; }
-    return true;
-  }
-
-  const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
-
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Content Ledger has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
+  if (isApproved) return <ApprovedView msg="Your Content Ledger has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -52,7 +46,7 @@ export default function Phase2Worksheet3() {
         <WorksheetHeader icon={FileText} title="Courseware Content Creation Ledger" subtitle="Days 31-60 · Track every content contribution." saveStatus={saveStatus} />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 
           <WorksheetSection title="Content Creation Tracker" subtitle="All content must be reviewed by mentor or Faculty Lead before release.">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -86,10 +80,10 @@ export default function Phase2Worksheet3() {
             ))}
           </WorksheetSection>
 
-          <WorksheetSection title="Reflection"><FieldGroup label="How did content creation improve your understanding of the subject?"><textarea className="lux-textarea" rows={3} value={data.reflection} onChange={e => u('reflection', e.target.value)} /></FieldGroup></WorksheetSection>
-          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => u('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="Reflection"><FieldGroup label="How did content creation improve your understanding of the subject?"><textarea className="lux-textarea" rows={3} value={data.reflection} onChange={e => updateField('reflection', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
           <ErrorAlert message={submitError} />
-          <ActionBar onCancel={() => n('/phase-2')} onSubmit={hSub} submitting={submitting} />
+          <ActionBar onCancel={() => n('/phase-2')} onSubmit={handleSubmit} submitting={submitting} />
         </form>
       </div>
     </div>

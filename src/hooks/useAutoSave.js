@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { getReviewerType } from '../worksheetConfig.jsx';
 import { notifyError } from '../utils/errorHandling';
+import { triggerNotification, getReviewerUserIds } from './useNotifications';
 
 export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1') {
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -35,6 +36,29 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,worksheet_id' });
       if (error) throw error;
+
+      // Trigger notification on first-time submission only
+      // Guard: Only send notification when transitioning FROM a non-submitted state
+      // (not on page reload when data is re-hydrated from Supabase)
+      const isNewSubmission = data.status === 'submitted'
+        && data._savedReviewStatus !== 'approved'
+        && data._savedReviewStatus !== 'pending_review'
+        && data._savedReviewStatus !== 'revision_submitted';
+      if (isNewSubmission) {
+        const reviewerUserIds = await getReviewerUserIds(reviewerType);
+        const phaseNames = { 'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3' };
+        const phaseName = phaseNames[phase] || phase;
+        for (const reviewerId of reviewerUserIds) {
+          await triggerNotification({
+            userId: reviewerId,
+            fromUserId: user.id,
+            worksheetId,
+            type: data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'submitted',
+            message: `A worksheet (${worksheetId}) was submitted in ${phaseName} and is ready for review.`,
+          });
+        }
+      }
+
       if (mountedRef.current) {
         setSaveStatus('saved');
         setTimeout(() => {

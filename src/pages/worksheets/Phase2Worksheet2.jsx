@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
-import { ClipboardCheck, AlertCircle } from 'lucide-react';
+import { useWorksheet } from '../../hooks/useWorksheet';
+import { ClipboardCheck } from 'lucide-react';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p2_w2';
@@ -11,36 +10,31 @@ const dims = ['Explained problem statement clearly', 'Circulated and helped mult
 
 export default function Phase2Worksheet2() {
   const n = useNavigate(); const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    employeeName: '',
-    sessions: Array(4).fill(null).map(() => blankSession()),
-    dimScores: dims.map(() => [0, 0]),
-    strongestMoment: '', biggestChallenge: '',
-    employeeSignature: '', status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false); const [submitting, setSubmitting] = useState(false); const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-2');
 
-  useEffect(() => {
-    if (!user?.id) return; (async () => { const saved = await loadWorksheetData(user.id, WS);if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-      else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); } setLoaded(true); })();
-  }, [user?.id]);
+  const {
+    data, setData, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-2',
+    defaultData: {
+      employeeName: '',
+      sessions: Array(2).fill(null).map(() => blankSession()),
+      dimScores: dims.map(() => [0, 0]),
+      strongestMoment: '', biggestChallenge: '',
+      employeeSignature: '',
+    },
+    requiredFields: [{ key: 'employeeName', label: 'Full Name' }],
+    redirectPath: '/phase-2',
+    approvedMsg: 'Your Lab Scorecard has been reviewed and approved.',
+    submittedMsg: 'Lab scorecard submitted.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
   const uS = (i, f, v) => setData(p => { const arr = [...p.sessions]; arr[i] = { ...arr[i], [f]: v }; return { ...p, sessions: arr }; });
   const uScore = (dimIdx, sessionIdx, v) => setData(p => { const arr = [...p.dimScores]; arr[dimIdx] = [...arr[dimIdx]]; arr[dimIdx][sessionIdx] = v; return { ...p, dimScores: arr }; });
-  const requiredFields = [{ key: 'employeeName', label: 'Full Name' }];
 
-  function validateRequired() {
-    const missing = requiredFields.filter(f => !data[f.key]?.trim());
-    if (missing.length > 0) { setSubmitError(`Please fill in: ${missing.map(f => f.label).join(', ')}`); return false; }
-    return true;
-  }
-
-  const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
-
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your Lab Scorecard has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="Lab scorecard submitted." path="/phase-2" />;
+  if (isApproved) return <ApprovedView msg="Your Lab Scorecard has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Lab scorecard submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -50,7 +44,7 @@ export default function Phase2Worksheet2() {
         <WorksheetHeader icon={ClipboardCheck} title="Independent Lab Facilitation Scorecard & Feedback Tracker" subtitle="Days 31-60 · Build lab facilitation confidence." saveStatus={saveStatus} />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 
           <WorksheetSection title="Lab Session Log" subtitle="Min. 2 independent sessions required.">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 2.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
@@ -96,13 +90,13 @@ export default function Phase2Worksheet2() {
           </WorksheetSection>
 
           <WorksheetSection title="Reflection">
-            <FieldGroup label="Strongest moment in lab facilitation this phase:"><textarea className="lux-textarea" rows={2} value={data.strongestMoment} onChange={e => u('strongestMoment', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Biggest challenge faced and how you handled it:"><textarea className="lux-textarea" rows={2} value={data.biggestChallenge} onChange={e => u('biggestChallenge', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Strongest moment in lab facilitation this phase:"><textarea className="lux-textarea" rows={2} value={data.strongestMoment} onChange={e => updateField('strongestMoment', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Biggest challenge faced and how you handled it:"><textarea className="lux-textarea" rows={2} value={data.biggestChallenge} onChange={e => updateField('biggestChallenge', e.target.value)} /></FieldGroup>
           </WorksheetSection>
 
-          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => u('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
           <ErrorAlert message={submitError} />
-          <ActionBar onCancel={() => n('/phase-2')} onSubmit={hSub} submitting={submitting} />
+          <ActionBar onCancel={() => n('/phase-2')} onSubmit={handleSubmit} submitting={submitting} />
         </form>
       </div>
     </div>

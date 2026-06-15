@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const roleLabels = {
   new_joinee: 'New Joinee',
@@ -83,6 +84,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {/* Desktop nav */}
             <nav className="desktop-nav-lux" style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+              <NotificationBell />
               {allLinks.map((item) => {
                 const active = isActive(item.path);
                 const Icon = item.icon;

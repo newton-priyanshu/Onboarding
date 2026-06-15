@@ -1,57 +1,37 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
+import { useWorksheet } from '../../hooks/useWorksheet';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import { BookOpen } from 'lucide-react';
 
 const WS = 'p3_w4';
 
 export default function Phase3Worksheet4() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    humanResources: '', technologyTools: '', budgetBreakdown: '', fundingSources: '',
-    keyMilestones: '', dependencies: '',
-    status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-3');
 
-  useEffect(() => {
-    if (!user?.id) return;
-    (async () => {
-      try {
-        const saved = await loadWorksheetData(user.id, WS);
-        if (saved?.worksheet_data) {
-          setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-        } else {
-          const name = await getOAuthName();
-          if (name) setData(prev => ({ ...prev, employeeName: name }));
-        }
-        setLoaded(true);
-      } catch (err) { console.error('Load error:', err); setLoaded(true); }
-    })();
-  }, [user?.id]);
+  const {
+    data, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-3',
+    defaultData: {
+      employeeName: '',
+      frameworksApplied: '',
+      activeLearningExample: '',
+      theoryPracticeGap: '',
+      iterationNotes: '',
+      frameworkGrowth: '',
+    },
+    requiredFields: [{ key: 'frameworksApplied', label: 'Pedagogical frameworks applied' }],
+    redirectPath: '/phase-3',
+    approvedMsg: 'Your Pedagogical Frameworks Journal has been reviewed and approved.',
+    submittedMsg: 'Pedagogical Frameworks Journal submitted for review.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
-
-  async function handleSubmit() {
-    setSubmitError('');
-    if (!data.humanResources?.trim()) { setSubmitError('Please fill in Human Resources.'); return; }
-    setSubmitting(true);
-    const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') };
-    setData(d); await flushSave(d);
-    setSubmitting(false);
-  }
-
-  if (loaded && data._savedReviewStatus === 'approved') {
-    return <ApprovedView msg="Your Resource Allocation & Budgeting worksheet has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  }
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
-    return <SubmittedView msg="Resource Allocation & Budgeting worksheet submitted for review." path="/phase-3" />;
-  }
+  if (isApproved) return <ApprovedView msg="Your Pedagogical Frameworks Journal has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Pedagogical Frameworks Journal submitted for review." path="/phase-3" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -59,41 +39,41 @@ export default function Phase3Worksheet4() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-3" label="Back to Phase 3" />
         <WorksheetHeader
-          icon={null} title="Resource Allocation & Budgeting"
-          subtitle="Detail the resources, budget, and timeline required for execution" saveStatus={saveStatus}
+          icon={BookOpen} title="Pedagogical Frameworks Application Journal"
+          subtitle="Reflect on how educational theory translates into classroom practice" saveStatus={saveStatus}
         />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="Resource Requirements">
-            <FieldGroup label="Human Resources" hint="What personnel and expertise are needed?" required>
-              <textarea className="lux-textarea" rows={4} value={data.humanResources || ''}
-                onChange={e => u('humanResources', e.target.value)} placeholder="Describe human resource needs..." />
+          <WorksheetSection title="About You">
+            <FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+          </WorksheetSection>
+
+          <WorksheetSection title="Framework Application" subtitle="Document which pedagogical frameworks you've experimented with and how they landed.">
+            <FieldGroup label="Which pedagogical frameworks or teaching strategies have you consciously applied this phase? (e.g., flipped classroom, think-pair-share, scaffolded instruction, peer instruction, problem-based learning)" required>
+              <textarea className="lux-textarea" rows={2} value={data.frameworksApplied || ''}
+                onChange={e => updateField('frameworksApplied', e.target.value)} placeholder="List the frameworks and briefly describe how you adapted them to your context..." />
             </FieldGroup>
-            <FieldGroup label="Technology & Tools" hint="What technology, software, or tools are required?">
-              <textarea className="lux-textarea" rows={3} value={data.technologyTools || ''}
-                onChange={e => u('technologyTools', e.target.value)} placeholder="List technology and tools needed..." />
+            <FieldGroup label="Describe one specific instance where you used an active-learning technique. What was the student response, and what did you learn from it?">
+              <textarea className="lux-textarea" rows={2} value={data.activeLearningExample || ''}
+                onChange={e => updateField('activeLearningExample', e.target.value)} placeholder="What did you try, how did students react, and what would you do differently next time?" />
+            </FieldGroup>
+            <FieldGroup label="Where have you noticed the biggest gap between theory and practice — and how did you bridge it in the moment?">
+              <textarea className="lux-textarea" rows={2} value={data.theoryPracticeGap || ''}
+                onChange={e => updateField('theoryPracticeGap', e.target.value)} placeholder="Did a well-planned technique fall flat? How did you adapt?" />
             </FieldGroup>
           </WorksheetSection>
-          <WorksheetSection title="Budget Planning">
-            <FieldGroup label="Budget Breakdown" hint="Provide a detailed breakdown of the budget">
-              <textarea className="lux-textarea" rows={5} value={data.budgetBreakdown || ''}
-                onChange={e => u('budgetBreakdown', e.target.value)} placeholder="Break down the budget..." />
+
+          <WorksheetSection title="Growth as an Educator" subtitle="Track your teaching evolution over Phase 3.">
+            <FieldGroup label="What specific teaching behaviour have you iterated on most this phase — and what changed as a result?">
+              <textarea className="lux-textarea" rows={2} value={data.iterationNotes || ''}
+                onChange={e => updateField('iterationNotes', e.target.value)} placeholder="e.g. I started using exit tickets — now I can gauge understanding before the next class..." />
             </FieldGroup>
-            <FieldGroup label="Funding Sources" hint="What are the sources of funding?">
-              <textarea className="lux-textarea" rows={3} value={data.fundingSources || ''}
-                onChange={e => u('fundingSources', e.target.value)} placeholder="Identify funding sources..." />
-            </FieldGroup>
-          </WorksheetSection>
-          <WorksheetSection title="Timeline & Milestones">
-            <FieldGroup label="Key Milestones" hint="What are the key milestones and their target dates?">
-              <textarea className="lux-textarea" rows={4} value={data.keyMilestones || ''}
-                onChange={e => u('keyMilestones', e.target.value)} placeholder="List key milestones with dates..." />
-            </FieldGroup>
-            <FieldGroup label="Dependencies" hint="What dependencies exist between milestones?">
-              <textarea className="lux-textarea" rows={3} value={data.dependencies || ''}
-                onChange={e => u('dependencies', e.target.value)} placeholder="Describe dependencies..." />
+            <FieldGroup label="How has your personal teaching philosophy evolved since you started the onboarding program?">
+              <textarea className="lux-textarea" rows={2} value={data.frameworkGrowth || ''}
+                onChange={e => updateField('frameworkGrowth', e.target.value)} placeholder="What do you now believe about teaching that you didn't 90 days ago?" />
             </FieldGroup>
           </WorksheetSection>
+
           <ErrorAlert message={submitError} />
           <ActionBar onCancel={() => navigate('/phase-3')} onSubmit={handleSubmit} submitting={submitting} />
         </form>

@@ -1,57 +1,36 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
+import { useWorksheet } from '../../hooks/useWorksheet';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import { Lightbulb } from 'lucide-react';
 
 const WS = 'p3_w5';
 
 export default function Phase3Worksheet5() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    keyStakeholders: '', communicationChannels: '', changeImpact: '', trainingSupport: '',
-    successMetrics: '', feedbackMechanisms: '',
-    status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-3');
 
-  useEffect(() => {
-    if (!user?.id) return;
-    (async () => {
-      try {
-        const saved = await loadWorksheetData(user.id, WS);
-        if (saved?.worksheet_data) {
-          setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-        } else {
-          const name = await getOAuthName();
-          if (name) setData(prev => ({ ...prev, employeeName: name }));
-        }
-        setLoaded(true);
-      } catch (err) { console.error('Load error:', err); setLoaded(true); }
-    })();
-  }, [user?.id]);
+  const {
+    data, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-3',
+    defaultData: {
+      employeeName: '',
+      problemIdentified: '',
+      proposedChange: '', expectedImpact: '',
+      implementationPlan: '',
+      successCriteria: '',
+    },
+    requiredFields: [{ key: 'problemIdentified', label: 'Problem description' }],
+    redirectPath: '/phase-3',
+    approvedMsg: 'Your Course Improvement Proposal has been reviewed and approved.',
+    submittedMsg: 'Course Improvement Proposal submitted for review.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
-
-  async function handleSubmit() {
-    setSubmitError('');
-    if (!data.keyStakeholders?.trim()) { setSubmitError('Please fill in Key Stakeholders.'); return; }
-    setSubmitting(true);
-    const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') };
-    setData(d); await flushSave(d);
-    setSubmitting(false);
-  }
-
-  if (loaded && data._savedReviewStatus === 'approved') {
-    return <ApprovedView msg="Your Communication & Change Management worksheet has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  }
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
-    return <SubmittedView msg="Communication & Change Management worksheet submitted for review." path="/phase-3" />;
-  }
+  if (isApproved) return <ApprovedView msg="Your Course Improvement Proposal has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Course Improvement Proposal submitted for review." path="/phase-3" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -59,41 +38,44 @@ export default function Phase3Worksheet5() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-3" label="Back to Phase 3" />
         <WorksheetHeader
-          icon={null} title="Communication & Change Management"
-          subtitle="Develop a communication and change management plan to ensure adoption" saveStatus={saveStatus}
+          icon={Lightbulb} title="Continuous Course Improvement Proposal"
+          subtitle="Identify a concrete gap in the current curriculum and propose an evidence-backed improvement" saveStatus={saveStatus}
         />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="Communication Plan">
-            <FieldGroup label="Key Stakeholders" hint="Who needs to be informed and engaged?" required>
-              <textarea className="lux-textarea" rows={4} value={data.keyStakeholders || ''}
-                onChange={e => u('keyStakeholders', e.target.value)} placeholder="List key stakeholders..." />
-            </FieldGroup>
-            <FieldGroup label="Communication Channels" hint="What channels will be used for communication?">
-              <textarea className="lux-textarea" rows={3} value={data.communicationChannels || ''}
-                onChange={e => u('communicationChannels', e.target.value)} placeholder="Describe communication channels..." />
+          <WorksheetSection title="About You">
+            <FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+          </WorksheetSection>
+
+          <WorksheetSection title="Problem Identification" subtitle="Ground your proposal in observed student needs or curriculum gaps.">
+            <FieldGroup label="What specific gap, bottleneck, or student difficulty have you identified in the current course delivery or content?" required>
+              <textarea className="lux-textarea" rows={2} value={data.problemIdentified || ''}
+                onChange={e => updateField('problemIdentified', e.target.value)} placeholder="Be precise — cite specific topics, student feedback patterns, or assessment data that reveal the gap..." />
             </FieldGroup>
           </WorksheetSection>
-          <WorksheetSection title="Change Management">
-            <FieldGroup label="Change Impact Assessment" hint="What is the expected impact of the changes on teams and processes?">
-              <textarea className="lux-textarea" rows={4} value={data.changeImpact || ''}
-                onChange={e => u('changeImpact', e.target.value)} placeholder="Assess the impact of changes..." />
+
+          <WorksheetSection title="Proposed Improvement" subtitle="Describe your solution and how it addresses the identified gap.">
+            <FieldGroup label="What specific change are you proposing, and what would it look like in practice?">
+              <textarea className="lux-textarea" rows={2} value={data.proposedChange || ''}
+                onChange={e => updateField('proposedChange', e.target.value)} placeholder="e.g. Adding weekly low-stakes quizzes, restructuring module sequencing, introducing peer review..." />
             </FieldGroup>
-            <FieldGroup label="Training & Support" hint="What training and support will be provided?">
-              <textarea className="lux-textarea" rows={3} value={data.trainingSupport || ''}
-                onChange={e => u('trainingSupport', e.target.value)} placeholder="Describe training and support plans..." />
-            </FieldGroup>
-          </WorksheetSection>
-          <WorksheetSection title="Adoption Metrics">
-            <FieldGroup label="Success Metrics" hint="How will you measure adoption and success?">
-              <textarea className="lux-textarea" rows={3} value={data.successMetrics || ''}
-                onChange={e => u('successMetrics', e.target.value)} placeholder="Define success metrics..." />
-            </FieldGroup>
-            <FieldGroup label="Feedback Mechanisms" hint="How will you collect and incorporate feedback?">
-              <textarea className="lux-textarea" rows={3} value={data.feedbackMechanisms || ''}
-                onChange={e => u('feedbackMechanisms', e.target.value)} placeholder="Describe feedback mechanisms..." />
+            <FieldGroup label="What measurable impact do you expect this change to have on student learning outcomes?">
+              <textarea className="lux-textarea" rows={2} value={data.expectedImpact || ''}
+                onChange={e => updateField('expectedImpact', e.target.value)} placeholder="How will you know if the change is working?" />
             </FieldGroup>
           </WorksheetSection>
+
+          <WorksheetSection title="Implementation & Success Metrics">
+            <FieldGroup label="Outline a brief implementation plan — what needs to happen, who needs to be involved, and over what timeline?">
+              <textarea className="lux-textarea" rows={2} value={data.implementationPlan || ''}
+                onChange={e => updateField('implementationPlan', e.target.value)} placeholder="Key steps, stakeholders, and timeline..." />
+            </FieldGroup>
+            <FieldGroup label="Define specific success criteria — how will you measure whether the improvement has worked?">
+              <textarea className="lux-textarea" rows={2} value={data.successCriteria || ''}
+                onChange={e => updateField('successCriteria', e.target.value)} placeholder="e.g. 15% improvement in assessment scores, reduced dropout rate, positive student survey results..." />
+            </FieldGroup>
+          </WorksheetSection>
+
           <ErrorAlert message={submitError} />
           <ActionBar onCancel={() => navigate('/phase-3')} onSubmit={handleSubmit} submitting={submitting} />
         </form>

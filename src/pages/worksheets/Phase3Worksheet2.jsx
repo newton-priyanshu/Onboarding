@@ -1,61 +1,36 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
+import { useWorksheet } from '../../hooks/useWorksheet';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import { Users } from 'lucide-react';
 
 const WS = 'p3_w2';
 
 export default function Phase3Worksheet2() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    governanceStructure: '', reviewCadence: '', primaryKpis: '', targetThresholds: '',
-    reportingStructure: '', accountabilityMechanisms: '',
-    status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-3');
 
-  useEffect(() => {
-    if (!user?.id) return;
-    (async () => {
-      try {
-        const saved = await loadWorksheetData(user.id, WS);
-        if (saved?.worksheet_data) {
-          setData(prev => ({ ...prev, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-        } else {
-          const name = await getOAuthName();
-          if (name) setData(prev => ({ ...prev, employeeName: name }));
-        }
-        setLoaded(true);
-      } catch (err) { console.error('Load error:', err); setLoaded(true); }
-    })();
-  }, [user?.id]);
+  const {
+    data, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-3',
+    defaultData: {
+      employeeName: '',
+      cohortSize: '',
+      performanceRange: '', highPerformers: '', lowPerformers: '',
+      learningNeeds: '', teachingAdaptations: '',
+      relationshipApproach: '',
+    },
+    requiredFields: [{ key: 'cohortSize', label: 'Cohort size / ability spread' }],
+    redirectPath: '/phase-3',
+    approvedMsg: 'Your Student Cohort Profiling worksheet has been reviewed and approved.',
+    submittedMsg: 'Student Cohort Profiling submitted for review.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
-
-  async function handleSubmit() {
-    setSubmitError('');
-    if (!data.governanceStructure?.trim()) {
-      setSubmitError('Please fill in the Governance Structure.');
-      return;
-    }
-    setSubmitting(true);
-    const submitData = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') };
-    setData(submitData);
-    await flushSave(submitData);
-    setSubmitting(false);
-  }
-
-  if (loaded && data._savedReviewStatus === 'approved') {
-    return <ApprovedView msg="Your Governance & Performance Indicators worksheet has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  }
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
-    return <SubmittedView msg="Governance & Performance worksheet submitted for review." path="/phase-3" />;
-  }
+  if (isApproved) return <ApprovedView msg="Your Student Cohort Profiling worksheet has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="Student Cohort Profiling submitted for review." path="/phase-3" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -63,46 +38,41 @@ export default function Phase3Worksheet2() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to="/phase-3" label="Back to Phase 3" />
         <WorksheetHeader
-          icon={null} title="Governance & Performance Indicators"
-          subtitle="Define governance structures and key performance indicators" saveStatus={saveStatus}
+          icon={Users} title="Student Cohort Profiling & Performance Mapping"
+          subtitle="Understand who your students are and how to reach each of them effectively" saveStatus={saveStatus}
         />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="Governance Framework">
-            <FieldGroup label="Governance Structure" hint="What governance model will oversee execution?" required>
-              <textarea className="lux-textarea" rows={4} value={data.governanceStructure || ''}
-                onChange={e => u('governanceStructure', e.target.value)} placeholder="Describe the governance structure..." />
+          <WorksheetSection title="About You">
+            <FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+          </WorksheetSection>
+
+          <WorksheetSection title="Cohort Profile" subtitle="Map the composition and performance spread of your students.">
+            <FieldGroup label="What is the size of your cohort(s), and how would you describe the overall ability spread?" required>
+              <textarea className="lux-textarea" rows={2} value={data.cohortSize || ''}
+                onChange={e => updateField('cohortSize', e.target.value)} placeholder="e.g. 120 students across 2 sections — roughly 30% high-performers, 50% mid-range, 20% struggling..." />
             </FieldGroup>
-            <FieldGroup label="Review Cadence" hint="How frequently will progress be reviewed?">
-              <select className="lux-select" value={data.reviewCadence || ''} onChange={e => u('reviewCadence', e.target.value)}>
-                <option value="">Select cadence...</option>
-                <option value="weekly">Weekly</option>
-                <option value="biweekly">Bi-Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-              </select>
+            <FieldGroup label="How would you characterise the top performers vs. those who need additional support — what distinguishes them?">
+              <textarea className="lux-textarea" rows={2} value={data.performanceRange || ''}
+                onChange={e => updateField('performanceRange', e.target.value)} placeholder="Describe patterns you've observed..." />
+            </FieldGroup>
+            <FieldGroup label="What specific learning needs or engagement challenges are most prevalent in your cohort?">
+              <textarea className="lux-textarea" rows={2} value={data.learningNeeds || ''}
+                onChange={e => updateField('learningNeeds', e.target.value)} placeholder="e.g. struggling with abstract concepts, low participation in labs, language barriers..." />
             </FieldGroup>
           </WorksheetSection>
-          <WorksheetSection title="Key Performance Indicators">
-            <FieldGroup label="Primary KPIs" hint="List the 3-5 key metrics that define success">
-              <textarea className="lux-textarea" rows={4} value={data.primaryKpis || ''}
-                onChange={e => u('primaryKpis', e.target.value)} placeholder="Enter your primary KPIs..." />
+
+          <WorksheetSection title="Teaching Adaptations" subtitle="How your understanding of the cohort shapes your teaching.">
+            <FieldGroup label="What adaptations have you made to your teaching approach based on the cohort's profile?">
+              <textarea className="lux-textarea" rows={2} value={data.teachingAdaptations || ''}
+                onChange={e => updateField('teachingAdaptations', e.target.value)} placeholder="e.g. more live coding demos for visual learners, additional practice sheets for slower-paced students..." />
             </FieldGroup>
-            <FieldGroup label="Target Thresholds" hint="What are the specific numeric targets for each KPI?">
-              <textarea className="lux-textarea" rows={3} value={data.targetThresholds || ''}
-                onChange={e => u('targetThresholds', e.target.value)} placeholder="Define target thresholds..." />
-            </FieldGroup>
-          </WorksheetSection>
-          <WorksheetSection title="Reporting & Accountability">
-            <FieldGroup label="Reporting Structure" hint="How will results be reported and to whom?">
-              <textarea className="lux-textarea" rows={3} value={data.reportingStructure || ''}
-                onChange={e => u('reportingStructure', e.target.value)} placeholder="Describe reporting structure..." />
-            </FieldGroup>
-            <FieldGroup label="Accountability Mechanisms" hint="What mechanisms ensure accountability?">
-              <textarea className="lux-textarea" rows={3} value={data.accountabilityMechanisms || ''}
-                onChange={e => u('accountabilityMechanisms', e.target.value)} placeholder="Describe accountability mechanisms..." />
+            <FieldGroup label="How do you build individual rapport with students and ensure no one falls through the cracks?">
+              <textarea className="lux-textarea" rows={2} value={data.relationshipApproach || ''}
+                onChange={e => updateField('relationshipApproach', e.target.value)} placeholder="Describe your system for tracking student progress and reaching out..." />
             </FieldGroup>
           </WorksheetSection>
+
           <ErrorAlert message={submitError} />
           <ActionBar onCancel={() => navigate('/phase-3')} onSubmit={handleSubmit} submitting={submitting} />
         </form>

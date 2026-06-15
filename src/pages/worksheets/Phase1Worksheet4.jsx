@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useAutoSave, loadWorksheetData, getOAuthName } from '../../hooks/useAutoSave';
-import { Shield, AlertCircle } from 'lucide-react';
+import { useWorksheet } from '../../hooks/useWorksheet';
+import { Shield } from 'lucide-react';
 import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
 
 const WS = 'p1_w4';
@@ -11,40 +10,31 @@ const blankCohort = () => ({ name: '', students: '', semesterYear: '', notes: ''
 
 export default function Phase1Worksheet4() {
   const n = useNavigate(); const { user } = useAuth();
-  const [data, setData] = useState(() => ({
-    employeeName: '',
-    semesters: Array(4).fill(null).map(() => blankSemester()),
-    cohorts: Array(4).fill(null).map(() => blankCohort()),
-    liaisonContact: '', escalationPath: '', gradeProcess: '', latePolicy: '',
-    employeeSignature: '', status: 'In Progress', dateSubmitted: '', _savedReviewStatus: '',
-  }));
-  const [loaded, setLoaded] = useState(false); const [submitting, setSubmitting] = useState(false); const [submitError, setSubmitError] = useState('');
-  const { saveStatus, flushSave } = useAutoSave(user, data, WS, 'phase-1');
 
-  useEffect(() => {
-    if (!user?.id) return; (async () => {
-      const saved = await loadWorksheetData(user.id, WS);
-      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-      else { const name = await getOAuthName(); if (name) setData(p => ({ ...p, employeeName: name })); }
-      setLoaded(true);
-    })();
-  }, [user?.id]);
+  const {
+    data, setData, loaded, submitting, submitError, saveStatus,
+    updateField, handleSubmit,
+    isApproved, isSubmitted,
+  } = useWorksheet({
+    user, worksheetId: WS, phase: 'phase-1',
+    defaultData: {
+      employeeName: '',
+      semesters: Array(3).fill(null).map(() => blankSemester()),
+      cohorts: Array(3).fill(null).map(() => blankCohort()),
+      liaisonContact: '', escalationPath: '', gradeProcess: '', latePolicy: '',
+      employeeSignature: '',
+    },
+    requiredFields: [{ key: 'employeeName', label: 'Full Name' }],
+    redirectPath: '/phase-1',
+    approvedMsg: 'Your University Governance worksheet has been reviewed and approved.',
+    submittedMsg: 'University Governance worksheet submitted.',
+  });
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
   const uSem = (i, f, v) => setData(p => { const arr = [...p.semesters]; arr[i] = { ...arr[i], [f]: v }; return { ...p, semesters: arr }; });
   const uCoh = (i, f, v) => setData(p => { const arr = [...p.cohorts]; arr[i] = { ...arr[i], [f]: v }; return { ...p, cohorts: arr }; });
-  const requiredFields = [{ key: 'employeeName', label: 'Full Name' }];
 
-  function validateRequired() {
-    const missing = requiredFields.filter(f => !data[f.key]?.trim());
-    if (missing.length > 0) { setSubmitError(`Please fill in: ${missing.map(f => f.label).join(', ')}`); return false; }
-    return true;
-  }
-
-  const hSub = async () => { setSubmitError(''); if (!validateRequired()) return; setSubmitting(true); const d = { ...data, status: 'submitted', dateSubmitted: new Date().toLocaleDateString('en-IN') }; setData(d); await flushSave(d); setSubmitting(false); };
-
-  if (loaded && data._savedReviewStatus === 'approved') return <ApprovedView msg="Your University Governance worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') return <SubmittedView msg="University Governance worksheet submitted." path="/phase-1" />;
+  if (isApproved) return <ApprovedView msg="Your University Governance worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
+  if (isSubmitted) return <SubmittedView msg="University Governance worksheet submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;
 
   return (
@@ -54,7 +44,7 @@ export default function Phase1Worksheet4() {
         <WorksheetHeader icon={Shield} title="Partner University Governance & Semester Architecture Map" subtitle="Days 1-14 · Understand how the semester and university partnership operate." saveStatus={saveStatus} />
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
-          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => u('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
 
           <WorksheetSection title="Section A: Academic Calendar Map" subtitle="Map out key dates for each semester.">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
@@ -85,15 +75,15 @@ export default function Phase1Worksheet4() {
           </WorksheetSection>
 
           <WorksheetSection title="Section C: Governance Contacts">
-            <FieldGroup label="University Liaison Contact"><input className="lux-input" value={data.liaisonContact} onChange={e => u('liaisonContact', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Internal escalation path for academic disputes"><textarea className="lux-textarea" rows={2} value={data.escalationPath} onChange={e => u('escalationPath', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Grade submission process and deadline"><textarea className="lux-textarea" rows={2} value={data.gradeProcess} onChange={e => u('gradeProcess', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Policy for late submissions and re-assessments"><textarea className="lux-textarea" rows={2} value={data.latePolicy} onChange={e => u('latePolicy', e.target.value)} /></FieldGroup>
+            <FieldGroup label="University Liaison Contact"><input className="lux-input" value={data.liaisonContact} onChange={e => updateField('liaisonContact', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Internal escalation path for academic disputes"><textarea className="lux-textarea" rows={2} value={data.escalationPath} onChange={e => updateField('escalationPath', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Grade submission process and deadline"><textarea className="lux-textarea" rows={2} value={data.gradeProcess} onChange={e => updateField('gradeProcess', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Policy for late submissions and re-assessments"><textarea className="lux-textarea" rows={2} value={data.latePolicy} onChange={e => updateField('latePolicy', e.target.value)} /></FieldGroup>
           </WorksheetSection>
 
-          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => u('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
+          <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
           <ErrorAlert message={submitError} />
-          <ActionBar onCancel={() => n('/phase-1')} onSubmit={hSub} submitting={submitting} />
+          <ActionBar onCancel={() => n('/phase-1')} onSubmit={handleSubmit} submitting={submitting} />
         </form>
       </div>
     </div>
