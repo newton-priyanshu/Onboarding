@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { MessageCircle } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p1_w8';
 const blankChan = () => ({ channel: '', dateRange: '', themes: '', pastDecisions: '' });
@@ -13,7 +13,7 @@ export default function Phase1Worksheet8() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-1',
     defaultData: {
@@ -30,6 +30,7 @@ export default function Phase1Worksheet8() {
 
   const uCh = (i, f, v) => setData(p => { const arr = [...p.channels]; arr[i] = { ...arr[i], [f]: v }; return { ...p, channels: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Slack Audit has been approved by your buddy." path="/phase-1" />;
   if (isApproved) return <ApprovedView msg="Your Slack Audit has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Slack audit submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;

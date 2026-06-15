@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { Users } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, FieldGrid, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, FieldGrid, ReviewFeedback} from '../../worksheetComponents';
 
 const WORKSHEET_ID = 'p1_w1';
 
@@ -16,7 +16,7 @@ export default function Phase1Worksheet1() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user,
     worksheetId: WORKSHEET_ID,
@@ -46,6 +46,7 @@ export default function Phase1Worksheet1() {
     submittedMsg: 'Your Team Introduction & Stakeholder Mapping worksheet has been submitted for review.',
   });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Team Introduction worksheet has been approved by your buddy." path="/phase-1" />;
   if (isApproved) return <ApprovedView msg="Your Team Introduction worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Your Team Introduction & Stakeholder Mapping worksheet has been submitted for review." path="/phase-1" />;
   if (!loaded) return <LoadingView />;

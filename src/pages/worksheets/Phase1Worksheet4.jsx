@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { Shield } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p1_w4';
 const blankSemester = () => ({ semester: '', startDate: '', endDate: '', keyEvents: '' });
@@ -14,7 +14,7 @@ export default function Phase1Worksheet4() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-1',
     defaultData: {
@@ -33,6 +33,7 @@ export default function Phase1Worksheet4() {
   const uSem = (i, f, v) => setData(p => { const arr = [...p.semesters]; arr[i] = { ...arr[i], [f]: v }; return { ...p, semesters: arr }; });
   const uCoh = (i, f, v) => setData(p => { const arr = [...p.cohorts]; arr[i] = { ...arr[i], [f]: v }; return { ...p, cohorts: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your University Governance worksheet has been approved by your buddy." path="/phase-1" />;
   if (isApproved) return <ApprovedView msg="Your University Governance worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="University Governance worksheet submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;

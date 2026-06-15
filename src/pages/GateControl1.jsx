@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabase';
 import { Shield, CheckCircle2, AlertCircle, Send, ArrowLeft } from 'lucide-react';
-import { Section, Slider, LoadingView } from '../worksheetComponents';
+import { Section, Slider, LoadingView, BuddyApprovedView } from '../worksheetComponents';
 
 const milestones = [
   ['Portal proficiency — end-to-end', 'Live demo with Faculty Lead'],
@@ -78,6 +78,9 @@ export default function GateControl1() {
     setSubmitting(false);
   };
 
+  if (loaded && data._savedReviewStatus === 'buddy_approved') {
+    return <BuddyApprovedView msg="Your Gate Control 1 has been approved by your buddy." path="/phase-1" />;
+  }
   if (loaded && data._savedReviewStatus === 'approved') {
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
@@ -92,7 +95,7 @@ export default function GateControl1() {
       </div>
     );
   }
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'revision_submitted') {
+  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'buddy_approved' && data._savedReviewStatus !== 'revision_submitted') {
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
         <div className="lux-container" style={{ textAlign: 'center' }}>

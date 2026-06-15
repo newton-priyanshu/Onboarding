@@ -31,12 +31,13 @@ export default function Phase3() {
     })();
   }, [user]);
 
-  const completed = worksheets.filter(w => { const s = statuses[w.id]; return s?.status === 'submitted' || s?.review_status === 'approved'; }).length;
+  const completed = worksheets.filter(w => { const s = statuses[w.id]; return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved'; }).length;
 
   function getBadge(status, reviewStatus) {
     if (reviewStatus === 'approved') return { label: 'Reviewed', color: '#1B5E20' };
+    if (reviewStatus === 'buddy_approved') return { label: 'Buddy Approved', color: '#381E72' };
     if (reviewStatus === 'needs_revision') return { label: 'Revise', color: '#C62828' };
-    if (status === 'submitted' || reviewStatus === 'pending_review') return { label: 'Pending', color: '#7D5260' };
+    if (status === 'submitted' || reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted') return { label: 'Pending', color: '#7D5260' };
     if (status === 'In Progress') return { label: 'In Progress', color: theme.charcoal };
     return { label: 'Not Started', color: theme.warmGrey };
   }
@@ -92,19 +93,19 @@ export default function Phase3() {
             const badge = getBadge(wsStatus?.status, wsStatus?.review_status);
             return (
               <div key={ws.id} onClick={() => navigate(ws.path)}
-                style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 0', borderBottom: '1px solid rgba(26, 26, 26, 0.06)', cursor: 'pointer', transition: 'opacity 500ms var(--ease-lux)', opacity: 0, animation: `luxFadeIn 0.6s ${idx * 0.06}s forwards` }}
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 0', borderBottom: '1px solid rgba(26, 26, 26, 0.06)', cursor: 'pointer', transition: 'opacity 500ms var(--ease-lux)', opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards` }}
                 onMouseOver={e => { e.currentTarget.style.opacity = '0.6'; }}
                 onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
               >
                 <div style={{ width: '40px', height: '40px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={18} strokeWidth={1.5} style={{ color: theme.charcoal }} />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: theme.fontBody, fontSize: '0.85rem', fontWeight: 500, color: theme.charcoal }}>W{ws.num}: {ws.title}</span>
+                    <span style={{ fontFamily: theme.fontBody, fontSize: '0.85rem', fontWeight: 500, color: theme.charcoal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>W{ws.num}: {ws.title}</span>
                     <ReviewerBadge worksheetId={ws.id} />
                   </div>
-                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5 }}>{ws.desc}</p>
+                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ws.desc}</p>
                 </div>
                 {(badge.label === 'Not Started' || badge.label === 'In Progress') && (() => {
                   const due = getDueDateInfo(ws.id);

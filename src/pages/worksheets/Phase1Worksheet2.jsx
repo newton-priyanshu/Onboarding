@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { MessageSquare } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WORKSHEET_ID = 'p1_w2';
 
@@ -15,7 +15,7 @@ export default function Phase1Worksheet2() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user,
     worksheetId: WORKSHEET_ID,
@@ -39,6 +39,7 @@ export default function Phase1Worksheet2() {
 
   const updateWeek = (i, f, v) => setData(p => { const arr = [...p.weeks]; arr[i] = { ...arr[i], [f]: v }; return { ...p, weeks: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Faculty Mentor Sync worksheet has been approved by your buddy." path="/phase-1" />;
   if (isApproved) return <ApprovedView msg="Your Faculty Mentor Alignment worksheet has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Your Faculty Mentor Alignment & Weekly Sync Tracker has been submitted for review." path="/phase-1" />;
   if (!loaded) return <LoadingView />;

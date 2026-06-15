@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { MessageSquare } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p2_w1';
 const blankEntry = () => ({ date: '', channel: '', query: '', resolution: '' });
@@ -14,7 +14,7 @@ export default function Phase2Worksheet1() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-2',
     defaultData: {
@@ -33,6 +33,7 @@ export default function Phase2Worksheet1() {
   const uE = (i, f, v) => setData(p => { const arr = [...p.entries]; arr[i] = { ...arr[i], [f]: v }; return { ...p, entries: arr }; });
   const uEr = (i, f, v) => setData(p => { const arr = [...p.errors]; arr[i] = { ...arr[i], [f]: v }; return { ...p, errors: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Doubt Resolution log has been approved by your buddy." path="/phase-2" />;
   if (isApproved) return <ApprovedView msg="Your Doubt Resolution log has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Student doubt log submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;

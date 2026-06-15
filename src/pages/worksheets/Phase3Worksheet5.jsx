@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 import { Lightbulb } from 'lucide-react';
 
 const WS = 'p3_w5';
@@ -13,7 +13,7 @@ export default function Phase3Worksheet5() {
   const {
     data, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-3',
     defaultData: {
@@ -29,6 +29,7 @@ export default function Phase3Worksheet5() {
     submittedMsg: 'Course Improvement Proposal submitted for review.',
   });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Course Improvement Proposal has been approved by your buddy." path="/phase-3" />;
   if (isApproved) return <ApprovedView msg="Your Course Improvement Proposal has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Course Improvement Proposal submitted for review." path="/phase-3" />;
   if (!loaded) return <LoadingView />;

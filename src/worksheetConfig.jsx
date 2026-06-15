@@ -37,37 +37,39 @@
 // =====================================================
 
 /**
- * Map of worksheet ID → reviewer type
- * buddy: Reviewed by the assigned buddy (day-to-day mentor)
- * manager: Reviewed by the assigned manager/lead instructor
- * onboarding_lead: Reviewed by the Onboarding Lead
+ * Map of worksheet ID → reviewer type (for display/metadata only)
+ * In the NEW flow: ALL worksheets are first approved by the buddy.
+ * Manager only approves at the PHASE level (after all buddy_approved).
+ * buddy: Display label — reviewed by buddy first
+ * manager: Display label — ultimately approved by manager at phase level
+ * onboarding_lead: Display label — reviewed by onboarding lead (read-only)
  */
 export const WORKSHEET_REVIEWER = {
   // Phase 1 — Orientation
-  p1_w1: 'buddy',           // Team Introduction → Buddy (helps with introductions)
-  p1_w2: 'buddy',           // Mentor Sync → Buddy (the mentor)
-  p1_w3: 'manager',         // Teaching Philosophy → Manager (oversees teaching approach)
-  p1_w4: 'onboarding_lead', // University Governance → Onboarding Lead (procedural)
-  p1_w5: 'onboarding_lead', // Portal Walkthrough → Onboarding Lead (systems access)
-  p1_w6: 'buddy',           // Observation Journal → Buddy (observed the classes)
-  p1_w7: 'manager',         // Courseware Review → Manager (quality oversight)
-  p1_w8: 'buddy',           // Slack Audit → Buddy (day-to-day communication)
-  gc1: 'manager',           // Gate Control 1 → Manager (milestone sign-off)
+  p1_w1: 'buddy',           // Team Introduction → Buddy
+  p1_w2: 'buddy',           // Mentor Sync → Buddy
+  p1_w3: 'buddy',           // Teaching Philosophy → Buddy first
+  p1_w4: 'onboarding_lead', // University Governance → Onboarding Lead
+  p1_w5: 'onboarding_lead', // Portal Walkthrough → Onboarding Lead
+  p1_w6: 'buddy',           // Observation Journal → Buddy
+  p1_w7: 'buddy',           // Courseware Review → Buddy first
+  p1_w8: 'buddy',           // Slack Audit → Buddy
+  gc1: 'buddy',             // Gate Control 1 → Buddy first
 
   // Phase 2 — Contribution
-  p2_w1: 'buddy',           // Doubt Resolution → Buddy (teaching practice)
-  p2_w2: 'buddy',           // Lab Scorecard → Buddy (observed labs)
-  p2_w3: 'manager',         // Content Ledger → Manager (content quality)
-  p2_w4: 'onboarding_lead', // Portal Ops → Onboarding Lead (systems)
-  gc2: 'manager',           // Gate Control 2 → Manager
+  p2_w1: 'buddy',           // Doubt Resolution → Buddy
+  p2_w2: 'buddy',           // Lab Scorecard → Buddy
+  p2_w3: 'buddy',           // Content Ledger → Buddy first
+  p2_w4: 'onboarding_lead', // Portal Ops → Onboarding Lead
+  gc2: 'buddy',             // Gate Control 2 → Buddy first
 
   // Phase 3 — Independent Teaching
-  p3_w1: 'manager',         // Lecture Delivery → Manager (teaching readiness)
-  p3_w2: 'buddy',           // Cohort Profiling → Buddy (student relationships)
-  p3_w3: 'manager',         // Assessment Blueprint → Manager (curriculum quality)
-  p3_w4: 'buddy',           // Pedagogical Journal → Buddy (teaching development)
-  p3_w5: 'manager',         // Course Proposal → Manager (final project)
-  gc3: 'manager',           // Gate Control 3 → Manager
+  p3_w1: 'buddy',           // Lecture Delivery → Buddy first
+  p3_w2: 'buddy',           // Cohort Profiling → Buddy
+  p3_w3: 'buddy',           // Assessment Blueprint → Buddy first
+  p3_w4: 'buddy',           // Pedagogical Journal → Buddy
+  p3_w5: 'buddy',           // Course Proposal → Buddy first
+  gc3: 'buddy',             // Gate Control 3 → Buddy first
 };
 
 /** Human-readable reviewer labels */
@@ -98,13 +100,13 @@ export const ALL_WORKSHEETS = {
     sheets: [
       { id: 'p1_w1', title: 'Team Introduction & Stakeholder Mapping', reviewer: 'buddy', color: '#6750A4' },
       { id: 'p1_w2', title: 'Faculty Mentor Weekly Sync', reviewer: 'buddy', color: '#006D40' },
-      { id: 'p1_w3', title: 'Teaching Philosophy Reflection', reviewer: 'manager', color: '#7D5260' },
+      { id: 'p1_w3', title: 'Teaching Philosophy Reflection', reviewer: 'buddy', color: '#7D5260' },
       { id: 'p1_w4', title: 'University Governance & Semester Map', reviewer: 'onboarding_lead', color: '#625B71' },
       { id: 'p1_w5', title: 'Portal Walkthrough & Verification', reviewer: 'onboarding_lead', color: '#006494' },
       { id: 'p1_w6', title: 'Classroom Observation Journal', reviewer: 'buddy', color: '#E65100' },
-      { id: 'p1_w7', title: 'Courseware Review Matrix', reviewer: 'manager', color: '#2E7D32' },
+      { id: 'p1_w7', title: 'Courseware Review Matrix', reviewer: 'buddy', color: '#2E7D32' },
       { id: 'p1_w8', title: 'Slack Audit & Bottleneck Synthesis', reviewer: 'buddy', color: '#4A148C' },
-      { id: 'gc1', title: 'Gate Control 1 — 30-Day Review', reviewer: 'manager', color: '#7D5260', isGate: true },
+      { id: 'gc1', title: 'Gate Control 1 — 30-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
     ],
   },
   'Phase 2': {
@@ -112,27 +114,94 @@ export const ALL_WORKSHEETS = {
     sheets: [
       { id: 'p2_w1', title: 'Doubt Resolution & Errors Log', reviewer: 'buddy', color: '#006D40' },
       { id: 'p2_w2', title: 'Lab Facilitation Scorecard', reviewer: 'buddy', color: '#7D5260' },
-      { id: 'p2_w3', title: 'Content Creation Ledger', reviewer: 'manager', color: '#625B71' },
+      { id: 'p2_w3', title: 'Content Creation Ledger', reviewer: 'buddy', color: '#625B71' },
       { id: 'p2_w4', title: 'Advanced Portal Operations Check', reviewer: 'onboarding_lead', color: '#006494' },
-      { id: 'gc2', title: 'Gate Control 2 — 60-Day Review', reviewer: 'manager', color: '#7D5260', isGate: true },
+      { id: 'gc2', title: 'Gate Control 2 — 60-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
     ],
   },
   'Phase 3': {
     num: 3,
     sheets: [
-      { id: 'p3_w1', title: 'Independent Lecture Delivery Log', reviewer: 'manager', color: '#6750A4' },
+      { id: 'p3_w1', title: 'Independent Lecture Delivery Log', reviewer: 'buddy', color: '#6750A4' },
       { id: 'p3_w2', title: 'Student Cohort Profiling', reviewer: 'buddy', color: '#006D40' },
-      { id: 'p3_w3', title: 'Assessment Blueprint & Bloom\'s Grid', reviewer: 'manager', color: '#7D5260' },
+      { id: 'p3_w3', title: 'Assessment Blueprint & Bloom\'s Grid', reviewer: 'buddy', color: '#7D5260' },
       { id: 'p3_w4', title: 'Pedagogical Frameworks Journal', reviewer: 'buddy', color: '#625B71' },
-      { id: 'p3_w5', title: 'Course Improvement Proposal', reviewer: 'manager', color: '#006494' },
-      { id: 'gc3', title: 'Gate Control 3 — 90-Day Review', reviewer: 'manager', color: '#7D5260', isGate: true },
+      { id: 'p3_w5', title: 'Course Improvement Proposal', reviewer: 'buddy', color: '#006494' },
+      { id: 'gc3', title: 'Gate Control 3 — 90-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
     ],
   },
 };
 
-/** Get the reviewer type for a worksheet. Falls back to 'manager' if not found. */
+/** Get the reviewer type for a worksheet. Falls back to 'buddy' since ALL worksheets go through buddy first. */
 export function getReviewerType(worksheetId) {
-  return WORKSHEET_REVIEWER[worksheetId] || 'manager';
+  return WORKSHEET_REVIEWER[worksheetId] || 'buddy';
+}
+
+// ─── Phase-level Helper Functions (for new buddy-first, manager-phase-approval flow) ───
+
+/** Map of phase number → worksheet IDs */
+export const PHASE_WORKSHEETS_MAP = {
+  1: ['p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8', 'gc1'],
+  2: ['p2_w1', 'p2_w2', 'p2_w3', 'p2_w4', 'gc2'],
+  3: ['p3_w1', 'p3_w2', 'p3_w3', 'p3_w4', 'p3_w5', 'gc3'],
+};
+
+/**
+ * Check if a phase is ready for manager approval (all worksheets buddy_approved).
+ * @param {number} phaseNum - 1, 2, or 3
+ * @param {Array} submissions - Array of worksheet submission objects from ALL users
+ * @param {string} userId - The joinee's user ID
+ * @returns {{ ready: boolean, total: number, buddyApproved: number, notSubmitted: number }}
+ */
+export function getPhaseReviewStatus(phaseNum, submissions, userId) {
+  const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+  const userSubs = submissions.filter(s => s.user_id === userId);
+  const total = wsList.length;
+  let buddyApproved = 0;
+  let notSubmitted = 0;
+
+  wsList.forEach(wsId => {
+    const sub = userSubs.find(s => s.worksheet_id === wsId);
+    if (!sub || (sub.review_status !== 'buddy_approved' && sub.review_status !== 'approved')) {
+      if (!sub || sub.review_status === '' || sub.review_status === 'needs_revision') {
+        notSubmitted++;
+      }
+    }
+    if (sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved') {
+      buddyApproved++;
+    }
+  });
+
+  return {
+    ready: buddyApproved === total && total > 0,
+    total,
+    buddyApproved,
+    notSubmitted,
+  };
+}
+
+/**
+ * Get buddy_approved worksheet IDs for a phase (ready for manager approval).
+ */
+export function getBuddyApprovedSheets(phaseNum, submissions, userId) {
+  const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+  const userSubs = submissions.filter(s => s.user_id === userId);
+  return wsList.filter(wsId => {
+    const sub = userSubs.find(s => s.worksheet_id === wsId);
+    return sub?.review_status === 'buddy_approved';
+  });
+}
+
+/**
+ * Get worksheet IDs in a phase filtered by review status.
+ */
+export function getPhaseWorksheetsByStatus(phaseNum, submissions, userId, status) {
+  const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+  const userSubs = submissions.filter(s => s.user_id === userId);
+  return wsList.filter(wsId => {
+    const sub = userSubs.find(s => s.worksheet_id === wsId);
+    return sub?.review_status === status;
+  });
 }
 
 /** Get all worksheet IDs assigned to a specific reviewer type */
@@ -157,7 +226,7 @@ export function getReviewerLabel(worksheetId) {
  * Renders with Luxury/Editorial styling (0px radius, uppercase tracking).
  */
 export function ReviewerBadge({ worksheetId, style: extraStyle = {} }) {
-  const type = WORKSHEET_REVIEWER[worksheetId] || 'manager';
+  const type = getReviewerType(worksheetId);
   const style = REVIEWER_STYLES[type];
   const label = REVIEWER_LABELS[type];
   return (

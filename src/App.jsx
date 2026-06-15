@@ -18,6 +18,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import BuddyDashboard from './pages/BuddyDashboard';
 import OnboardingLeadDashboard from './pages/OnboardingLeadDashboard';
 import WorksheetReview from './pages/WorksheetReview';
+import PhaseReview from './pages/PhaseReview';
+import NotFound from './pages/NotFound';
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './worksheetConfig';
 
@@ -84,7 +86,12 @@ export default function App() {
                 <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyDashboard /></ProtectedRoute>} />
                 <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
-                <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head']}><WorksheetReview /></ProtectedRoute>} />
+                {/* Phase Review Routes (Manager approves entire phase) */}
+                <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><PhaseReview /></ProtectedRoute>} />
+                <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><PhaseReview /></ProtectedRoute>} />
+
+                {/* Individual Worksheet Review Routes */}
+                <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
                 <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
                 <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
 
@@ -101,6 +108,9 @@ export default function App() {
                 {/* Legacy */}
                 <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
                 <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
+
+                {/* 404 catch-all */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
 
@@ -109,9 +119,8 @@ export default function App() {
               padding: '2rem 1rem',
               borderTop: '1px solid rgba(26, 26, 26, 0.15)',
               fontFamily: 'var(--font-body)',
-              fontSize: '0.7rem',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              letterSpacing: '0.1em',
               color: 'var(--color-warm-grey)',
             }}>
               <span className="lux-line" style={{ margin: '0 auto 1rem' }} />

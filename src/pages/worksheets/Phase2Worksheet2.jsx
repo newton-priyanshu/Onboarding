@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { ClipboardCheck } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p2_w2';
 const blankSession = () => ({ date: '', subject: '', observer: '', notes: '' });
@@ -14,7 +14,7 @@ export default function Phase2Worksheet2() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-2',
     defaultData: {
@@ -33,6 +33,7 @@ export default function Phase2Worksheet2() {
   const uS = (i, f, v) => setData(p => { const arr = [...p.sessions]; arr[i] = { ...arr[i], [f]: v }; return { ...p, sessions: arr }; });
   const uScore = (dimIdx, sessionIdx, v) => setData(p => { const arr = [...p.dimScores]; arr[dimIdx] = [...arr[dimIdx]]; arr[dimIdx][sessionIdx] = v; return { ...p, dimScores: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Lab Scorecard has been approved by your buddy." path="/phase-2" />;
   if (isApproved) return <ApprovedView msg="Your Lab Scorecard has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Lab scorecard submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;

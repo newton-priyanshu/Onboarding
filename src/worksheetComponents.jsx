@@ -140,6 +140,33 @@ export function SubmittedView({ msg, path, title = 'Worksheet Submitted' }) {
   );
 }
 
+/* ─── Buddy Approved View ──────────────────────────────────── */
+export function BuddyApprovedView({ msg, path, title = '✓ Buddy Approved' }) {
+  const navigate = useNavigate();
+  return (
+    <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
+      <div className="lux-container" style={{ textAlign: 'center', maxWidth: '520px', margin: '0 auto' }}>
+        <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+        <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#381E72', marginBottom: '0.75rem' }}>
+          {title}
+        </h1>
+        <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '1rem', lineHeight: 1.6 }}>
+          {msg}
+        </p>
+        <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: '#381E72', marginBottom: '1.5rem', padding: '8px 12px', border: '1px solid #381E72', background: 'rgba(56, 30, 114, 0.04)' }}>
+          Your buddy has approved this worksheet. It now awaits manager-level phase approval.
+          Once all worksheets in this phase are buddy-approved, the manager will review and
+          finalize them in one go.
+        </p>
+        <button onClick={() => navigate(path)} className="lux-btn lux-btn-primary">
+          <span className="gold-overlay" />
+          <span className="btn-content">Back to Phase</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Approved View ────────────────────────────────────────── */
 export function ApprovedView({ msg, path, title = '✓ Worksheet Approved', reviewerName, date }) {
   const navigate = useNavigate();

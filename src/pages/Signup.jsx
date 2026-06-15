@@ -101,7 +101,7 @@ export default function Signup() {
                 <User size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="signup-name" className="lux-input" value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Jane Smith" style={{ paddingLeft: '28px' }} required />
+                  placeholder="e.g. Jane Smith" style={{ paddingLeft: '28px' }} required autoComplete="name" />
               </div>
             </div>
 
@@ -111,7 +111,7 @@ export default function Signup() {
                 <Mail size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="signup-email" className="lux-input" type="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane@newton.edu" style={{ paddingLeft: '28px' }} required />
+                  placeholder="jane@newton.edu" style={{ paddingLeft: '28px' }} required autoComplete="email" />
               </div>
             </div>
 
@@ -121,7 +121,7 @@ export default function Signup() {
                 <Lock size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="signup-password" className="lux-input" type={showPw ? 'text' : 'password'}
                   value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 6 characters" style={{ paddingLeft: '28px', paddingRight: '32px' }} required />
+                  placeholder="Min. 6 characters" style={{ paddingLeft: '28px', paddingRight: '32px' }} required autoComplete="new-password" />
                 <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '0', top: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0 }}>
                   {showPw ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
@@ -148,7 +148,10 @@ export default function Signup() {
                     }} />
                     <input type="radio" name="role" value={r.value}
                       checked={role === r.value} onChange={() => setRole(r.value)}
-                      style={{ display: 'none' }} />
+                      className="sr-only"
+                      style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
+                      onFocus={(e) => { e.target.closest('label').style.borderColor = 'var(--color-gold)'; }}
+                      onBlur={(e) => { e.target.closest('label').style.borderColor = role === r.value ? 'var(--color-charcoal)' : 'rgba(26, 26, 26, 0.15)'; }} />
                     <div>
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-charcoal)' }}>{r.label}</div>
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-warm-grey)', marginTop: '2px' }}>{r.desc}</div>

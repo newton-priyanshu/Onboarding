@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCheck, CheckCircle2, XCircle, RefreshCw, Clock, AlertTriangle, FileText, User } from 'lucide-react';
+import { Bell, CheckCheck, CheckCircle2, XCircle, RefreshCw, Clock, AlertTriangle, FileText, User, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../hooks/useNotifications';
@@ -14,6 +14,7 @@ const NOTIFICATION_ICONS = {
   submitted: { icon: FileText, color: '#0369A1' },
   revision_submitted: { icon: RefreshCw, color: '#7D5260' },
   approved: { icon: CheckCircle2, color: '#1B5E20' },
+  buddy_approved: { icon: Shield, color: '#381E72' },
   needs_revision: { icon: XCircle, color: '#C62828' },
   due_soon: { icon: Clock, color: '#E65100' },
   overdue: { icon: AlertTriangle, color: '#C62828' },

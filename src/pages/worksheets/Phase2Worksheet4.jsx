@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { Monitor } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p2_w4';
 const portalTasks = ['Create coding question with custom test cases', 'Create MCQ with answer key and explanations', 'Design and publish a structured assignment', 'Set up lab exercise with test cases', 'Set cohort-specific content release rules', 'Reopen/extend deadline for individual students'];
@@ -13,7 +13,7 @@ export default function Phase2Worksheet4() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-2',
     defaultData: {
@@ -30,6 +30,7 @@ export default function Phase2Worksheet4() {
 
   const toggleTask = (i, f) => setData(p => { const arr = [...p.tasks]; arr[i] = { ...arr[i], [f]: !arr[i][f] }; return { ...p, tasks: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Portal Ops checklist has been approved by your buddy." path="/phase-2" />;
   if (isApproved) return <ApprovedView msg="Your Portal Operations checklist has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Portal ops checklist submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;

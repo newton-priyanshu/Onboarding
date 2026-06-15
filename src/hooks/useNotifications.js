@@ -135,6 +135,7 @@ export async function getReviewerUserIds(reviewerType) {
     buddy: 'lead_instructor',
     manager: 'academic_head',
     onboarding_lead: 'onboarding_lead',
+    buddy_approved: 'academic_head', // notify manager when buddy approves
   };
   const role = roleMap[reviewerType];
   if (!role) return [];

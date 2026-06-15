@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { BookText } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p3_w1';
 const blankLec = () => ({ date: '', subject: '', duration: '', observer: '' });
@@ -13,7 +13,7 @@ export default function Phase3Worksheet1() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-3',
     defaultData: {
@@ -31,6 +31,7 @@ export default function Phase3Worksheet1() {
 
   const uL = (i, f, v) => setData(p => { const arr = [...p.lectures]; arr[i] = { ...arr[i], [f]: v }; return { ...p, lectures: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Lecture Delivery log has been approved by your buddy." path="/phase-3" />;
   if (isApproved) return <ApprovedView msg="Your Lecture Delivery log has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Lecture delivery log submitted." path="/phase-3" />;
   if (!loaded) return <LoadingView />;

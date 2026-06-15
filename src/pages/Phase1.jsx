@@ -49,17 +49,19 @@ export default function Phase1() {
 
   const completed = worksheets.filter(w => {
     const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved';
+    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
   }).length;
 
   function getBadge(status, reviewStatus) {
     const isApproved = reviewStatus === 'approved';
+    const isBuddyApproved = reviewStatus === 'buddy_approved';
     const needsRevision = reviewStatus === 'needs_revision';
     const isSubmitted = status === 'submitted';
-    const pendingReview = reviewStatus === 'pending_review' || (isSubmitted && !reviewStatus);
+    const pendingReview = reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted' || (isSubmitted && !reviewStatus);
     const inProgress = status === 'In Progress';
 
     if (isApproved) return { label: 'Reviewed', color: '#1B5E20' };
+    if (isBuddyApproved) return { label: 'Buddy Approved', color: '#381E72' };
     if (needsRevision) return { label: 'Revise', color: '#C62828' };
     if (isSubmitted || pendingReview) return { label: 'Pending', color: '#7D5260' };
     if (inProgress) return { label: 'In Progress', color: theme.charcoal };
@@ -136,7 +138,7 @@ export default function Phase1() {
                   cursor: 'pointer',
                   transition: 'opacity 500ms var(--ease-lux)',
                   opacity: 0,
-                  animation: `luxFadeIn 0.6s ${idx * 0.06}s forwards`,
+                  animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
                 }}
                 onMouseOver={e => { e.currentTarget.style.opacity = '0.6'; }}
                 onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
@@ -144,14 +146,14 @@ export default function Phase1() {
                 <div style={{ width: '40px', height: '40px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon size={18} strokeWidth={1.5} style={{ color: theme.charcoal }} />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: theme.fontBody, fontSize: '0.85rem', fontWeight: 500, color: theme.charcoal }}>
+                    <span style={{ fontFamily: theme.fontBody, fontSize: '0.85rem', fontWeight: 500, color: theme.charcoal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                       W{ws.num}: {ws.title}
                     </span>
                     <ReviewerBadge worksheetId={ws.id} />
                   </div>
-                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5 }}>{ws.desc}</p>
+                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ws.desc}</p>
                 </div>
                 {(badge.label === 'Not Started' || badge.label === 'In Progress') && (() => {
                   const due = getDueDateInfo(ws.id);

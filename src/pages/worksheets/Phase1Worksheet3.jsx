@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { BookText } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p1_w3';
 
@@ -12,7 +12,7 @@ export default function Phase1Worksheet3() {
   const {
     data, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-1',
     defaultData: {
@@ -28,6 +28,7 @@ export default function Phase1Worksheet3() {
     submittedMsg: 'Culture & Teaching Philosophy submitted.',
   });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Teaching Philosophy reflection has been approved by your buddy." path="/phase-1" />;
   if (isApproved) return <ApprovedView msg="Your Culture & Teaching Philosophy reflection has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Culture & Teaching Philosophy submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;

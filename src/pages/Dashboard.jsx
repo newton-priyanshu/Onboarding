@@ -41,18 +41,24 @@ export default function Dashboard() {
   }, [user?.id]);
 
   async function loadSubmissions() {
-    const { data } = await supabase
-      .from('worksheet_submissions')
-      .select('*')
-      .eq('user_id', user.id);
-    if (data) setSubmissions(data);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('worksheet_submissions')
+        .select('*')
+        .eq('user_id', user.id);
+      if (data) setSubmissions(data);
+    } catch (err) {
+      console.error('Failed to load submissions:', err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function getWorksheetStatus(wsId) {
     const sub = submissions.find(s => s.worksheet_id === wsId);
     if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
     if (sub.review_status === 'approved') return { status: 'approved', label: 'Reviewed', color: '#1B5E20', icon: CheckCircle2 };
+    if (sub.review_status === 'buddy_approved') return { status: 'buddy_approved', label: 'Buddy Approved', color: '#381E72', icon: CheckCircle2 };
     if (sub.review_status === 'needs_revision') return { status: 'needs_revision', label: 'Needs Revision', color: '#C62828', icon: AlertCircle };
     if (sub.review_status === 'revision_submitted' || sub.review_status === 'pending_review') return { status: 'pending', label: 'Under Review', color: '#7D5260', icon: Clock };
     if (sub.status === 'submitted') return { status: 'submitted', label: 'Submitted', color: '#7D5260', icon: Clock };
@@ -61,7 +67,10 @@ export default function Dashboard() {
 
   function getPhaseProgress(phaseWorksheets) {
     const total = phaseWorksheets.length;
-    const done = phaseWorksheets.filter(wsId => getWorksheetStatus(wsId).status === 'approved').length;
+    const done = phaseWorksheets.filter(wsId => {
+      const s = getWorksheetStatus(wsId);
+      return s.status === 'approved' || s.status === 'buddy_approved';
+    }).length;
     return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
   }
 
@@ -108,6 +117,7 @@ export default function Dashboard() {
               {[
                 { label: 'Not Started', color: t.wg },
                 { label: 'In Progress', color: t.ch },
+                { label: 'Buddy Approved', color: '#381E72' },
                 { label: 'Under Review', color: '#7D5260' },
                 { label: 'Reviewed', color: '#1B5E20' },
                 { label: 'Needs Revision', color: '#C62828' },
@@ -286,6 +296,8 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
             {[
               { to: '/phase-1', label: 'Start Phase 1', desc: 'Begin your orientation' },
+              { to: '/phase-2', label: 'Phase 2 Worksheets', desc: 'Teaching & content creation' },
+              { to: '/phase-3', label: 'Phase 3 Worksheets', desc: 'Independent teaching' },
               { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
               { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
             ].map((link, i) => (

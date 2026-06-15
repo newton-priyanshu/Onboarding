@@ -22,9 +22,12 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
     const reviewerType = getReviewerType(worksheetId);
     try {
       // If the worksheet is already approved, do NOT overwrite review_status
+      // If it's buddy_approved, preserve it (awaiting manager)
       const newReviewStatus = data.status === 'submitted'
         ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'pending_review')
-        : (data._savedReviewStatus === 'approved' ? 'approved' : '');
+        : (data._savedReviewStatus === 'approved' ? 'approved'
+          : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
+          : '');
       const { error } = await supabase.from('worksheet_submissions').upsert({
         user_id: user.id,
         worksheet_id: worksheetId,
@@ -42,6 +45,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
       // (not on page reload when data is re-hydrated from Supabase)
       const isNewSubmission = data.status === 'submitted'
         && data._savedReviewStatus !== 'approved'
+        && data._savedReviewStatus !== 'buddy_approved'
         && data._savedReviewStatus !== 'pending_review'
         && data._savedReviewStatus !== 'revision_submitted';
       if (isNewSubmission) {

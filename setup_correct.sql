@@ -73,9 +73,12 @@ CREATE POLICY "Reviewers select submissions" ON worksheet_submissions
   );
 
 -- 10. Reviewers can update submissions
+--     lead_instructor (buddy) can update: approve to buddy_approved or request revision
+--     academic_head (manager) can update: approve phase or request revision
+--     onboarding_lead: read-only, cannot update
 CREATE POLICY "Reviewers update submissions" ON worksheet_submissions
   FOR UPDATE USING (
-    auth.jwt() -> 'user_metadata' ->> 'role' IN ('lead_instructor', 'academic_head', 'onboarding_lead')
+    auth.jwt() -> 'user_metadata' ->> 'role' IN ('lead_instructor', 'academic_head')
     OR auth.uid() IN (
       SELECT assigned_lead_id FROM user_profiles WHERE id = worksheet_submissions.user_id
     )

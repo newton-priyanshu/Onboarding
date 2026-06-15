@@ -106,11 +106,14 @@ export function useWorksheet({
 
   // ── Derived view states ──────────────────────────────────────────────
   const isApproved = loaded && data._savedReviewStatus === 'approved';
+  const isBuddyApproved = loaded && data._savedReviewStatus === 'buddy_approved';
   const isSubmitted = (
     data.status === 'submitted'
     && loaded
     && data._savedReviewStatus !== 'needs_revision'
     && data._savedReviewStatus !== 'revision_submitted'
+    && data._savedReviewStatus !== 'buddy_approved'
+    && data._savedReviewStatus !== 'approved'
   );
 
   const reviewData = useMemo(() => ({
@@ -140,6 +143,7 @@ export function useWorksheet({
     handleSubmit,
     setSubmitError,
     isApproved,
+    isBuddyApproved,
     isSubmitted,
     reviewData,
   };

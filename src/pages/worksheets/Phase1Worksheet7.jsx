@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { FileText, Star } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p1_w7';
 const materialTypes = ['Lecture Slide Decks (PPTs)', 'Worksheets & Problem Sets', 'Coding Question Bank', 'MCQ Bank', 'Previous Exam / Contest Papers', 'Assignment Sets', 'Lab Exercises'];
@@ -14,7 +14,7 @@ export default function Phase1Worksheet7() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-1',
     defaultData: {
@@ -31,6 +31,7 @@ export default function Phase1Worksheet7() {
 
   const uRev = (i, f, v) => setData(p => { const arr = [...p.reviews]; arr[i] = { ...arr[i], [f]: v }; return { ...p, reviews: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Courseware Review has been approved by your buddy." path="/phase-1" />;
   if (isApproved) return <ApprovedView msg="Your Courseware Review has been reviewed and approved." path="/phase-1" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Courseware review submitted." path="/phase-1" />;
   if (!loaded) return <LoadingView />;

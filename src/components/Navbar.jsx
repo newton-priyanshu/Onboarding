@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
 
@@ -18,7 +18,20 @@ export default function Navbar({ progress }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const { user, profile, signOut } = useAuth();
+
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [userMenuOpen]);
   const role = profile?.role;
 
   // Role-specific links
@@ -113,7 +126,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
 
             {/* User menu */}
             {user ? (
-              <div style={{ position: 'relative', marginLeft: '8px' }}>
+              <div ref={userMenuRef} style={{ position: 'relative', marginLeft: '8px' }}>
                 <button onClick={() => setUserMenuOpen(!userMenuOpen)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '8px',
@@ -234,7 +247,13 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
           background: 'var(--color-alabaster)',
           padding: '8px 0',
           fontFamily: 'var(--font-body)',
+          maxHeight: 'calc(100vh - 64px)',
+          overflowY: 'auto',
         }}>
+          {/* Notification Bell in mobile */}
+          <div style={{ padding: '8px 24px', borderBottom: '1px solid rgba(26, 26, 26, 0.06)' }}>
+            <NotificationBell />
+          </div>
           {allLinks.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;
@@ -259,7 +278,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
             <button onClick={() => { handleSignOut(); setMobileOpen(false); }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '14px 24px', border: 'none', background: 'transparent',
+                padding: '14px 24px', border: 'none', borderTop: '1px solid rgba(26, 26, 26, 0.06)', background: 'transparent',
                 cursor: 'pointer', color: 'var(--color-warm-grey)',
                 fontSize: '0.8rem', fontWeight: 500,
                 fontFamily: 'var(--font-body)',

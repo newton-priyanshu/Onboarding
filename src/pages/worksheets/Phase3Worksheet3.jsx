@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 import { CheckSquare } from 'lucide-react';
 
 const WS = 'p3_w3';
@@ -22,7 +22,7 @@ export default function Phase3Worksheet3() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-3',
     defaultData: {
@@ -40,6 +40,7 @@ export default function Phase3Worksheet3() {
 
   const uBloom = (i, f, v) => setData(p => { const arr = [...p.bloomGrid]; arr[i] = { ...arr[i], [f]: v }; return { ...p, bloomGrid: arr }; });
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Assessment Blueprint has been approved by your buddy." path="/phase-3" />;
   if (isApproved) return <ApprovedView msg="Your Assessment Blueprint worksheet has been reviewed and approved." path="/phase-3" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Assessment Blueprint submitted for review." path="/phase-3" />;
   if (!loaded) return <LoadingView />;

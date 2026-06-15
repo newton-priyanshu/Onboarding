@@ -143,11 +143,12 @@ CREATE TABLE IF NOT EXISTS worksheet_submissions (
   -- Review workflow state machine:
   --   ''                → Not submitted / In Progress
   --   'pending_review'  → Submitted, awaiting reviewer
+  --   'buddy_approved'  → Buddy has approved this worksheet (NEW)
   --   'needs_revision'  → Reviewer requested changes
   --   'revision_submitted' → Instructor resubmitted after revision
-  --   'approved'        → Worksheet is complete
+  --   'approved'        → Worksheet is complete (manager approved entire phase)
   review_status TEXT DEFAULT ''
-    CHECK (review_status IN ('', 'pending_review', 'needs_revision', 'revision_submitted', 'approved')),
+    CHECK (review_status IN ('', 'pending_review', 'buddy_approved', 'needs_revision', 'revision_submitted', 'approved')),
 
   -- Who is responsible for reviewing this worksheet
   reviewer_type TEXT DEFAULT 'manager'
@@ -200,9 +201,12 @@ CREATE POLICY "Reviewers select submissions" ON worksheet_submissions
   );
 
 -- 4e. Reviewers can update submissions (for approve/revision actions)
+--     lead_instructor (buddy) can update: approve to buddy_approved or request revision
+--     academic_head (manager) can update: approve phase (change buddy_approved → approved) or request revision
+--     onboarding_lead: read-only, cannot update
 CREATE POLICY "Reviewers update submissions" ON worksheet_submissions
   FOR UPDATE USING (
-    auth.jwt() -> 'user_metadata' ->> 'role' IN ('lead_instructor', 'academic_head', 'onboarding_lead')
+    auth.jwt() -> 'user_metadata' ->> 'role' IN ('lead_instructor', 'academic_head')
     OR auth.uid() IN (
       SELECT assigned_lead_id FROM user_profiles WHERE id = worksheet_submissions.user_id
     )

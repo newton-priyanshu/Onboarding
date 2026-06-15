@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { FileText, Plus, Trash2 } from 'lucide-react';
-import { WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback } from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
 
 const WS = 'p2_w3';
 const blankEntry = () => ({ type: '', title: '', date: '', submitted: false, reviewer: '', approved: false });
@@ -14,7 +14,7 @@ export default function Phase2Worksheet3() {
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
     updateField, handleSubmit,
-    isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user, worksheetId: WS, phase: 'phase-2',
     defaultData: {
@@ -35,6 +35,7 @@ export default function Phase2Worksheet3() {
   const addEntry = () => setData(p => ({ ...p, entries: [...p.entries, blankEntry()] }));
   const removeEntry = (i) => { if (data.entries.length > 1) setData(p => ({ ...p, entries: p.entries.filter((_, idx) => idx !== i) })); };
 
+  if (isBuddyApproved) return <BuddyApprovedView msg="Your Content Ledger has been approved by your buddy." path="/phase-2" />;
   if (isApproved) return <ApprovedView msg="Your Content Ledger has been reviewed and approved." path="/phase-2" reviewerName={data._savedReviewerName} date={data._savedReviewedAt} />;
   if (isSubmitted) return <SubmittedView msg="Content ledger submitted." path="/phase-2" />;
   if (!loaded) return <LoadingView />;
