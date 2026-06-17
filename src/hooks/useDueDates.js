@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 
 /**
  * Default due date offsets (in days from phase start) for each worksheet.

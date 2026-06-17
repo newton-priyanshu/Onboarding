@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../supabase';
-import { getReviewerType } from '../worksheetConfig.jsx';
+import { supabase } from '../api/supabase';
+import { getReviewerType } from '../config/worksheetConfig.jsx';
 import { notifyError } from '../utils/errorHandling';
-import { triggerNotification, getReviewerUserIds } from './useNotifications';
+import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from './useNotifications';
+import { calculateDueDate } from './useDueDates';
 
 export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1') {
   const [saveStatus, setSaveStatus] = useState('idle');
   const timerRef = useRef(null);
   const mountedRef = useRef(true);
   const initialSaveDoneRef = useRef(false);
+  const dueDateSetRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -28,7 +30,16 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         : (data._savedReviewStatus === 'approved' ? 'approved'
           : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
           : '');
-      const { error } = await supabase.from('worksheet_submissions').upsert({
+      // Calculate due_date ONLY once (tracked via dueDateSetRef).
+      // This prevents date drift — calculateDueDate uses Date.now()-30 as a fallback
+      // which shifts daily, so we must persist the first calculation and never overwrite.
+      let dueDateValue;
+      if (!dueDateSetRef.current && newReviewStatus !== 'approved' && newReviewStatus !== 'buddy_approved') {
+        dueDateValue = calculateDueDate(worksheetId)?.toISOString().split('T')[0] || null;
+        dueDateSetRef.current = true;
+      }
+
+      const upsertPayload = {
         user_id: user.id,
         worksheet_id: worksheetId,
         worksheet_data: data,
@@ -37,7 +48,11 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         status: data.status || 'In Progress',
         review_status: newReviewStatus,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,worksheet_id' });
+      };
+      // Only include due_date on initial save — never overwrite persisted value
+      if (dueDateValue !== undefined) upsertPayload.due_date = dueDateValue;
+
+      const { error } = await supabase.from('worksheet_submissions').upsert(upsertPayload, { onConflict: 'user_id,worksheet_id' });
       if (error) throw error;
 
       // Trigger notification on first-time submission only
@@ -49,7 +64,15 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         && data._savedReviewStatus !== 'pending_review'
         && data._savedReviewStatus !== 'revision_submitted';
       if (isNewSubmission) {
-        const reviewerUserIds = await getReviewerUserIds(reviewerType);
+        // Notify the ASSIGNED reviewer, not all users with that role
+        let reviewerUserIds = [];
+        if (reviewerType === 'buddy' || reviewerType === 'manager') {
+          reviewerUserIds = await getAssignedReviewerIds(user.id, reviewerType);
+        }
+        // Fallback to all role users for non-assigned types (onboarding_lead)
+        if (reviewerUserIds.length === 0) {
+          reviewerUserIds = await getReviewerUserIds(reviewerType);
+        }
         const phaseNames = { 'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3' };
         const phaseName = phaseNames[phase] || phase;
         for (const reviewerId of reviewerUserIds) {

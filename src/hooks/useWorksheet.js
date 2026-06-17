@@ -80,6 +80,39 @@ export function useWorksheet({
     setData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  /**
+   * updateArrayItem — Stable helper for updating an item in an array field.
+   * Eliminates the need for inline setData(p => {...}) callbacks in JSX.
+   *
+   * @param {string} field - The array field name, e.g. 'stakeholders'
+   * @param {number} index - Index of the item to update
+   * @param {string} subField - Property name within the array item
+   * @returns {(value: any) => void} Stable callback for onChange
+   *
+   * Usage:
+   *   onChange={updateArrayItem('stakeholders', i, 'name')}
+   */
+  const updateArrayItem = useCallback((field, index, subField) => (value) => {
+    setData(prev => {
+      const arr = (prev[field] || []).slice();
+      arr[index] = { ...(arr[index] || {}), [subField]: value };
+      return { ...prev, [field]: arr };
+    });
+  }, []);
+
+  /**
+   * updateArrayItemEvent — Like updateArrayItem but extracts e.target.value from event.
+   * For use directly in JSX: onChange={updateArrayItemEvent('stakeholders', i, 'name')}
+   */
+  const updateArrayItemEvent = useCallback((field, index, subField) => (e) => {
+    const value = e?.target?.value !== undefined ? e.target.value : e;
+    setData(prev => {
+      const arr = (prev[field] || []).slice();
+      arr[index] = { ...(arr[index] || {}), [subField]: value };
+      return { ...prev, [field]: arr };
+    });
+  }, []);
+
   const validate = useCallback(() => {
     const missing = requiredFields.filter(f => !data[f.key]?.trim());
     if (missing.length > 0) {
@@ -140,6 +173,8 @@ export function useWorksheet({
     submitError,
     saveStatus,
     updateField,
+    updateArrayItem,
+    updateArrayItemEvent,
     handleSubmit,
     setSubmitError,
     isApproved,

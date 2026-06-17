@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { Users, ClipboardCheck, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, RefreshCw, UserCheck, Briefcase, User, Shield, BadgeCheck, XCircle } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus } from '../worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus } from '../config/worksheetConfig.jsx';
+import { triggerNotification } from '../hooks/useNotifications';
 
 const WORKSHEET_NAMES = {
   p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',
@@ -394,6 +395,7 @@ function PhasesReadyTab({ allWorksheets, instructors, isManager }) {
 }
 
 function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
+  const { profile } = useAuth();
   const [selectedInstructor, setSelectedInstructor] = useState('');
   const [selectedManager, setSelectedManager] = useState('');
   const [selectedBuddy, setSelectedBuddy] = useState('');
@@ -449,6 +451,26 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
           if (!selectedInstructor || !selectedManager) { setMessage('Select a joinee and a manager.'); return; }
           setSaving(true); setMessage('');
           const { error } = await supabase.from('user_profiles').update({ assigned_lead_id: selectedManager || null }).eq('id', selectedInstructor);
+          if (!error) {
+            const managerName = buddyProfiles.find(p => p.id === selectedManager)?.full_name || 'Manager';
+            const joineeName = instructors.find(p => p.id === selectedInstructor)?.full_name || 'Joinee';
+            // Notify the joinee
+            await triggerNotification({
+              userId: selectedInstructor,
+              fromUserId: profile?.id,
+              worksheetId: '',
+              type: 'approved',
+              message: `A manager (${managerName}) has been assigned to you. They will oversee your Phase 2 & 3 approvals.`,
+            });
+            // Notify the assigned manager
+            await triggerNotification({
+              userId: selectedManager,
+              fromUserId: profile?.id,
+              worksheetId: '',
+              type: 'submitted',
+              message: `You have been assigned as the manager for ${joineeName}. Review their progress in the dashboard.`,
+            });
+          }
           setMessage(error ? 'Error: ' + error.message : 'Manager assigned!');
           onRefresh(); setSaving(false);
         }} disabled={saving} style={btnPrimary}>
@@ -458,6 +480,26 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
           if (!selectedInstructor || !selectedBuddy) { setMessage('Select a joinee and a buddy.'); return; }
           setSaving(true); setMessage('');
           const { error } = await supabase.from('user_profiles').update({ assigned_buddy_id: selectedBuddy || null }).eq('id', selectedInstructor);
+          if (!error) {
+            const buddyName = buddyProfiles.find(p => p.id === selectedBuddy)?.full_name || 'Buddy';
+            const joineeName = instructors.find(p => p.id === selectedInstructor)?.full_name || 'Joinee';
+            // Notify the joinee
+            await triggerNotification({
+              userId: selectedInstructor,
+              fromUserId: profile?.id,
+              worksheetId: '',
+              type: 'approved',
+              message: `A buddy/mentor (${buddyName}) has been assigned to you. They will review your Phase 1 worksheets.`,
+            });
+            // Notify the assigned buddy
+            await triggerNotification({
+              userId: selectedBuddy,
+              fromUserId: profile?.id,
+              worksheetId: '',
+              type: 'submitted',
+              message: `You have been assigned as the buddy/mentor for ${joineeName}. Their worksheets will appear in your review dashboard.`,
+            });
+          }
           setMessage(error ? 'Error: ' + error.message : 'Buddy assigned!');
           onRefresh(); setSaving(false);
         }} disabled={saving} style={btnPrimary}>

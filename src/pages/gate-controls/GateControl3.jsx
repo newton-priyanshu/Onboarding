@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabase';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../api/supabase';
 import { Shield, CheckCircle2, AlertCircle, Send, ArrowLeft, Star } from 'lucide-react';
-import { Section, Slider, BuddyApprovedView } from '../worksheetComponents';
+import { Section, Slider, BuddyApprovedView } from '../../config/worksheetComponents';
 
 const milestones = [
   ['Independent lecture delivery (min. 2 full sessions)', 'Faculty Lead lecture observation'],

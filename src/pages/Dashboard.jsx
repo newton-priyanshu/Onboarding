@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { 
   ArrowRight, BookOpen, Target, Sparkles,
   CheckCircle2, Clock, AlertCircle, FileText,
 } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../config/worksheetConfig.jsx';
 
 const phases = [
   { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes.', icon: BookOpen, path: '/phase-1', worksheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'], hasGate: true, gatePath: '/phase-1/gate-1' },

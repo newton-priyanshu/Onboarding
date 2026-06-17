@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 
 /**
  * useNotifications — Fetches and manages notifications for a user.

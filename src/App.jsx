@@ -21,7 +21,7 @@ import WorksheetReview from './pages/WorksheetReview';
 import PhaseReview from './pages/PhaseReview';
 import NotFound from './pages/NotFound';
 
-import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './worksheetConfig';
+import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
 
 // Grid lines removed per user request. Structure preserved in CSS if re-enabled.
 

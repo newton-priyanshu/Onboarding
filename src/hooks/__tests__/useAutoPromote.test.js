@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockFrom = vi.hoisted(() => vi.fn());
 const mockAuthUpdateUser = vi.hoisted(() => vi.fn());
 
-vi.mock('../../supabase', () => ({
+vi.mock('../../api/supabase', () => ({
   supabase: {
     from: mockFrom,
     auth: {
@@ -12,7 +12,7 @@ vi.mock('../../supabase', () => ({
   },
 }));
 
-vi.mock('../../worksheetConfig.jsx', () => ({
+vi.mock('../../config/worksheetConfig.jsx', () => ({
   PHASE_WORKSHEETS_MAP: {
     1: ['p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8', 'gc1'],
     2: ['p2_w1', 'p2_w2', 'p2_w3', 'p2_w4', 'gc2'],

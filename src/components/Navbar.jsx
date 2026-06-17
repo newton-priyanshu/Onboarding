@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight } from 'lucide-react';
+import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight, Loader2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -18,6 +18,8 @@ export default function Navbar({ progress }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const userMenuRef = useRef(null);
   const { user, profile, signOut } = useAuth();
 
@@ -52,8 +54,14 @@ const joineeLinks = ['new_joinee', 'lab_instructor'].includes(role) ? [
 const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
 
   const handleSignOut = async () => {
+    setSigningOut(true);
     try { await signOut(); } catch (e) { console.error(e); }
-    setUserMenuOpen(false);
+    setSigningOut(false);
+    setConfirmingSignOut(false);
+  };
+
+  const handleCancelSignOut = () => {
+    setConfirmingSignOut(false);
   };
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -127,7 +135,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
             {/* User menu */}
             {user ? (
               <div ref={userMenuRef} style={{ position: 'relative', marginLeft: '8px' }}>
-                <button onClick={() => setUserMenuOpen(!userMenuOpen)}
+                <button onClick={() => { setUserMenuOpen(!userMenuOpen); setConfirmingSignOut(false); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '8px',
                     padding: '6px 12px',
@@ -153,7 +161,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                   </span>
                 </button>
                 {userMenuOpen && (
-                  <div style={{
+                  <div className="user-menu-dropdown" style={{
                     position: 'absolute', right: 0, top: 'calc(100% + 8px)',
                     width: '260px',
                     background: 'var(--color-alabaster)',
@@ -161,10 +169,11 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                     zIndex: 200,
                     fontFamily: 'var(--font-body)',
                     fontSize: '0.8rem',
+                    animation: 'menuFadeIn 200ms ease-out',
                   }}>
-                    <div style={{ padding: '16px', borderBottom: '1px solid rgba(26, 26, 26, 0.12)' }}>
-                      <p style={{ fontWeight: 500, color: 'var(--color-charcoal)' }}>{profile?.full_name}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-warm-grey)', marginTop: '4px' }}>{profile?.email}</p>
+                    <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid rgba(26, 26, 26, 0.12)' }}>
+                      <p style={{ fontWeight: 500, color: 'var(--color-charcoal)', fontSize: '0.85rem' }}>{profile?.full_name}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--color-warm-grey)', marginTop: '4px' }}>{profile?.email}</p>
                       {profile?.role && (
                         <span className="lux-badge" style={{ marginTop: '8px', fontSize: '0.6rem' }}>
                           {roleLabels[profile.role] || profile.role}
@@ -173,26 +182,57 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                     </div>
                     {(role === 'lead_instructor' || role === 'academic_head') && (
                       <button onClick={() => { navigate('/buddy'); setUserMenuOpen(false); }}
-                        style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-charcoal)', fontSize: '0.8rem', transition: 'background 500ms var(--ease-lux)' }}>
+                        className="menu-item-btn">
                         <UserCheck size={14} strokeWidth={1.5} /> Reviews
                       </button>
                     )}
                     {role === 'onboarding_lead' && (
                       <button onClick={() => { navigate('/onboarding-lead'); setUserMenuOpen(false); }}
-                        style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-charcoal)', fontSize: '0.8rem', transition: 'background 500ms var(--ease-lux)' }}>
+                        className="menu-item-btn">
                         <Shield size={14} strokeWidth={1.5} /> Onboarding Panel
                       </button>
                     )}
                     {(role === 'academic_head' || role === 'onboarding_lead') && (
                       <button onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
-                        style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-charcoal)', fontSize: '0.8rem', transition: 'background 500ms var(--ease-lux)' }}>
+                        className="menu-item-btn">
                         <ClipboardCheck size={14} strokeWidth={1.5} /> Admin Dashboard
                       </button>
                     )}
-                    <button onClick={handleSignOut}
-                      style={{ width: '100%', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', borderTop: '1px solid rgba(26, 26, 26, 0.12)', background: 'transparent', cursor: 'pointer', color: 'var(--color-warm-grey)', fontSize: '0.8rem', transition: 'color 500ms var(--ease-lux)' }}>
-                      <LogOut size={14} strokeWidth={1.5} /> Sign Out
-                    </button>
+                    {confirmingSignOut ? (
+                      <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(26, 26, 26, 0.12)' }}>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--color-warm-grey)', marginBottom: '10px', lineHeight: 1.4 }}>
+                          Are you sure you want to sign out? You'll need to log back in to continue.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={handleCancelSignOut} disabled={signingOut}
+                            style={{
+                              flex: 1, padding: '8px 0', border: '1px solid rgba(26,26,26,0.2)', background: 'transparent',
+                              cursor: signingOut ? 'default' : 'pointer', color: 'var(--color-charcoal)',
+                              fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
+                              letterSpacing: '0.15em', textTransform: 'uppercase',
+                            }}>
+                            Cancel
+                          </button>
+                          <button onClick={handleSignOut} disabled={signingOut}
+                            style={{
+                              flex: 1, padding: '8px 0', border: '1px solid #C62828', background: '#C62828',
+                              cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',
+                              fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
+                              letterSpacing: '0.15em', textTransform: 'uppercase',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                            }}>
+                            {signingOut ? <Loader2 size={12} strokeWidth={1.5} className="spin-icon" /> : <LogOut size={12} strokeWidth={1.5} />}
+                            {signingOut ? 'Signing out…' : 'Sign Out'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmingSignOut(true)} disabled={signingOut}
+                        className="menu-item-btn menu-item-signout">
+                        <LogOut size={14} strokeWidth={1.5} />
+                        Sign Out
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -210,7 +250,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
             )}
 
             {/* Mobile toggle */}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="mobile-menu-btn-lux"
+            <button onClick={() => { setMobileOpen(!mobileOpen); setConfirmingSignOut(false); }} className="mobile-menu-btn-lux"
               style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-charcoal)' }}
               aria-label="Toggle navigation menu">
               {mobileOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
@@ -275,16 +315,49 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
             );
           })}
           {user && (
-            <button onClick={() => { handleSignOut(); setMobileOpen(false); }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '14px 24px', border: 'none', borderTop: '1px solid rgba(26, 26, 26, 0.06)', background: 'transparent',
-                cursor: 'pointer', color: 'var(--color-warm-grey)',
-                fontSize: '0.8rem', fontWeight: 500,
-                fontFamily: 'var(--font-body)',
+            confirmingSignOut ? (
+              <div style={{
+                borderTop: '1px solid rgba(26, 26, 26, 0.06)',
+                padding: '16px 24px',
               }}>
-              <LogOut size={16} strokeWidth={1.5} /> Sign Out
-            </button>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-warm-grey)', marginBottom: '12px' }}>
+                  Are you sure you want to sign out?
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => { setConfirmingSignOut(false); }} disabled={signingOut}
+                    style={{
+                      flex: 1, padding: '10px 0', border: '1px solid rgba(26,26,26,0.2)', background: 'transparent',
+                      cursor: signingOut ? 'default' : 'pointer', color: 'var(--color-charcoal)',
+                      fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                    }}>
+                    Cancel
+                  </button>
+                  <button onClick={() => { handleSignOut(); setMobileOpen(false); }} disabled={signingOut}
+                    style={{
+                      flex: 1, padding: '10px 0', border: '1px solid #C62828', background: '#C62828',
+                      cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',
+                      fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    }}>
+                    {signingOut ? <Loader2 size={12} strokeWidth={1.5} className="spin-icon" /> : <LogOut size={12} strokeWidth={1.5} />}
+                    {signingOut ? 'Signing out…' : 'Sign Out'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmingSignOut(true)} disabled={signingOut}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '14px 24px', border: 'none', borderTop: '1px solid rgba(26, 26, 26, 0.06)', background: 'transparent',
+                  cursor: 'pointer', color: 'var(--color-warm-grey)',
+                  fontSize: '0.8rem', fontWeight: 500,
+                  fontFamily: 'var(--font-body)',
+                }}>
+                <LogOut size={16} strokeWidth={1.5} /> Sign Out
+              </button>
+            )
           )}
         </div>
       )}
@@ -292,6 +365,39 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
       <style>{`
         @media (min-width: 850px) { .desktop-nav-lux { display: flex !important; } .mobile-menu-btn-lux { display: none !important; } }
         @media (max-width: 849px) { .desktop-nav-lux { display: none !important; } .mobile-menu-btn-lux { display: flex !important; } }
+
+        @keyframes menuFadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .spin-icon { animation: spin 0.8s linear infinite; }
+
+        .menu-item-btn {
+          width: 100%;
+          padding: 10px 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          color: var(--color-charcoal);
+          font-size: 0.8rem;
+          font-family: var(--font-body);
+          transition: background 200ms var(--ease-lux), color 200ms var(--ease-lux);
+        }
+        .menu-item-btn:hover { background: rgba(26, 26, 26, 0.04); }
+        .menu-item-btn:active { background: rgba(26, 26, 26, 0.08); }
+        .menu-item-btn:disabled { cursor: default; opacity: 0.6; }
+        .menu-item-signout {
+          border-top: 1px solid rgba(26, 26, 26, 0.12);
+          color: var(--color-warm-grey);
+        }
+        .menu-item-signout:hover { color: #C62828; background: rgba(198, 40, 40, 0.06); }
       `}</style>
     </header>
   );

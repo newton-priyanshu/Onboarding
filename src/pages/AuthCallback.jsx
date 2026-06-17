@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { GraduationCap } from 'lucide-react';
 
 export default function AuthCallback() {

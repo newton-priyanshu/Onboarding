@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { notifyError } from '../utils/errorHandling';
+import { triggerNotification, getReviewerUserIds } from '../hooks/useNotifications';
 
 const AuthContext = createContext(null);
 
@@ -158,6 +159,22 @@ export function AuthProvider({ children }) {
         role,
       });
       if (profileError) notifyError('Profile creation error:', profileError);
+
+      // Notify managers + onboarding leads about new joinee
+      if (role === 'new_joinee' || role === 'lab_instructor') {
+        const adminIds = await getReviewerUserIds('manager');
+        const onboardingIds = await getReviewerUserIds('onboarding_lead');
+        const allRecipients = [...new Set([...adminIds, ...onboardingIds])];
+        for (const recipientId of allRecipients) {
+          await triggerNotification({
+            userId: recipientId,
+            fromUserId: data.user.id,
+            worksheetId: '',
+            type: 'submitted',
+            message: `New ${role === 'new_joinee' ? 'Joinee' : 'Lab Instructor'} joined: ${fullName} (${email}). They need a manager and buddy assigned.`,
+          });
+        }
+      }
     }
 
     return data;
@@ -181,6 +198,9 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    // Clear local state immediately so UI updates before Supabase event fires
+    setUser(null);
+    setProfile(null);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }

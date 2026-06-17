@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { Monitor } from 'lucide-react';
-import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../config/worksheetComponents';
 
 const WS = 'p2_w4';
 const portalTasks = ['Create coding question with custom test cases', 'Create MCQ with answer key and explanations', 'Design and publish a structured assignment', 'Set up lab exercise with test cases', 'Set cohort-specific content release rules', 'Reopen/extend deadline for individual students'];

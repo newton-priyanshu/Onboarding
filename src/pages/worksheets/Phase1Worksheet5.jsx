@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { Monitor } from 'lucide-react';
-import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../config/worksheetComponents';
 
 const WS = 'p1_w5';
 const studentFeatures = ['Browse course dashboard and navigation', 'View and attempt a live assignment', 'View grades and submission feedback', 'Navigate lab exercise interface'];

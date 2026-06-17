@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, MessageSquare, ClipboardCheck, FileText, Monitor, Shield, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
-import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../worksheetConfig.jsx';
+import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../config/worksheetConfig.jsx';
 import { getDueDateInfo } from '../hooks/useDueDates';
 
 const worksheets = [

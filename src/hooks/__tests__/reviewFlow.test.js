@@ -6,7 +6,7 @@ import {
   getBuddyApprovedSheets,
   getPhaseWorksheetsByStatus,
   PHASE_WORKSHEETS_MAP,
-} from '../../worksheetConfigData.js';
+} from '../../config/worksheetConfigData.js';
 
 /**
  * Helper: build a mock submission object for testing.

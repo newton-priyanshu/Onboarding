@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { CheckCircle2, XCircle, MessageSquare, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown, Shield } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES } from '../worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES } from '../config/worksheetConfig.jsx';
 import ReviewContent from '../components/ReviewContent.jsx';
-import { triggerNotification, getReviewerUserIds } from '../hooks/useNotifications';
+import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 
 const WORKSHEET_INFO = {
   p1_w1: { title: 'Team Introduction & Stakeholder Mapping Log', phase: 'Phase 1' },
@@ -136,8 +136,12 @@ export default function WorksheetReview() {
         message: `Your worksheet (${worksheetId}) has been approved by your buddy (${profile?.full_name || 'Buddy'}). It's now pending manager phase approval.`,
       });
 
-      // Also notify all managers that a worksheet is now buddy-approved
-      const managerIds = await getReviewerUserIds('manager');
+      // Notify the ASSIGNED manager that a worksheet is now buddy-approved
+      let managerIds = await getAssignedReviewerIds(userId, 'manager');
+      // Fallback to all managers if no assigned manager found
+      if (managerIds.length === 0) {
+        managerIds = await getReviewerUserIds('manager');
+      }
       for (const mgrId of managerIds) {
         await triggerNotification({
           userId: mgrId,

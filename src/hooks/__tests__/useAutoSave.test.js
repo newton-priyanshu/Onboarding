@@ -5,7 +5,7 @@ const { mockFrom, mockGetUser } = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
 }));
 
-vi.mock('../../supabase', () => ({
+vi.mock('../../api/supabase', () => ({
   supabase: {
     from: mockFrom,
     auth: { getUser: mockGetUser },

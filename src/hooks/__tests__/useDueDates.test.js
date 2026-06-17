@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Mock supabase to avoid Node.js WebSocket issues
-vi.mock('../../supabase', () => ({
+vi.mock('../../api/supabase', () => ({
   supabase: {
     from: vi.fn(),
     auth: { getUser: vi.fn() },

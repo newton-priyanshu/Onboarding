@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { Users } from 'lucide-react';
-import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, FieldGrid, ReviewFeedback} from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, FieldGrid, ReviewFeedback} from '../../config/worksheetComponents';
 
 const WORKSHEET_ID = 'p1_w1';
 
@@ -15,7 +15,7 @@ export default function Phase1Worksheet1() {
 
   const {
     data, setData, loaded, submitting, submitError, saveStatus,
-    updateField, handleSubmit,
+    updateField, updateArrayItemEvent, handleSubmit,
     isBuddyApproved, isApproved, isSubmitted,
   } = useWorksheet({
     user,
@@ -76,10 +76,10 @@ export default function Phase1Worksheet1() {
               </div>
               {data.stakeholders.map((s, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr', gap: '8px' }}>
-                  <input className="lux-input" placeholder="Name" id={`st-name-${i}`} value={s.name} onChange={e => setData(p => { const arr = [...p.stakeholders]; arr[i] = { ...arr[i], name: e.target.value }; return { ...p, stakeholders: arr }; })} />
-                  <input className="lux-input" placeholder="Role" id={`st-role-${i}`} value={s.role} onChange={e => setData(p => { const arr = [...p.stakeholders]; arr[i] = { ...arr[i], role: e.target.value }; return { ...p, stakeholders: arr }; })} />
-                  <input className="lux-input" placeholder="Team" id={`st-team-${i}`} value={s.team} onChange={e => setData(p => { const arr = [...p.stakeholders]; arr[i] = { ...arr[i], team: e.target.value }; return { ...p, stakeholders: arr }; })} />
-                  <input className="lux-input" placeholder="Why they matter" id={`st-resp-${i}`} value={s.responsibility} onChange={e => setData(p => { const arr = [...p.stakeholders]; arr[i] = { ...arr[i], responsibility: e.target.value }; return { ...p, stakeholders: arr }; })} />
+                  <input className="lux-input" placeholder="Name" id={`st-name-${i}`} value={s.name} onChange={updateArrayItemEvent('stakeholders', i, 'name')} />
+                  <input className="lux-input" placeholder="Role" id={`st-role-${i}`} value={s.role} onChange={updateArrayItemEvent('stakeholders', i, 'role')} />
+                  <input className="lux-input" placeholder="Team" id={`st-team-${i}`} value={s.team} onChange={updateArrayItemEvent('stakeholders', i, 'team')} />
+                  <input className="lux-input" placeholder="Why they matter" id={`st-resp-${i}`} value={s.responsibility} onChange={updateArrayItemEvent('stakeholders', i, 'responsibility')} />
                 </div>
               ))}
             </div>
@@ -94,9 +94,9 @@ export default function Phase1Worksheet1() {
               </div>
               {data.conversations.map((c, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 3fr', gap: '8px' }}>
-                  <input className="lux-input" placeholder="Instructor name" id={`conv-name-${i}`} value={c.instructorName} onChange={e => setData(p => { const arr = [...p.conversations]; arr[i] = { ...arr[i], instructorName: e.target.value }; return { ...p, conversations: arr }; })} />
-                  <input className="lux-input" type="date" id={`conv-date-${i}`} value={c.date} onChange={e => setData(p => { const arr = [...p.conversations]; arr[i] = { ...arr[i], date: e.target.value }; return { ...p, conversations: arr }; })} />
-                  <textarea className="lux-textarea" rows={2} placeholder="What key insight did you gain from this conversation?" id={`conv-take-${i}`} value={c.takeaways} onChange={e => setData(p => { const arr = [...p.conversations]; arr[i] = { ...arr[i], takeaways: e.target.value }; return { ...p, conversations: arr }; })} />
+                  <input className="lux-input" placeholder="Instructor name" id={`conv-name-${i}`} value={c.instructorName} onChange={updateArrayItemEvent('conversations', i, 'instructorName')} />
+                  <input className="lux-input" type="date" id={`conv-date-${i}`} value={c.date} onChange={updateArrayItemEvent('conversations', i, 'date')} />
+                  <textarea className="lux-textarea" rows={2} placeholder="What key insight did you gain from this conversation?" id={`conv-take-${i}`} value={c.takeaways} onChange={updateArrayItemEvent('conversations', i, 'takeaways')} />
                 </div>
               ))}
             </div>

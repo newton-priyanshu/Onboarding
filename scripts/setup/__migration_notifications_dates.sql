@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     'submitted',
     'revision_submitted',
     'approved',
+    'buddy_approved',
     'needs_revision',
     'due_soon',
     'overdue'
@@ -30,7 +31,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Select own notifications" ON notifications
   FOR SELECT USING (auth.uid() = user_id);
 
--- 2b. Anyone can insert notifications (triggered by app logic)
+-- 2b. Any authenticated user can insert notifications (triggered by app logic)
 CREATE POLICY "Insert notifications" ON notifications
   FOR INSERT TO authenticated
   WITH CHECK (true);
@@ -44,17 +45,9 @@ CREATE POLICY "Update own notifications" ON notifications
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications (user_id, read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications (created_at DESC);
 
--- 4. Add review_status CHECK constraint to enforce valid state transitions
---    Note: This is a soft constraint — we enforce at the app level.
---    PostgreSQL CHECK constraints don't support cross-row validation easily,
---    so we keep the existing CHECK and validate transitions in code.
-
--- 5. Update the existing review_status CHECK to ensure only valid values
+-- 4. Update the existing review_status CHECK to ensure only valid values
 ALTER TABLE worksheet_submissions DROP CONSTRAINT IF EXISTS worksheet_submissions_review_status_check;
 ALTER TABLE worksheet_submissions ADD CONSTRAINT worksheet_submissions_review_status_check
-  CHECK (review_status IN ('', 'pending_review', 'needs_revision', 'revision_submitted', 'approved'));
-
--- 6. Ensure 'submitted' status is lowercase consistently
---    (No ALTER needed — status is TEXT, we enforce casing in app code)
+  CHECK (review_status IN ('', 'pending_review', 'needs_revision', 'revision_submitted', 'buddy_approved', 'approved'));
 
 -- ✅ Migration Complete

@@ -52,7 +52,7 @@ export function WorksheetSection({ title, subtitle, children }) {
 export function FieldGroup({ label, required, id, children, hint }) {
   return (
     <div className="lux-form-group">
-      <label className="lux-label" htmlFor={id || undefined} style={{ marginBottom: '8px' }}>
+      <label className="lux-label" htmlFor={id || undefined} style={{ marginBottom: '6px' }}>
         {label}{required && <span style={{ color: '#C62828', marginLeft: '4px' }}>*</span>}
       </label>
       {children}
@@ -64,7 +64,7 @@ export function FieldGroup({ label, required, id, children, hint }) {
 /* ─── Grid Layout Helper ───────────────────────────────────── */
 export function FieldGrid({ cols, children }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '1rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0.75rem' }}>
       {children}
     </div>
   );

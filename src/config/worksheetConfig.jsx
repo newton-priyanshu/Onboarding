@@ -23,26 +23,26 @@ export {
   getReviewerLabel,
 } from './worksheetConfigData.js';
 
-import Phase1Worksheet1 from './pages/worksheets/Phase1Worksheet1';
-import Phase1Worksheet2 from './pages/worksheets/Phase1Worksheet2';
-import Phase1Worksheet3 from './pages/worksheets/Phase1Worksheet3';
-import Phase1Worksheet4 from './pages/worksheets/Phase1Worksheet4';
-import Phase1Worksheet5 from './pages/worksheets/Phase1Worksheet5';
-import Phase1Worksheet6 from './pages/worksheets/Phase1Worksheet6';
-import Phase1Worksheet7 from './pages/worksheets/Phase1Worksheet7';
-import Phase1Worksheet8 from './pages/worksheets/Phase1Worksheet8';
-import Phase2Worksheet1 from './pages/worksheets/Phase2Worksheet1';
-import Phase2Worksheet2 from './pages/worksheets/Phase2Worksheet2';
-import Phase2Worksheet3 from './pages/worksheets/Phase2Worksheet3';
-import Phase2Worksheet4 from './pages/worksheets/Phase2Worksheet4';
-import Phase3Worksheet1 from './pages/worksheets/Phase3Worksheet1';
-import Phase3Worksheet2 from './pages/worksheets/Phase3Worksheet2';
-import Phase3Worksheet3 from './pages/worksheets/Phase3Worksheet3';
-import Phase3Worksheet4 from './pages/worksheets/Phase3Worksheet4';
-import Phase3Worksheet5 from './pages/worksheets/Phase3Worksheet5';
-import GateControl1 from './pages/GateControl1';
-import GateControl2 from './pages/GateControl2';
-import GateControl3 from './pages/GateControl3';
+import Phase1Worksheet1 from '../pages/worksheets/Phase1Worksheet1';
+import Phase1Worksheet2 from '../pages/worksheets/Phase1Worksheet2';
+import Phase1Worksheet3 from '../pages/worksheets/Phase1Worksheet3';
+import Phase1Worksheet4 from '../pages/worksheets/Phase1Worksheet4';
+import Phase1Worksheet5 from '../pages/worksheets/Phase1Worksheet5';
+import Phase1Worksheet6 from '../pages/worksheets/Phase1Worksheet6';
+import Phase1Worksheet7 from '../pages/worksheets/Phase1Worksheet7';
+import Phase1Worksheet8 from '../pages/worksheets/Phase1Worksheet8';
+import Phase2Worksheet1 from '../pages/worksheets/Phase2Worksheet1';
+import Phase2Worksheet2 from '../pages/worksheets/Phase2Worksheet2';
+import Phase2Worksheet3 from '../pages/worksheets/Phase2Worksheet3';
+import Phase2Worksheet4 from '../pages/worksheets/Phase2Worksheet4';
+import Phase3Worksheet1 from '../pages/worksheets/Phase3Worksheet1';
+import Phase3Worksheet2 from '../pages/worksheets/Phase3Worksheet2';
+import Phase3Worksheet3 from '../pages/worksheets/Phase3Worksheet3';
+import Phase3Worksheet4 from '../pages/worksheets/Phase3Worksheet4';
+import Phase3Worksheet5 from '../pages/worksheets/Phase3Worksheet5';
+import GateControl1 from '../pages/gate-controls/GateControl1';
+import GateControl2 from '../pages/gate-controls/GateControl2';
+import GateControl3 from '../pages/gate-controls/GateControl3';
 
 import { getReviewerType, REVIEWER_LABELS, REVIEWER_STYLES } from './worksheetConfigData.js';
 

@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets } from '../worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets } from '../config/worksheetConfig.jsx';
 import ReviewContent from '../components/ReviewContent.jsx';
-import { triggerNotification } from '../hooks/useNotifications';
+import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { checkAndPromote } from '../hooks/useAutoPromote';
-import { getReviewerUserIds } from '../hooks/useNotifications';
 
 const WORKSHEET_NAMES = {
   p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',
@@ -146,8 +145,12 @@ export default function PhaseReview() {
     if (allSucceeded) {
       setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved.`);
 
-      // Notify the buddy that the phase has been manager-approved
-      const buddyIds = await getReviewerUserIds('buddy');
+      // Notify the ASSIGNED buddy that the phase has been manager-approved
+      let buddyIds = await getAssignedReviewerIds(userId, 'buddy');
+      // Fallback to all buddies if no assigned buddy found
+      if (buddyIds.length === 0) {
+        buddyIds = await getReviewerUserIds('buddy');
+      }
       for (const buddyId of buddyIds) {
         await triggerNotification({
           userId: buddyId,

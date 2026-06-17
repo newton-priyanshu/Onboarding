@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabase';
+import { supabase } from '../api/supabase';
 import { Users, Clock, CheckCircle2, RefreshCw, Shield, BadgeCheck, Eye, User, BookOpen } from 'lucide-react';
-import { WORKSHEET_REVIEWER, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus } from '../worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus } from '../config/worksheetConfig.jsx';
 
 const WORKSHEET_NAMES = {
   p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',

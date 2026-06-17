@@ -1,5 +1,6 @@
-import { supabase } from '../supabase';
-import { PHASE_WORKSHEETS_MAP } from '../worksheetConfig.jsx';
+import { supabase } from '../api/supabase';
+import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig.jsx';
+import { triggerNotification, getReviewerUserIds } from './useNotifications';
 
 /**
  * Auto-promote a joinee to lead_instructor (buddy) when ALL worksheets
@@ -59,6 +60,27 @@ export async function checkAndPromote(userId) {
 
     if (metaError) {
       console.warn('Could not update auth metadata role:', metaError);
+    }
+
+    // Notify the promoted user
+    await triggerNotification({
+      userId,
+      fromUserId: null,
+      worksheetId: '',
+      type: 'approved',
+      message: '🎉 Congratulations! All 20 worksheets across all 3 phases have been approved. You have been promoted to Buddy/Mentor (lead_instructor)! You can now review other instructors\' worksheets.',
+    });
+
+    // Notify all managers about the promotion
+    const managerIds = await getReviewerUserIds('manager');
+    for (const mgrId of managerIds) {
+      await triggerNotification({
+        userId: mgrId,
+        fromUserId: userId,
+        worksheetId: '',
+        type: 'approved',
+        message: `A joinee has completed all 3 phases and been promoted to lead_instructor. They can now serve as a buddy/mentor.`,
+      });
     }
 
     return { promoted: true, message: 'All 20 worksheets approved! User promoted to Buddy/Mentor (lead_instructor).' };

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorksheet } from '../../hooks/useWorksheet';
 import { FileText, Star } from 'lucide-react';
-import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../worksheetComponents';
+import {BuddyApprovedView, WorksheetHeader, WorksheetSection, FieldGroup, ActionBar, SubmittedView, ApprovedView, LoadingView, BackButton, ErrorAlert, ReviewFeedback} from '../../config/worksheetComponents';
 
 const WS = 'p1_w7';
 const materialTypes = ['Lecture Slide Decks (PPTs)', 'Worksheets & Problem Sets', 'Coding Question Bank', 'MCQ Bank', 'Previous Exam / Contest Papers', 'Assignment Sets', 'Lab Exercises'];
