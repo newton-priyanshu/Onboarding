@@ -297,7 +297,21 @@ async function createUser({ name, email, role }) {
     return null;
   }
   await sleep(2000);
-  const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', data.user.id).single();
+  let { data: profile } = await supabase.from('user_profiles').select('*').eq('id', data.user.id).single();
+  if (!profile) {
+    // DB trigger may not exist — insert profile directly
+    const { data: inserted, error: insErr } = await supabase.from('user_profiles').insert({
+      id: data.user.id,
+      email: email,
+      full_name: name,
+      role: role,
+    }).select().single();
+    if (insErr) {
+      console.log('⏳ profile insert error: ' + insErr.message);
+    } else if (inserted) {
+      profile = inserted;
+    }
+  }
   if (profile) {
     createdUsers[email] = profile;
     console.log('✅');

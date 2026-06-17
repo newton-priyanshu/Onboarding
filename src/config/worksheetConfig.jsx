@@ -14,6 +14,7 @@ export {
   REVIEWER_STYLES,
   REVIEWER_ICONS,
   ALL_WORKSHEETS,
+  WORKSHEET_INFO,
   getReviewerType,
   PHASE_WORKSHEETS_MAP,
   getPhaseReviewStatus,

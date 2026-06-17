@@ -219,3 +219,30 @@ export function getReviewerLabel(worksheetId) {
   const type = getReviewerType(worksheetId);
   return REVIEWER_LABELS[type] || 'Manager';
 }
+
+/**
+ * WORKSHEET_INFO — Full worksheet titles and phase info.
+ * Single source of truth (was duplicated across WorksheetReview.jsx and PhaseReview.jsx).
+ */
+export const WORKSHEET_INFO = {
+  p1_w1: { title: 'Team Introduction & Stakeholder Mapping Log', phase: 'Phase 1' },
+  p1_w2: { title: 'Faculty Mentor Alignment & Weekly Sync Tracker', phase: 'Phase 1' },
+  p1_w3: { title: 'Organisational Culture & Teaching Philosophy Reflection', phase: 'Phase 1' },
+  p1_w4: { title: 'Partner University Governance & Semester Architecture Map', phase: 'Phase 1' },
+  p1_w5: { title: 'Core Learning Portal Practical Walkthrough', phase: 'Phase 1' },
+  p1_w6: { title: 'Classroom & Laboratory Live Observation Journal', phase: 'Phase 1' },
+  p1_w7: { title: 'Existing Courseware & Question Bank Review Matrix', phase: 'Phase 1' },
+  p1_w8: { title: 'Slack Historical Context & Student Bottleneck Audit', phase: 'Phase 1' },
+  gc1: { title: 'Gate Control 1 — 30-Day Milestone Review', phase: 'Phase 1' },
+  p2_w1: { title: 'Student Doubt Resolution & Common Errors Diagnostic Log', phase: 'Phase 2' },
+  p2_w2: { title: 'Independent Lab Facilitation Scorecard', phase: 'Phase 2' },
+  p2_w3: { title: 'Courseware Content Creation Ledger', phase: 'Phase 2' },
+  p2_w4: { title: 'Advanced Portal Operations & Quiz Configuration Check', phase: 'Phase 2' },
+  gc2: { title: 'Gate Control 2 — 60-Day Milestone Review', phase: 'Phase 2' },
+  p3_w1: { title: 'Independent Lecture Delivery Log & Pacing Post-Mortem', phase: 'Phase 3' },
+  p3_w2: { title: 'Student Cohort Profiling & High/Low Performer Mapping', phase: 'Phase 3' },
+  p3_w3: { title: "Assessment Design Blueprint & Bloom's Taxonomy Grid", phase: 'Phase 3' },
+  p3_w4: { title: 'Pedagogical Frameworks Application Journal', phase: 'Phase 3' },
+  p3_w5: { title: 'Continuous Course Improvement Proposal', phase: 'Phase 3' },
+  gc3: { title: 'Gate Control 3 — 90-Day Final Readiness Assessment', phase: 'Phase 3' },
+};

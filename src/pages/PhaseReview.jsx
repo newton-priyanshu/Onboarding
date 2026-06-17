@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets } from '../config/worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets, WORKSHEET_INFO } from '../config/worksheetConfig.jsx';
 import ReviewContent from '../components/ReviewContent.jsx';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { checkAndPromote } from '../hooks/useAutoPromote';
@@ -15,30 +15,7 @@ const WORKSHEET_NAMES = {
   p2_w1: 'Doubt Resolution', p2_w2: 'Lab Scorecard', p2_w3: 'Content Ledger',
   p2_w4: 'Portal Ops Check', gc2: 'Gate Control 2',
   p3_w1: 'Lecture Delivery', p3_w2: 'Cohort Profiling', p3_w3: 'Assessment Blueprint',
-  p3_w4: 'Pedagogical Journal', p3_w5: 'Course Proposal', gc3: 'Gate Control 3',
-};
-
-const WORKSHEET_INFO = {
-  p1_w1: { title: 'Team Introduction & Stakeholder Mapping Log', phase: 'Phase 1' },
-  p1_w2: { title: 'Faculty Mentor Alignment & Weekly Sync Tracker', phase: 'Phase 1' },
-  p1_w3: { title: 'Organisational Culture & Teaching Philosophy Reflection', phase: 'Phase 1' },
-  p1_w4: { title: 'Partner University Governance & Semester Architecture Map', phase: 'Phase 1' },
-  p1_w5: { title: 'Core Learning Portal Practical Walkthrough', phase: 'Phase 1' },
-  p1_w6: { title: 'Classroom & Laboratory Live Observation Journal', phase: 'Phase 1' },
-  p1_w7: { title: 'Existing Courseware & Question Bank Review Matrix', phase: 'Phase 1' },
-  p1_w8: { title: 'Slack Historical Context & Student Bottleneck Audit', phase: 'Phase 1' },
-  gc1: { title: 'Gate Control 1 — 30-Day Milestone Review', phase: 'Phase 1' },
-  p2_w1: { title: 'Student Doubt Resolution & Common Errors Diagnostic Log', phase: 'Phase 2' },
-  p2_w2: { title: 'Independent Lab Facilitation Scorecard', phase: 'Phase 2' },
-  p2_w3: { title: 'Courseware Content Creation Ledger', phase: 'Phase 2' },
-  p2_w4: { title: 'Advanced Portal Operations & Quiz Configuration Check', phase: 'Phase 2' },
-  gc2: { title: 'Gate Control 2 — 60-Day Milestone Review', phase: 'Phase 2' },
-  p3_w1: { title: 'Independent Lecture Delivery Log & Pacing Post-Mortem', phase: 'Phase 3' },
-  p3_w2: { title: 'Student Cohort Profiling & High/Low Performer Mapping', phase: 'Phase 3' },
-  p3_w3: { title: 'Assessment Design Blueprint & Bloom\'s Taxonomy Grid', phase: 'Phase 3' },
-  p3_w4: { title: 'Pedagogical Frameworks Application Journal', phase: 'Phase 3' },
-  p3_w5: { title: 'Continuous Course Improvement Proposal', phase: 'Phase 3' },
-  gc3: { title: 'Gate Control 3 — 90-Day Final Readiness Assessment', phase: 'Phase 3' },
+  p3_w4: 'Pedagogical Journal',  p3_w5: 'Course Proposal', gc3: 'Gate Control 3',
 };
 
 const PHASE_LABELS = {

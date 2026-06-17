@@ -150,6 +150,11 @@ export function AuthProvider({ children }) {
     });
     if (error) throw error;
 
+    // BUG FIX: Detect duplicate email signup — Supabase returns existing user with empty identities array
+    if (data?.user?.identities && data.user.identities.length === 0) {
+      throw new Error('An account with this email already exists. Please sign in instead.');
+    }
+
     // Create profile in user_profiles table
     if (data.user) {
       const { error: profileError } = await supabase.from('user_profiles').insert({
