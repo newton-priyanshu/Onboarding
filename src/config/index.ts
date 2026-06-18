@@ -1,4 +1,4 @@
-export { t } from './theme.js';
+export { t } from './theme';
 export {
   WORKSHEET_REVIEWER,
   REVIEWER_LABELS,
@@ -15,14 +15,14 @@ export {
   getPhaseWorksheetsByStatus,
   getWorksheetsForReviewer,
   getReviewerLabel,
-} from './worksheetConfigData.js';
+} from './worksheetConfigData';
 export {
   WORKSHEET_COMPONENTS,
   ReviewerBadge,
-} from './worksheetConfig.jsx';
+} from './worksheetConfig';
 export {
   Section,
   Slider,
   LoadingView,
   BuddyApprovedView,
-} from './worksheetComponents.jsx';
+} from './worksheetComponents';

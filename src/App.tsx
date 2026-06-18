@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -24,16 +24,22 @@ import NotFound from './pages/NotFound';
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
 
-// Grid lines removed per user request. Structure preserved in CSS if re-enabled.
+// ─── Types ──────────────────────────────────────────────
 
-/**
- * Tracks the current route location and exposes it as a child render prop
- * so ErrorBoundary can reset on route changes.
- * 
- * ErrorBoundary checks this.props.locationKey: when it changes, the error
- * state is automatically cleared, allowing navigation to resolve errors.
- */
-function ErrorBoundaryRouteResetter({ children }) {
+interface PhaseData {
+  num: number;
+  sheets: Array<{
+    id: string;
+    title: string;
+    reviewer: string;
+    color: string;
+    isGate?: boolean;
+  }>;
+}
+
+// ─── Error Boundary Route Resetter ──────────────────────
+
+function ErrorBoundaryRouteResetter({ children }: { children: ReactNode }) {
   const location = useLocation();
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -44,6 +50,8 @@ function ErrorBoundaryRouteResetter({ children }) {
   );
 }
 
+// ─── App Component ──────────────────────────────────────
+
 export default function App() {
   const [progress, setProgress] = useState(0);
 
@@ -53,25 +61,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handler = (e) => { setProgress(e.detail); localStorage.setItem('onboarding_progress', String(e.detail)); };
-    window.addEventListener('progressUpdate', handler);
-    return () => window.removeEventListener('progressUpdate', handler);
+    const handler = (e: CustomEvent) => { setProgress(e.detail); localStorage.setItem('onboarding_progress', String(e.detail)); };
+    window.addEventListener('progressUpdate', handler as EventListener);
+    return () => window.removeEventListener('progressUpdate', handler as EventListener);
   }, []);
 
   // Generate dynamic worksheet routes
   const worksheetRoutes = Object.entries(ALL_WORKSHEETS).flatMap(([phaseName, phaseData]) => {
+    const data = phaseData as PhaseData;
     const phasePath = phaseName.toLowerCase().replace(' ', '-');
-    return phaseData.sheets
-      // Gate controls are filled by the buddy, not the joinee
+    return data.sheets
       .filter(sheet => !sheet.isGate)
       .map(sheet => {
-      const Component = WORKSHEET_COMPONENTS[sheet.id];
-      const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
-      const routePath = `/${phasePath}/worksheet-${wsNum}`;
-      return (
-        <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Component /></ProtectedRoute>} />
-      );
-    });
+        const Component = WORKSHEET_COMPONENTS[sheet.id];
+        if (!Component) return null;
+        const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
+        const routePath = `/${phasePath}/worksheet-${wsNum}`;
+        return (
+          <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Component /></ProtectedRoute>} />
+        );
+      })
   });
 
   return (
@@ -91,11 +100,11 @@ export default function App() {
                 <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyDashboard /></ProtectedRoute>} />
                 <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
-                {/* Phase Review Routes (Manager approves entire phase) */}
+                {/* Phase Review Routes */}
                 <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><PhaseReview /></ProtectedRoute>} />
                 <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><PhaseReview /></ProtectedRoute>} />
 
-                {/* Buddy Gate Pass Routes (buddy fills gate control for joinee) */}
+                {/* Buddy Gate Pass Routes */}
                 <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyGatePass /></ProtectedRoute>} />
 
                 {/* Individual Worksheet Review Routes */}
