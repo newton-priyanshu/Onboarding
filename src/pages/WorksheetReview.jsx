@@ -7,11 +7,7 @@ import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, WORKSHEET_INFO } 
 import ReviewContent from '../components/ReviewContent.jsx';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
+import { t } from '../config/theme.js';
 
 export default function WorksheetReview() {
   const { userId, worksheetId } = useParams();

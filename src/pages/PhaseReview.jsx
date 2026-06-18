@@ -3,32 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets, WORKSHEET_INFO } from '../config/worksheetConfig.jsx';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets, WORKSHEET_INFO, PHASE_LABELS } from '../config/worksheetConfig.jsx';
 import ReviewContent from '../components/ReviewContent.jsx';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { checkAndPromote } from '../hooks/useAutoPromote';
 
-const WORKSHEET_NAMES = {
-  p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',
-  p1_w4: 'University Governance', p1_w5: 'Portal Walkthrough', p1_w6: 'Observation Journal',
-  p1_w7: 'Courseware Review', p1_w8: 'Slack Audit', gc1: 'Gate Control 1',
-  p2_w1: 'Doubt Resolution', p2_w2: 'Lab Scorecard', p2_w3: 'Content Ledger',
-  p2_w4: 'Portal Ops Check', gc2: 'Gate Control 2',
-  p3_w1: 'Lecture Delivery', p3_w2: 'Cohort Profiling', p3_w3: 'Assessment Blueprint',
-  p3_w4: 'Pedagogical Journal',  p3_w5: 'Course Proposal', gc3: 'Gate Control 3',
-};
-
-const PHASE_LABELS = {
-  1: { title: 'Phase 1 — Orientation', days: 'Days 1–30' },
-  2: { title: 'Phase 2 — Contribution', days: 'Days 31–60' },
-  3: { title: 'Phase 3 — Ownership', days: 'Days 61–90' },
-};
-
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
+import { t } from '../config/theme.js';
 
 export default function PhaseReview() {
   const { userId, phaseNum } = useParams();
@@ -160,6 +140,15 @@ export default function PhaseReview() {
   const pending = submissions.filter(s => s.review_status === 'pending_review' || s.review_status === 'revision_submitted');
   const needsRevision = submissions.filter(s => s.review_status === 'needs_revision');
   const notSubmitted = wsList.filter(id => !submissions.find(s => s.worksheet_id === id));
+  const isAllBuddyApproved = buddyApproved.length > 0 && pending.length === 0;
+  const canApprove = isManager && isAllBuddyApproved;
+
+  // Auto-expand ALL buddy-approved worksheets when manager can approve the phase
+  useEffect(() => {
+    if (!loading && canApprove) {
+      setExpandedSheet('all');
+    }
+  }, [loading, canApprove]);
 
   if (loading) {
     return (
@@ -182,8 +171,6 @@ export default function PhaseReview() {
       </div>
     );
   }
-
-  const canApprove = isManager && buddyApproved.length > 0 && pending.length === 0;
 
   return (
     <div className="lux-section">
@@ -302,7 +289,7 @@ export default function PhaseReview() {
                     {isExpanded ? 'Hide' : 'View'}
                   </button>
                 </div>
-                {isExpanded && data && Object.keys(data).length > 0 && (
+                {(isExpanded || expandedSheet === 'all') && data && Object.keys(data).length > 0 && (
                   <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(26, 26, 26, 0.02)', border: '1px solid rgba(26, 26, 26, 0.08)' }}>
                     <ReviewContent data={data} worksheetId={wsId} />
                   </div>

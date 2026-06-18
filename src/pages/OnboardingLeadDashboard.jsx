@@ -3,23 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { Users, Clock, CheckCircle2, RefreshCw, Shield, BadgeCheck, Eye, User, BookOpen } from 'lucide-react';
-import { WORKSHEET_REVIEWER, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus } from '../config/worksheetConfig.jsx';
-
-const WORKSHEET_NAMES = {
-  p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',
-  p1_w4: 'University Governance', p1_w5: 'Portal Walkthrough', p1_w6: 'Observation Journal',
-  p1_w7: 'Courseware Review', p1_w8: 'Slack Audit', gc1: 'Gate Control 1',
-  p2_w1: 'Doubt Resolution', p2_w2: 'Lab Scorecard', p2_w3: 'Content Ledger',
-  p2_w4: 'Portal Ops Check', gc2: 'Gate Control 2',
-  p3_w1: 'Lecture Delivery', p3_w2: 'Cohort Profiling', p3_w3: 'Assessment Blueprint',
-  p3_w4: 'Pedagogical Journal', p3_w5: 'Course Proposal', gc3: 'Gate Control 3',
-};
-
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
+import { WORKSHEET_REVIEWER, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, WORKSHEET_NAMES } from '../config/worksheetConfig.jsx';
+import { t } from '../config/theme.js';
 
 export default function OnboardingLeadDashboard() {
   const { profile } = useAuth();

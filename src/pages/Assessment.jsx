@@ -40,11 +40,7 @@ const levels = [
   },
 ];
 
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
+import { t } from '../config/theme.js';
 
 export default function Assessment() {
   const navigate = useNavigate();

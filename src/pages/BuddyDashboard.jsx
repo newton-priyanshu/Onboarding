@@ -2,26 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { ClipboardCheck, Users, Clock, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Star, User, Shield } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus } from '../config/worksheetConfig.jsx';
+import { ClipboardCheck, Users, Clock, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Star, User, Shield, FileCheck } from 'lucide-react';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, WORKSHEET_NAMES } from '../config/worksheetConfig.jsx';
 
-const WORKSHEET_NAMES = {
-  p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Culture & Philosophy',
-  p1_w4: 'University Governance', p1_w5: 'Portal Walkthrough', p1_w6: 'Observation Journal',
-  p1_w7: 'Courseware Review', p1_w8: 'Slack Audit',
-  p2_w1: 'Doubt Resolution', p2_w2: 'Lab Scorecard', p2_w3: 'Content Ledger', p2_w4: 'Portal Ops',
-  p3_w1: 'Lecture Delivery', p3_w2: 'Cohort Profiling', p3_w3: 'Assessment Blueprint',
-  p3_w4: 'Pedagogical Journal', p3_w5: 'Course Proposal',
-  gc1: 'Gate Control 1', gc2: 'Gate Control 2', gc3: 'Gate Control 3',
-};
-
-const ALL_PHASE_SHEETS = [...PHASE_WORKSHEETS_MAP[1], ...PHASE_WORKSHEETS_MAP[2], ...PHASE_WORKSHEETS_MAP[3]];
-
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
+import { t } from '../config/theme.js';
 
 export default function BuddyDashboard() {
   const { profile, user } = useAuth();
@@ -244,7 +228,32 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink }) {
   );
 }
 
+const GATE_INFO = {
+  1: { gateId: 'gc1', regularSheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'], label: 'Gate Pass 1 — Phase 1' },
+  2: { gateId: 'gc2', regularSheets: ['p2_w1','p2_w2','p2_w3','p2_w4'], label: 'Gate Pass 2 — Phase 2' },
+  3: { gateId: 'gc3', regularSheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'], label: 'Gate Pass 3 — Phase 3' },
+};
+
 function InstructorsTab({ myInstructors, allWorksheets }) {
+  const navigate = useNavigate();
+
+  /** Check if all regular worksheets in a phase are buddy-approved for this user */
+  function isPhaseReadyForGate(userId, phaseNum) {
+    const info = GATE_INFO[phaseNum];
+    if (!info) return false;
+    const userSheets = allWorksheets.filter(w => w.user_id === userId);
+    return info.regularSheets.every(wsId => {
+      const sub = userSheets.find(s => s.worksheet_id === wsId);
+      return sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved';
+    });
+  }
+
+  /** Check if the gate pass has already been filled (= buddy_approved) */
+  function isGateFilled(userId, gateId) {
+    const sub = allWorksheets.find(w => w.user_id === userId && w.worksheet_id === gateId);
+    return sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved';
+  }
+
   return (
     <div>
       <p style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1rem' }}>
@@ -260,29 +269,64 @@ function InstructorsTab({ myInstructors, allWorksheets }) {
           const pending = instrWorksheets.filter(w => w.review_status === 'pending_review' || w.review_status === 'revision_submitted');
           const buddyApproved = instrWorksheets.filter(w => w.review_status === 'buddy_approved');
           const totalApproved = instrWorksheets.filter(w => w.review_status === 'approved').length;
+
+          // Check which phases need a gate pass filled
+          const gatePassNeeded = [1, 2, 3].filter(phaseNum =>
+            isPhaseReadyForGate(instr.id, phaseNum) &&
+            !isGateFilled(instr.id, GATE_INFO[phaseNum].gateId)
+          );
+
           return (
             <div key={instr.id} style={{
-              display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0',
+              padding: '12px 0',
               borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
               opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.05}s forwards`,
             }}>
-              <UserCheck size={16} strokeWidth={1.5} style={{ color: t.ch, flexShrink: 0 }} />
-              <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, flex: 1 }}>{instr.full_name}</span>
-              <span style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{instr.email}</span>
-              {pending.length > 0 && (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>
-                  {pending.length} pending
-                </span>
-              )}
-              {buddyApproved.length > 0 && (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: '#381E72' }}>
-                  {buddyApproved.length} buddy approved
-                </span>
-              )}
-              {totalApproved > 0 && (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: '#1B5E20' }}>
-                  {totalApproved} approved
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: gatePassNeeded.length > 0 ? '8px' : 0 }}>
+                <UserCheck size={16} strokeWidth={1.5} style={{ color: t.ch, flexShrink: 0 }} />
+                <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, flex: 1 }}>{instr.full_name}</span>
+                <span style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{instr.email}</span>
+                {pending.length > 0 && (
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>
+                    {pending.length} pending
+                  </span>
+                )}
+                {buddyApproved.length > 0 && (
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: '#381E72' }}>
+                    {buddyApproved.length} buddy approved
+                  </span>
+                )}
+                {totalApproved > 0 && (
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: '#1B5E20' }}>
+                    {totalApproved} approved
+                  </span>
+                )}
+              </div>
+              {/* Gate Pass Action Buttons */}
+              {gatePassNeeded.length > 0 && (
+                <div style={{ paddingLeft: '28px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {gatePassNeeded.map(phaseNum => {
+                    const info = GATE_INFO[phaseNum];
+                    return (
+                      <button key={phaseNum}
+                        onClick={() => navigate(`/buddy/gate-pass/${instr.id}/${info.gateId}`)}
+                        style={{
+                          fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
+                          letterSpacing: '0.1em', textTransform: 'uppercase',
+                          padding: '6px 14px', border: '1px solid #381E72',
+                          background: 'rgba(56, 30, 114, 0.06)', color: '#381E72',
+                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px',
+                          transition: 'all 300ms var(--ease-lux)',
+                        }}
+                        onMouseOver={e => { e.currentTarget.style.background = '#381E72'; e.currentTarget.style.color = '#FFF'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(56, 30, 114, 0.06)'; e.currentTarget.style.color = '#381E72'; }}
+                      >
+                        <FileCheck size={12} strokeWidth={1.5} />
+                        Fill {info.label}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </div>
           );

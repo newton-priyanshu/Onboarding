@@ -13,15 +13,13 @@ const milestones = [
   ['All Phase 2 worksheets submitted', 'Compendium review by Faculty Lead'],
 ];
 
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
+import { t } from '../../config/theme.js';
 
-export default function GateControl2() {
+export default function GateControl2({ targetUserId }) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const activeUserId = targetUserId || user?.id;
+  const isBuddyMode = !!targetUserId;
   const [data, setData] = useState({
     employeeName: '',
     studentSupport: 3, labFacilitation: 3, contentCreation: 3, portalProficiency: 3, communication: 3,
@@ -34,25 +32,32 @@ export default function GateControl2() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!activeUserId) return;
     (async () => {
-      const saved = await supabase.from('worksheet_submissions').select('*').eq('user_id', user.id).eq('worksheet_id', 'gc2').maybeSingle();
+      const saved = await supabase.from('worksheet_submissions').select('*').eq('user_id', activeUserId).eq('worksheet_id', 'gc2').maybeSingle();
       if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-      else setData(p => ({ ...p, employeeName: profile?.full_name || user?.email?.split('@')[0] || '' }));
+      else {
+        if (isBuddyMode && targetUserId) {
+          const { data: joinee } = await supabase.from('user_profiles').select('full_name').eq('id', targetUserId).single();
+          if (joinee) setData(p => ({ ...p, employeeName: joinee.full_name }));
+        } else {
+          setData(p => ({ ...p, employeeName: profile?.full_name || user?.email?.split('@')[0] || '' }));
+        }
+      }
       setLoaded(true);
     })();
-  }, [user?.id, profile]);
+  }, [activeUserId, user?.id, profile, isBuddyMode, targetUserId]);
 
   useEffect(() => {
-    if (!user?.id || data.status === 'submitted' || !loaded) return;
+    if (!activeUserId || data.status === 'submitted' || !loaded) return;
     const t = setTimeout(async () => {
       await supabase.from('worksheet_submissions').upsert({
-        user_id: user.id, worksheet_id: 'gc2', worksheet_data: data, phase: 'phase2', status: data.status,
+        user_id: activeUserId, worksheet_id: 'gc2', worksheet_data: data, phase: 'phase2', status: data.status,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,worksheet_id' });
     }, 2000);
     return () => clearTimeout(t);
-  }, [data, user?.id, loaded]);
+  }, [data, activeUserId, loaded]);
 
   const u = (f, v) => setData(p => ({ ...p, [f]: v }));
   const toggleMs = (i) => setData(p => {
@@ -64,16 +69,25 @@ export default function GateControl2() {
 
   const handleSubmit = async () => {
     setError('');
-    if (!data.employeeName.trim()) { setError('Please fill in your name.'); return; }
+    if (!data.employeeName.trim()) { setError('Please fill in the instructor name.'); return; }
     setSubmitting(true);
-    const isResubmit = data._savedReviewStatus === 'needs_revision';
-    const review_status = isResubmit ? 'revision_submitted' : '';
+    const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
     const d = { ...data, status: 'submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
     setData(d);
-    await supabase.from('worksheet_submissions').upsert({
-      user_id: user.id, worksheet_id: 'gc2', worksheet_data: d, phase: 'phase2', status: 'submitted',
-      review_status, updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,worksheet_id' });
+    
+    const payload = {
+      user_id: activeUserId,
+      worksheet_id: 'gc2',
+      worksheet_data: d,
+      phase: 'phase2',
+      status: 'submitted',
+      review_status,
+      updated_at: new Date().toISOString(),
+      reviewed_by: isBuddyMode ? user?.id : null,
+      reviewed_at: isBuddyMode ? new Date().toISOString() : null,
+      reviewer_name: isBuddyMode ? (profile?.full_name || 'Buddy') : null,
+    };
+    await supabase.from('worksheet_submissions').upsert(payload, { onConflict: 'user_id,worksheet_id' });
     setSubmitting(false);
   };
 

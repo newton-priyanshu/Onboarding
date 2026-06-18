@@ -1,10 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search } from 'lucide-react';
 
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-};
+import { t } from '../config/theme.js';
 
 export default function NotFound() {
   return (

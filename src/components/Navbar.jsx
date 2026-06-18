@@ -48,6 +48,8 @@ export default function Navbar({ progress }) {
 ];
 const joineeLinks = ['new_joinee', 'lab_instructor'].includes(role) ? [
   { path: '/phase-1', label: 'Phase 1' },
+  // Phase 2 and 3 are gated — the phase pages themselves handle the lock check.
+  // Navbar always shows them as navigable; the phase page will redirect if locked.
   { path: '/phase-2', label: 'Phase 2' },
   { path: '/phase-3', label: 'Phase 3' },
 ] : [];

@@ -1,37 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { 
-  ArrowRight, BookOpen, Target, Sparkles,
+  ArrowRight, BookOpen, Target, Sparkles, Lock,
   CheckCircle2, Clock, AlertCircle, FileText,
 } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../config/worksheetConfig.jsx';
+import { t } from '../config/theme.js';
+import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge, WORKSHEET_NAMES, isPhaseApproved } from '../config/worksheetConfig.jsx';
 
 const phases = [
-  { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes.', icon: BookOpen, path: '/phase-1', worksheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'], hasGate: true, gatePath: '/phase-1/gate-1' },
-  { num: 2, title: 'Contribution & Guided Teaching', days: 'Days 31–60', description: 'Teach, create content, and develop your craft.', icon: Target, path: '/phase-2', worksheets: ['p2_w1','p2_w2','p2_w3','p2_w4'], hasGate: true, gatePath: '/phase-2/gate-2' },
-  { num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90', description: 'Teach independently and propose improvements.', icon: Sparkles, path: '/phase-3', worksheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'], hasGate: true, gatePath: '/phase-3/gate-3' },
+  { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes.', icon: BookOpen, path: '/phase-1', worksheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'] },
+  { num: 2, title: 'Contribution & Guided Teaching', days: 'Days 31–60', description: 'Teach, create content, and develop your craft.', icon: Target, path: '/phase-2', worksheets: ['p2_w1','p2_w2','p2_w3','p2_w4'] },
+  { num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90', description: 'Teach independently and propose improvements.', icon: Sparkles, path: '/phase-3', worksheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'] },
 ];
-
-const WORKSHEET_TITLES = {
-  p1_w1: 'Team Introduction', p1_w2: 'Mentor Weekly Sync', p1_w3: 'Teaching Philosophy',
-  p1_w4: 'University Governance', p1_w5: 'Portal Walkthrough', p1_w6: 'Observation Journal',
-  p1_w7: 'Courseware Review', p1_w8: 'Slack Audit',
-  p2_w1: 'Doubt Resolution', p2_w2: 'Lab Scorecard', p2_w3: 'Content Ledger', p2_w4: 'Portal Ops',
-  p3_w1: 'Lecture Delivery', p3_w2: 'Cohort Profiling', p3_w3: 'Assessment Blueprint',
-  p3_w4: 'Pedagogical Journal', p3_w5: 'Course Proposal',
-  gc1: 'Gate Control 1', gc2: 'Gate Control 2', gc3: 'Gate Control 3',
-};
-
-const t = {
-  body: 'var(--font-body)', heading: 'var(--font-heading)',
-  ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,6 +62,22 @@ export default function Dashboard() {
 
   const totalApproved = submissions.filter(s => s.review_status === 'approved').length;
 
+  // Phase gating
+  const phase1Approved = isPhaseApproved(user?.id, 1, submissions);
+  const phase2Approved = isPhaseApproved(user?.id, 2, submissions);
+
+  const lockedPhase = (phaseNum) => {
+    if (phaseNum === 2 && !phase1Approved) return true;
+    if (phaseNum === 3 && !phase2Approved) return true;
+    return false;
+  };
+
+  const phaseLockReason = (phaseNum) => {
+    if (phaseNum === 2 && !phase1Approved) return 'Complete Phase 1 to unlock';
+    if (phaseNum === 3 && !phase2Approved) return 'Complete Phase 2 to unlock';
+    return '';
+  };
+
   return (
     <div className="lux-section">
       <div className="lux-container">
@@ -108,7 +110,7 @@ export default function Dashboard() {
             color: t.wg, maxWidth: '500px', marginBottom: '2rem',
           }}>
             This 30–60–90 day program helps you integrate into our faculty community.
-            Complete worksheets and pass gate controls to advance through each phase.
+            Complete worksheets and get them reviewed to advance through each phase.
           </p>
 
           {/* Status Legend */}
@@ -171,6 +173,7 @@ export default function Dashboard() {
             {phases.map((phase, idx) => {
               const Icon = phase.icon;
               const progress = getPhaseProgress(phase.worksheets);
+              const isLocked = lockedPhase(phase.num);
               return (
                 <div key={phase.num} style={{
                   animation: `luxFadeIn 0.7s ${idx * 0.15}s forwards`, opacity: 0,
@@ -178,20 +181,22 @@ export default function Dashboard() {
                   padding: '2rem 0',
                 }}>
                   {/* Phase Header */}
-                  <Link to={phase.path} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '1.25rem',
-                    textDecoration: 'none', cursor: 'pointer',
-                    transition: 'opacity 500ms var(--ease-lux)',
-                  }}
-                    onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
-                    onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
+                  <div onClick={() => { if (!isLocked) navigate(phase.path); }}
+                    role={isLocked ? 'presentation' : 'button'}
+                    tabIndex={isLocked ? -1 : 0}
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: '1.25rem',
+                      textDecoration: 'none', cursor: isLocked ? 'default' : 'pointer',
+                      transition: 'opacity 500ms var(--ease-lux)',
+                      opacity: isLocked ? 0.5 : 1,
+                    }}
                   >
                     <div style={{
                       width: '52px', height: '52px',
                       border: '1px solid var(--color-charcoal)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
-                      <Icon size={24} strokeWidth={1.5} style={{ color: t.ch }} />
+                      {isLocked ? <Lock size={22} strokeWidth={1.5} style={{ color: t.wg }} /> : <Icon size={24} strokeWidth={1.5} style={{ color: t.ch }} />}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px', flexWrap: 'wrap' }}>
@@ -204,27 +209,41 @@ export default function Dashboard() {
                         <span className="lux-badge lux-badge-light" style={{ fontSize: '0.55rem' }}>
                           {phase.worksheets.length} worksheets
                         </span>
+                        {isLocked && (
+                          <span className="lux-badge" style={{ fontSize: '0.55rem', borderColor: '#9E9E9E', color: '#9E9E9E' }}>
+                            <Lock size={10} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: '4px' }} />Locked
+                          </span>
+                        )}
                       </div>
-                      <h3 style={{ fontFamily: t.heading, fontSize: '1.35rem', fontWeight: 400, color: t.ch, marginBottom: '4px' }}>
+                      <h3 style={{ fontFamily: t.heading, fontSize: '1.35rem', fontWeight: 400, color: isLocked ? t.wg : t.ch, marginBottom: '4px' }}>
                         {phase.title}
                       </h3>
                       <p style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.wg, lineHeight: 1.6, marginBottom: '0.75rem' }}>
-                        {phase.description}
+                        {isLocked ? phaseLockReason(phase.num) : phase.description}
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="lux-progress" style={{ flex: 1, maxWidth: '250px' }}>
-                          <div className="lux-progress-fill" style={{ width: `${progress.pct}%` }} />
+                      {isLocked ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Lock size={12} strokeWidth={1.5} style={{ color: t.wg }} />
+                          <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg }}>
+                            {phaseLockReason(phase.num)}
+                          </span>
                         </div>
-                        <span style={{ fontFamily: t.body, fontSize: '0.75rem', fontWeight: 500, color: t.ch }}>
-                          {progress.done}/{progress.total}
-                        </span>
-                        <ArrowRight size={13} strokeWidth={1.5} style={{ color: t.wg }} />
-                      </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div className="lux-progress" style={{ flex: 1, maxWidth: '250px' }}>
+                            <div className="lux-progress-fill" style={{ width: `${progress.pct}%` }} />
+                          </div>
+                          <span style={{ fontFamily: t.body, fontSize: '0.75rem', fontWeight: 500, color: t.ch }}>
+                            {progress.done}/{progress.total}
+                          </span>
+                          <ArrowRight size={13} strokeWidth={1.5} style={{ color: t.wg }} />
+                        </div>
+                      )}
                     </div>
-                  </Link>
+                  </div>
 
                   {/* Worksheet List */}
-                  {!loading && (
+                  {!loading && !isLocked && (
                     <div style={{ marginTop: '1rem', paddingLeft: 'calc(52px + 1.25rem)' }}>
                       {phase.worksheets.map((wsId, i) => {
                         const ws = getWorksheetStatus(wsId);
@@ -250,7 +269,7 @@ export default function Dashboard() {
                             ) : (
                               <div style={{ width: '10px', height: '10px', border: '1px solid ' + ws.color, flexShrink: 0 }} />
                             )}
-                            <span style={{ flex: 1 }}>{WORKSHEET_TITLES[wsId] || wsId}</span>
+                            <span style={{ flex: 1 }}>{WORKSHEET_NAMES[wsId] || wsId}</span>
                             <ReviewerBadge worksheetId={wsId} />
                             <span style={{ fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: ws.color, whiteSpace: 'nowrap' }}>
                               {ws.label}
@@ -258,25 +277,6 @@ export default function Dashboard() {
                           </Link>
                         );
                       })}
-                      {phase.hasGate && (
-                        <Link to={phase.gatePath}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '12px',
-                            padding: '12px 0 12px 12px',
-                            textDecoration: 'none',
-                            fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500,
-                            color: t.gd,
-                            opacity: 0,
-                            animation: `luxFadeIn 0.5s ${(idx * phase.worksheets.length + phase.worksheets.length) * 0.04 + 0.4}s forwards`,
-                          }}>
-                          <div style={{ width: '10px', height: '10px', border: '1px solid ' + t.gd, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <div style={{ width: '4px', height: '4px', background: t.gd }} />
-                          </div>
-                          <span>Gate {phase.num} — Milestone Review</span>
-                          <ReviewerBadge worksheetId={`gc${phase.num}`} />
-                          <ArrowRight size={12} strokeWidth={1.5} style={{ marginLeft: 'auto' }} />
-                        </Link>
-                      )}
                     </div>
                   )}
                 </div>

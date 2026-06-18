@@ -220,6 +220,81 @@ export function getReviewerLabel(worksheetId) {
   return REVIEWER_LABELS[type] || 'Manager';
 }
 
+const PHASE_WORKSHEET_IDS = [PHASE_WORKSHEETS_MAP[1], PHASE_WORKSHEETS_MAP[2], PHASE_WORKSHEETS_MAP[3]];
+
+/**
+ * Check if a specific phase has been fully approved by the manager.
+ * A phase is "approved" when ALL its worksheets have review_status === 'approved'.
+ * @param {string} userId
+ * @param {number} phaseNum - 1, 2, or 3
+ * @param {Array} submissions - Array of worksheet submission objects
+ * @returns {boolean}
+ */
+export function isPhaseApproved(userId, phaseNum, submissions) {
+  const wsIds = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+  const userSubs = submissions.filter(s => s.user_id === userId);
+  return wsIds.every(wsId => {
+    const sub = userSubs.find(s => s.worksheet_id === wsId);
+    return sub?.review_status === 'approved';
+  });
+}
+
+/**
+ * For a given user, get all phases that are fully manager-approved.
+ * @returns {number[]} Array of approved phase numbers
+ */
+export function getApprovedPhases(userId, submissions) {
+  return [1, 2, 3].filter(p => isPhaseApproved(userId, p, submissions));
+}
+
+/**
+ * Get the highest phase number a joinee can access.
+ * - Phase 1 is always accessible.
+ * - Phase 2 requires Phase 1 to be manager-approved.
+ * - Phase 3 requires Phase 1 AND Phase 2 to be manager-approved.
+ * @returns {number} The maximum accessible phase number (1, 2, or 3)
+ */
+export function getMaxAccessiblePhase(userId, submissions) {
+  const approved = getApprovedPhases(userId, submissions);
+  if (approved.includes(1) && approved.includes(2)) return 3;
+  if (approved.includes(1)) return 2;
+  return 1;
+}
+
+/**
+ * Check if a joinee can access a specific phase.
+ */
+export function canAccessPhase(userId, phaseNum, submissions) {
+  if (phaseNum === 1) return true; // Phase 1 always accessible
+  if (phaseNum === 2) return isPhaseApproved(userId, 1, submissions);
+  if (phaseNum === 3) return isPhaseApproved(userId, 1, submissions) && isPhaseApproved(userId, 2, submissions);
+  return false;
+}
+
+/**
+ * WORKSHEET_NAMES — Short display names for worksheet cards/lists.
+ * Single source of truth (was duplicated across Dashboard.jsx, BuddyDashboard.jsx,
+ * AdminDashboard.jsx, OnboardingLeadDashboard.jsx, PhaseReview.jsx).
+ */
+export const WORKSHEET_NAMES = {
+  p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',
+  p1_w4: 'University Governance', p1_w5: 'Portal Walkthrough', p1_w6: 'Observation Journal',
+  p1_w7: 'Courseware Review', p1_w8: 'Slack Audit',
+  p2_w1: 'Doubt Resolution', p2_w2: 'Lab Scorecard', p2_w3: 'Content Ledger', p2_w4: 'Portal Ops',
+  p3_w1: 'Lecture Delivery', p3_w2: 'Cohort Profiling', p3_w3: 'Assessment Blueprint',
+  p3_w4: 'Pedagogical Journal', p3_w5: 'Course Proposal',
+  gc1: 'Gate Control 1', gc2: 'Gate Control 2', gc3: 'Gate Control 3',
+};
+
+/**
+ * PHASE_LABELS — Phase header info for review/admin pages.
+ */
+export const PHASE_LABELS = {
+  1: { title: 'Phase 1 — Orientation', days: 'Days 1–30' },
+  2: { title: 'Phase 2 — Contribution', days: 'Days 31–60' },
+  3: { title: 'Phase 3 — Ownership', days: 'Days 61–90' },
+};
+
 /**
  * WORKSHEET_INFO — Full worksheet titles and phase info.
  * Single source of truth (was duplicated across WorksheetReview.jsx and PhaseReview.jsx).

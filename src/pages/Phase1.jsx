@@ -3,6 +3,7 @@ import { BookOpen, Users, MessageSquare, BookText, Monitor, Eye, FileText, Messa
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
+import { t } from '../config/theme.js';
 import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../config/worksheetConfig.jsx';
 import { getDueDateInfo, formatDueDate } from '../hooks/useDueDates';
 
@@ -16,15 +17,6 @@ const worksheets = [
   { id: 'p1_w7', num: 7, path: '/phase-1/worksheet-7', title: 'Existing Courseware & Question Bank Review Matrix', icon: FileText, desc: 'Review PPTs, worksheets, assignments and assessments for quality.' },
   { id: 'p1_w8', num: 8, path: '/phase-1/worksheet-8', title: 'Slack Historical Context & Student Bottleneck Audit', icon: MessageCircle, desc: 'Audit Slack history to identify recurring student pain points.' },
 ];
-
-const theme = {
-  fontBody: 'var(--font-body)',
-  fontHeading: 'var(--font-heading)',
-  charcoal: 'var(--color-charcoal)',
-  warmGrey: 'var(--color-warm-grey)',
-  gold: 'var(--color-gold)',
-  ease: 'var(--ease-lux)',
-};
 
 export default function Phase1() {
   const navigate = useNavigate();
@@ -64,8 +56,8 @@ export default function Phase1() {
     if (isBuddyApproved) return { label: 'Buddy Approved', color: '#381E72' };
     if (needsRevision) return { label: 'Revise', color: '#C62828' };
     if (isSubmitted || pendingReview) return { label: 'Pending', color: '#7D5260' };
-    if (inProgress) return { label: 'In Progress', color: theme.charcoal };
-    return { label: 'Not Started', color: theme.warmGrey };
+    if (inProgress) return { label: 'In Progress', color: t.ch };
+    return { label: 'Not Started', color: t.wg };
   }
 
   return (
@@ -76,16 +68,16 @@ export default function Phase1() {
           <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ width: '48px', height: '48px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <BookOpen size={22} strokeWidth={1.5} style={{ color: theme.charcoal }} />
+              <BookOpen size={22} strokeWidth={1.5} style={{ color: t.ch }} />
             </div>
             <div style={{ flex: 1 }}>
-              <h1 style={{ fontFamily: theme.fontHeading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: theme.charcoal, marginBottom: '4px' }}>
-                Phase 1: <em style={{ fontStyle: 'italic', color: theme.gold }}>Orientation</em>
+              <h1 style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>
+                Phase 1: <em style={{ fontStyle: 'italic', color: t.gd }}>Orientation</em>
               </h1>
-              <span style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, letterSpacing: '0.05em' }}>Days 1–30 — 8 worksheets + Gate Control</span>
+              <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>Days 1–30 — 8 worksheets</span>
             </div>
           </div>
-          <p style={{ fontFamily: theme.fontBody, fontSize: '0.875rem', color: theme.warmGrey, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>
             Build foundational knowledge of people, culture, systems, and processes.
           </p>
           {/* Progress */}
@@ -93,16 +85,16 @@ export default function Phase1() {
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
               <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${(completed / (worksheets.length + 1)) * 100}%` }} />
             </div>
-            <span style={{ fontFamily: theme.fontBody, fontSize: '0.8rem', fontWeight: 500, color: theme.charcoal }}>
-              <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: theme.gold, verticalAlign: 'middle' }} />
-              {completed} / {worksheets.length + 1}
+            <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
+              <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: t.gd, verticalAlign: 'middle' }} />
+              {completed} / {worksheets.length}
             </span>
           </div>
         </div>
 
         {/* Reviewer Legend */}
         <div style={{ marginBottom: '2.5rem', borderTop: '1px solid rgba(26, 26, 26, 0.1)', paddingTop: '1.5rem' }}>
-          <span style={{ fontFamily: theme.fontBody, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.25em', textTransform: 'uppercase', color: theme.warmGrey, display: 'block', marginBottom: '0.75rem' }}>
+          <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.25em', textTransform: 'uppercase', color: t.wg, display: 'block', marginBottom: '0.75rem' }}>
             Reviewed by
           </span>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -110,7 +102,7 @@ export default function Phase1() {
               const style = REVIEWER_STYLES[key];
               return (
                 <span key={key} style={{
-                  fontFamily: theme.fontBody, fontSize: '0.65rem', fontWeight: 500,
+                  fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
                   letterSpacing: '0.1em',
                   padding: '4px 12px',
                   border: '1px solid ' + style.color,
@@ -144,25 +136,25 @@ export default function Phase1() {
                 onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
               >
                 <div style={{ width: '40px', height: '40px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={18} strokeWidth={1.5} style={{ color: theme.charcoal }} />
+                  <Icon size={18} strokeWidth={1.5} style={{ color: t.ch }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: theme.fontBody, fontSize: '0.85rem', fontWeight: 500, color: theme.charcoal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                    <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                       W{ws.num}: {ws.title}
                     </span>
                     <ReviewerBadge worksheetId={ws.id} />
                   </div>
-                  <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '4px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ws.desc}</p>
+                  <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, marginTop: '4px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ws.desc}</p>
                 </div>
                 {(badge.label === 'Not Started' || badge.label === 'In Progress') && (() => {
                   const due = getDueDateInfo(ws.id);
                   if (!due.dueDate) return null;
                   return (
                     <span style={{
-                      fontFamily: theme.fontBody, fontSize: '0.55rem', fontWeight: 500,
+                      fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
                       letterSpacing: '0.1em',
-                      color: due.isOverdue ? '#C62828' : due.isDueSoon ? '#E65100' : theme.warmGrey,
+                      color: due.isOverdue ? '#C62828' : due.isDueSoon ? '#E65100' : t.wg,
                       whiteSpace: 'nowrap',
                       display: 'flex', alignItems: 'center', gap: '4px',
                     }}>
@@ -172,48 +164,17 @@ export default function Phase1() {
                   );
                 })()}
                 <span style={{
-                  fontFamily: theme.fontBody, fontSize: '0.6rem', fontWeight: 500,
+                  fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
                   letterSpacing: '0.1em',
                   color: badge.color,
                   whiteSpace: 'nowrap',
                 }}>{badge.label}</span>
-                <ArrowRight size={14} strokeWidth={1.5} style={{ color: theme.warmGrey, flexShrink: 0 }} />
+                <ArrowRight size={14} strokeWidth={1.5} style={{ color: t.wg, flexShrink: 0 }} />
               </div>
             );
           })}
         </div>
 
-        {/* Gate Control */}
-        <div onClick={() => navigate('/phase-1/gate-1')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '1rem',
-            padding: '1.25rem 0',
-            marginTop: '0.5rem',
-            cursor: 'pointer',
-            borderTop: '1px solid ' + theme.gold,
-            transition: 'opacity 500ms var(--ease-lux)',
-            opacity: 0,
-            animation: 'luxFadeIn 0.6s 0.6s forwards',
-          }}
-          onMouseOver={e => { e.currentTarget.style.opacity = '0.6'; }}
-          onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
-        >
-          <div style={{ width: '36px', height: '36px', border: '1px solid ' + theme.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield size={18} strokeWidth={1.5} style={{ color: theme.gold }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: theme.fontBody, fontSize: '0.85rem', fontWeight: 500, color: theme.gold }}>
-                Gate Control 1 — 30-Day Milestone Review
-              </span>
-              <ReviewerBadge worksheetId="gc1" />
-            </div>
-            <p style={{ fontFamily: theme.fontBody, fontSize: '0.75rem', color: theme.warmGrey, marginTop: '2px' }}>
-              Manager sign-off to advance to Phase 2
-            </p>
-          </div>
-          <ArrowRight size={14} strokeWidth={1.5} style={{ color: theme.gold, flexShrink: 0 }} />
-        </div>
       </div>
     </div>
   );

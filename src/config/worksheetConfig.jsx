@@ -15,6 +15,8 @@ export {
   REVIEWER_ICONS,
   ALL_WORKSHEETS,
   WORKSHEET_INFO,
+  WORKSHEET_NAMES,
+  PHASE_LABELS,
   getReviewerType,
   PHASE_WORKSHEETS_MAP,
   getPhaseReviewStatus,
@@ -22,6 +24,10 @@ export {
   getPhaseWorksheetsByStatus,
   getWorksheetsForReviewer,
   getReviewerLabel,
+  isPhaseApproved,
+  getApprovedPhases,
+  getMaxAccessiblePhase,
+  canAccessPhase,
 } from './worksheetConfigData.js';
 
 import Phase1Worksheet1 from '../pages/worksheets/Phase1Worksheet1';

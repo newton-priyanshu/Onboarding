@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle, Star, Calendar, FileText, ClipboardCheck, Signature } from 'lucide-react';
+import { CheckCircle2, XCircle, Star, Calendar, FileText, ClipboardCheck, Signature, Shield } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -241,6 +241,88 @@ function ScoreGridRenderer({ scores, labels }) {
     </div>
   );
 }
+
+// ─── Gate Control Milestone Renderer ───────────────────────────────────────
+
+const GC_MILESTONE_LABELS = {
+  gc1: [
+    { outcome: 'Portal proficiency — end-to-end', verify: 'Live demo with Faculty Lead' },
+    { outcome: 'Clear understanding of course objectives', verify: 'Verbal explanation or short written summary' },
+    { outcome: 'Awareness of classroom management norms', verify: 'Observation debrief with mentor' },
+    { outcome: 'All Phase 1 worksheets submitted', verify: 'Compendium review by Faculty Lead' },
+    { outcome: 'Ready for guided contribution', verify: 'Faculty Lead sign-off' },
+  ],
+  gc2: [
+    { outcome: 'Confidently resolves student doubts independently', verify: 'Observed by mentor during doubt session' },
+    { outcome: 'Runs lab sessions without guidance', verify: 'Faculty Lead lab observation' },
+    { outcome: 'All content contributions reviewed and approved', verify: 'Content audit by Faculty Lead' },
+    { outcome: 'Full advanced portal proficiency', verify: 'Live portal demonstration' },
+    { outcome: 'All Phase 2 worksheets submitted', verify: 'Compendium review by Faculty Lead' },
+  ],
+  gc3: [
+    { outcome: 'Independent lecture delivery (min. 2 full sessions)', verify: 'Faculty Lead lecture observation' },
+    { outcome: 'Student awareness — knows names, cohorts, needs', verify: 'Instructor-led student walkthrough' },
+    { outcome: 'End-to-end assessment creation and management', verify: 'Review of created assessment artefacts' },
+    { outcome: 'Applied pedagogical frameworks in class', verify: 'Classroom observation + self-assessment' },
+    { outcome: 'Active course improvement contributor', verify: 'Written proposal submitted (WS 3.5)' },
+    { outcome: 'All Phase 3 worksheets submitted and reviewed', verify: 'Compendium review by Faculty Lead' },
+  ],
+};
+
+function MilestonesRenderer({ worksheetId, values, label }) {
+  const labels = GC_MILESTONE_LABELS[worksheetId];
+  if (!values || values.length === 0) return null;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <Shield size={14} style={{ color: 'var(--md-primary)' }} />
+        <span className="label-medium" style={{ fontSize: '0.75rem' }}>{label || 'Milestone Outcomes'}</span>
+        <span style={{
+          padding: '2px 8px', borderRadius: 'var(--md-radius-pill)', fontSize: '0.65rem', fontWeight: 600,
+          background: values.every(v => v === 'Met') ? '#E8F5E9' : values.some(v => v === 'Met') ? '#FFF8E1' : '#F5F5F5',
+          color: values.every(v => v === 'Met') ? '#1B5E20' : values.some(v => v === 'Met') ? '#F57F17' : '#9E9E9E',
+        }}>
+          {values.filter(v => v === 'Met').length}/{values.length} Met
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {values.map((status, i) => {
+          const milestone = labels?.[i];
+          const statusColor = status === 'Met' ? '#1B5E20' : status === 'Partial' ? '#E65100' : '#9E9E9E';
+          const statusBg = status === 'Met' ? '#E8F5E9' : status === 'Partial' ? '#FFF8E1' : '#F5F5F5';
+          return (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '8px 10px', borderRadius: 'var(--md-radius-lg)',
+              background: statusBg, border: '1px solid ' + statusColor,
+            }}>
+              <div style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                background: statusColor, flexShrink: 0,
+              }} />
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 500, color: status === 'Not Met' ? 'var(--md-outline)' : 'var(--md-on-surface)' }}>
+                  {milestone?.outcome || `Milestone ${i + 1}`}
+                </span>
+                {milestone?.verify && (
+                  <p style={{ fontSize: '0.65rem', color: 'var(--md-outline)', margin: '2px 0 0', fontStyle: 'italic' }}>
+                    {milestone.verify}
+                  </p>
+                )}
+              </div>
+              <span style={{
+                padding: '2px 8px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 600,
+                background: statusColor, color: '#FFF', whiteSpace: 'nowrap',
+              }}>{status}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Exported Component ────────────────────────────────────────────────
 
 const FIELD_SECTIONS = {
@@ -402,6 +484,41 @@ const FIELD_SECTIONS = {
       'Implementation & Success Metrics': ['implementationPlan', 'successCriteria'],
     }
   },
+
+  // Gate Control 1 — 30-Day Milestone Review
+  gc1: {
+    sections: ['About You', 'Self Assessment', 'Milestone Outcomes', 'Manager Assessment', 'Sign-Off'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Self Assessment': ['portalRating', 'courseRating', 'studentRating', 'commRating', 'readinessRating'],
+      'Milestone Outcomes': ['milestones'],
+      'Manager Assessment': ['managerStrengths', 'managerRisks', 'readinessDecision'],
+      'Sign-Off': ['managerSignature', 'instructorSignature'],
+    }
+  },
+  // Gate Control 2 — 60-Day Milestone Review
+  gc2: {
+    sections: ['About You', 'Self Assessment', 'Milestone Outcomes', 'Manager Review', 'Sign-Off'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Self Assessment': ['studentSupport', 'labFacilitation', 'contentCreation', 'portalProficiency', 'communication'],
+      'Milestone Outcomes': ['milestones'],
+      'Manager Review': ['managerComments', 'decision'],
+      'Sign-Off': ['managerSignature', 'instructorSignature'],
+    }
+  },
+  // Gate Control 3 — 90-Day Final Readiness Assessment
+  gc3: {
+    sections: ['About You', 'Self Reflection', 'Faculty Assessment', 'Milestone Outcomes', 'Final Decision', 'Sign-Off'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Self Reflection': ['selfProud', 'selfUncomfortable', 'selfSkills', 'selfPhilosophy'],
+      'Faculty Assessment': ['teachingRating', 'commRating', 'contentRating', 'studentRating', 'assessmentRating', 'ownershipRating', 'professionalismRating'],
+      'Milestone Outcomes': ['milestones'],
+      'Final Decision': ['decision', 'finalComments'],
+      'Sign-Off': ['facultyLeadSignature', 'instructorSignature'],
+    }
+  },
 };
 
 // Default section layout for unknown worksheets
@@ -450,10 +567,15 @@ export default function ReviewContent({ data, worksheetId }) {
   // For simple worksheets without specific section layouts, do a generic render
   const layout = getSectionLayout(worksheetId);
 
+  // Store worksheetId globally for milestone renderer to access
+  if (typeof window !== 'undefined') {
+    window.__reviewWorksheetId = worksheetId;
+  }
+
   // Dev-time check: warn if FIELD_SECTIONS is stale (new fields in data but not in layout)
   if (process.env.NODE_ENV === 'development' && layout) {
     const allLayoutFields = new Set(Object.values(layout.sectionMap).flat());
-    const dataKeys = Object.keys(data).filter(k => !k.startsWith('_') && k !== 'status' && k !== 'dateSubmitted');
+    const dataKeys = Object.keys(data).filter(k => !k.startsWith('_') && k !== 'status' && k !== 'dateSubmitted' && k !== '__reviewWorksheetId');
     const missingFields = dataKeys.filter(k => !allLayoutFields.has(k) && typeof data[k] !== 'object');
     if (missingFields.length > 0) {
       console.warn(
@@ -573,6 +695,16 @@ function renderField(key, value) {
         </div>
       );
     }
+  }
+
+  // Gate control milestone string arrays (e.g. ['Not Met', 'Met', 'Partial', ...])
+  if (key === 'milestones' && Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+    const worksheetId = window.__reviewWorksheetId || '';
+    return (
+      <div key={key} className="review-field">
+        <MilestonesRenderer worksheetId={worksheetId} values={value} label="Milestone Outcomes" />
+      </div>
+    );
   }
 
   // Score grids (dimScores)

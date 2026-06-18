@@ -19,6 +19,7 @@ import BuddyDashboard from './pages/BuddyDashboard';
 import OnboardingLeadDashboard from './pages/OnboardingLeadDashboard';
 import WorksheetReview from './pages/WorksheetReview';
 import PhaseReview from './pages/PhaseReview';
+import BuddyGatePass from './pages/BuddyGatePass';
 import NotFound from './pages/NotFound';
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
@@ -60,9 +61,13 @@ export default function App() {
   // Generate dynamic worksheet routes
   const worksheetRoutes = Object.entries(ALL_WORKSHEETS).flatMap(([phaseName, phaseData]) => {
     const phasePath = phaseName.toLowerCase().replace(' ', '-');
-    return phaseData.sheets.map(sheet => {
+    return phaseData.sheets
+      // Gate controls are filled by the buddy, not the joinee
+      .filter(sheet => !sheet.isGate)
+      .map(sheet => {
       const Component = WORKSHEET_COMPONENTS[sheet.id];
-      const routePath = `/${phasePath}/${sheet.isGate ? `gate-${phaseData.num}` : `worksheet-${sheet.id.split('_w')[1] || sheet.id.split('gc')[1]}`}`;
+      const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
+      const routePath = `/${phasePath}/worksheet-${wsNum}`;
       return (
         <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Component /></ProtectedRoute>} />
       );
@@ -89,6 +94,9 @@ export default function App() {
                 {/* Phase Review Routes (Manager approves entire phase) */}
                 <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><PhaseReview /></ProtectedRoute>} />
                 <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><PhaseReview /></ProtectedRoute>} />
+
+                {/* Buddy Gate Pass Routes (buddy fills gate control for joinee) */}
+                <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyGatePass /></ProtectedRoute>} />
 
                 {/* Individual Worksheet Review Routes */}
                 <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
