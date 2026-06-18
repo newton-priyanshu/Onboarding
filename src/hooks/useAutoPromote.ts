@@ -1,15 +1,26 @@
 import { supabase } from '../api/supabase';
-import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig.jsx';
+import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
 import { triggerNotification, getReviewerUserIds } from './useNotifications';
+
+// ─── Types ──────────────────────────────────────────────
+
+interface PromoteResult {
+  promoted: boolean;
+  message: string;
+}
+
+interface SubmissionRow {
+  worksheet_id: string;
+  review_status: string;
+}
+
+// ─── Hook ───────────────────────────────────────────────
 
 /**
  * Auto-promote a joinee to lead_instructor (buddy) when ALL worksheets
  * across all 3 phases are fully approved by the manager.
- *
- * @param {string} userId - The joinee's user ID
- * @returns {Promise<{promoted: boolean, message: string}>}
  */
-export async function checkAndPromote(userId) {
+export async function checkAndPromote(userId: string | null): Promise<PromoteResult> {
   if (!userId) return { promoted: false, message: 'No user ID provided' };
 
   try {
@@ -24,22 +35,23 @@ export async function checkAndPromote(userId) {
       return { promoted: false, message: 'No submissions found' };
     }
 
+    const typedSubmissions = submissions as SubmissionRow[];
+
     // Collect all worksheet IDs across all phases
-    const allWsIds = [
-      ...PHASE_WORKSHEETS_MAP[1],
-      ...PHASE_WORKSHEETS_MAP[2],
-      ...PHASE_WORKSHEETS_MAP[3],
-    ];
+    const p1 = PHASE_WORKSHEETS_MAP[1] || [];
+    const p2 = PHASE_WORKSHEETS_MAP[2] || [];
+    const p3 = PHASE_WORKSHEETS_MAP[3] || [];
+    const allWsIds: string[] = [...p1, ...p2, ...p3];
 
     // Check if ALL worksheets are fully approved
     const allApproved = allWsIds.every(wsId => {
-      const sub = submissions.find(s => s.worksheet_id === wsId);
+      const sub = typedSubmissions.find(s => s.worksheet_id === wsId);
       return sub?.review_status === 'approved';
     });
 
     if (!allApproved) {
       const approved = allWsIds.filter(wsId => {
-        const sub = submissions.find(s => s.worksheet_id === wsId);
+        const sub = typedSubmissions.find(s => s.worksheet_id === wsId);
         return sub?.review_status === 'approved';
       }).length;
       return { promoted: false, message: `${approved}/${allWsIds.length} worksheets approved — not yet complete` };
@@ -65,7 +77,7 @@ export async function checkAndPromote(userId) {
     // Notify the promoted user
     await triggerNotification({
       userId,
-      fromUserId: null,
+      fromUserId: null as unknown as string,
       worksheetId: '',
       type: 'approved',
       message: '🎉 Congratulations! All 20 worksheets across all 3 phases have been approved. You have been promoted to Buddy/Mentor (lead_instructor)! You can now review other instructors\' worksheets.',
@@ -79,13 +91,14 @@ export async function checkAndPromote(userId) {
         fromUserId: userId,
         worksheetId: '',
         type: 'approved',
-        message: `A joinee has completed all 3 phases and been promoted to lead_instructor. They can now serve as a buddy/mentor.`,
+        message: 'A joinee has completed all 3 phases and been promoted to lead_instructor. They can now serve as a buddy/mentor.',
       });
     }
 
     return { promoted: true, message: 'All 20 worksheets approved! User promoted to Buddy/Mentor (lead_instructor).' };
   } catch (err) {
     console.error('Auto-promote check failed:', err);
-    return { promoted: false, message: `Error: ${err.message}` };
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    return { promoted: false, message: `Error: ${errorMessage}` };
   }
 }

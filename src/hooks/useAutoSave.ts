@@ -1,13 +1,47 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../api/supabase';
-import { getReviewerType } from '../config/worksheetConfig.jsx';
+import { getReviewerType } from '../config/worksheetConfig';
 import { notifyError } from '../utils/errorHandling';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from './useNotifications';
 import { calculateDueDate } from './useDueDates';
+import type { User } from '@supabase/supabase-js';
 
-export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1') {
-  const [saveStatus, setSaveStatus] = useState('idle');
-  const timerRef = useRef(null);
+// ─── Types ──────────────────────────────────────────────
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+interface UpsertPayload {
+  user_id: string;
+  worksheet_id: string;
+  worksheet_data: Record<string, unknown>;
+  phase: string;
+  reviewer_type: string;
+  status: string;
+  review_status: string;
+  updated_at: string;
+  due_date?: string;
+}
+
+interface SavedWorksheetData {
+  worksheet_data: Record<string, unknown> | null;
+  review_status?: string;
+  review_comment?: string | null;
+  reviewer_name?: string | null;
+  review_history?: unknown[];
+  reviewed_at?: string | null;
+  [key: string]: unknown;
+}
+
+// ─── Hook ───────────────────────────────────────────────
+
+export function useAutoSave(
+  user: User | null,
+  worksheetData: Record<string, unknown>,
+  worksheetId: string,
+  phase: string = 'phase-1'
+): { saveStatus: SaveStatus; flushSave: (data: Record<string, unknown>) => Promise<void> } {
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
   const initialSaveDoneRef = useRef(false);
   const dueDateSetRef = useRef(false);
@@ -18,7 +52,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
     return () => { mountedRef.current = false; };
   }, [worksheetId]);
 
-  const save = useCallback(async (data) => {
+  const save = useCallback(async (data: Record<string, unknown>) => {
     if (!user?.id) return;
     setSaveStatus('saving');
     const reviewerType = getReviewerType(worksheetId);
@@ -31,21 +65,19 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
           : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
           : '');
       // Calculate due_date ONLY once (tracked via dueDateSetRef).
-      // This prevents date drift — calculateDueDate uses Date.now()-30 as a fallback
-      // which shifts daily, so we must persist the first calculation and never overwrite.
-      let dueDateValue;
+      let dueDateValue: string | undefined;
       if (!dueDateSetRef.current && newReviewStatus !== 'approved' && newReviewStatus !== 'buddy_approved') {
-        dueDateValue = calculateDueDate(worksheetId)?.toISOString().split('T')[0] || null;
+        dueDateValue = calculateDueDate(worksheetId)?.toISOString().split('T')[0] || undefined;
         dueDateSetRef.current = true;
       }
 
-      const upsertPayload = {
+      const upsertPayload: UpsertPayload = {
         user_id: user.id,
         worksheet_id: worksheetId,
         worksheet_data: data,
         phase,
         reviewer_type: reviewerType,
-        status: data.status || 'In Progress',
+        status: (data.status as string) || 'In Progress',
         review_status: newReviewStatus,
         updated_at: new Date().toISOString(),
       };
@@ -56,8 +88,6 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
       if (error) throw error;
 
       // Trigger notification on first-time submission only
-      // Guard: Only send notification when transitioning FROM a non-submitted state
-      // (not on page reload when data is re-hydrated from Supabase)
       const isNewSubmission = data.status === 'submitted'
         && data._savedReviewStatus !== 'approved'
         && data._savedReviewStatus !== 'buddy_approved'
@@ -65,7 +95,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         && data._savedReviewStatus !== 'revision_submitted';
       if (isNewSubmission) {
         // Notify the ASSIGNED reviewer, not all users with that role
-        let reviewerUserIds = [];
+        let reviewerUserIds: string[] = [];
         if (reviewerType === 'buddy' || reviewerType === 'manager') {
           reviewerUserIds = await getAssignedReviewerIds(user.id, reviewerType);
         }
@@ -73,7 +103,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
         if (reviewerUserIds.length === 0) {
           reviewerUserIds = await getReviewerUserIds(reviewerType);
         }
-        const phaseNames = { 'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3' };
+        const phaseNames: Record<string, string> = { 'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3' };
         const phaseName = phaseNames[phase] || phase;
         for (const reviewerId of reviewerUserIds) {
           await triggerNotification({
@@ -89,7 +119,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
       if (mountedRef.current) {
         setSaveStatus('saved');
         setTimeout(() => {
-          if (mountedRef.current) setSaveStatus((p) => p === 'saved' ? 'idle' : p);
+          if (mountedRef.current) setSaveStatus((p: SaveStatus) => p === 'saved' ? 'idle' : p);
         }, 2000);
       }
     } catch (err) {
@@ -109,11 +139,8 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
   useEffect(() => {
     if (!user?.id) return;
     if (timerRef.current) clearTimeout(timerRef.current);
-    // BUG-02 FIX: Skip auto-save if worksheetData contains only initial/empty values
-    // (before loadWorksheetData completes). The loaded check ensures we don't
-    // overwrite saved data with empty initial state.
     const hasRealData = Object.keys(worksheetData).length > 2 ||
-      worksheetData.employeeName?.trim() ||
+      (worksheetData.employeeName as string)?.trim() ||
       worksheetData._savedReviewStatus;
     if (!hasRealData && !initialSaveDoneRef.current) return;
     initialSaveDoneRef.current = true;
@@ -121,7 +148,7 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [worksheetData, save, user?.id]);
 
-  const flushSave = useCallback(async (data) => {
+  const flushSave = useCallback(async (data: Record<string, unknown>) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     initialSaveDoneRef.current = true;
     await save(data);
@@ -130,7 +157,12 @@ export function useAutoSave(user, worksheetData, worksheetId, phase = 'phase-1')
   return { saveStatus, flushSave };
 }
 
-export async function loadWorksheetData(userId, worksheetId) {
+// ─── Standalone Helpers ────────────────────────────────
+
+export async function loadWorksheetData(
+  userId: string | null,
+  worksheetId: string | null
+): Promise<SavedWorksheetData | null> {
   if (!userId || !worksheetId) return null;
   const { data } = await supabase
     .from('worksheet_submissions')
@@ -138,17 +170,16 @@ export async function loadWorksheetData(userId, worksheetId) {
     .eq('user_id', userId)
     .eq('worksheet_id', worksheetId)
     .maybeSingle();
-  return data;
+  return data as SavedWorksheetData | null;
 }
 
-export async function getOAuthName() {
+export async function getOAuthName(): Promise<string> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    return user?.user_metadata?.full_name ||
-      user?.user_metadata?.name ||
-      user?.email?.split('@')[0] || '';
+    return (user?.user_metadata?.full_name as string) ||
+      (user?.user_metadata?.name as string) ||
+      (user?.email?.split('@')[0]) || '';
   } catch {
     return '';
   }
 }
-

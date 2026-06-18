@@ -18,20 +18,20 @@ describe('calculateDueDate', () => {
 
   it('calculates due date 7 days from start for p1_w1', () => {
     const start = new Date('2025-01-01');
-    const due = calculateDueDate('p1_w1', start);
+    const due = calculateDueDate('p1_w1', start)!;
     expect(due).toBeInstanceOf(Date);
     expect(due.toISOString().split('T')[0]).toBe('2025-01-08');
   });
 
   it('calculates due date 30 days from start for gc1', () => {
     const start = new Date('2025-01-01');
-    const due = calculateDueDate('gc1', start);
+    const due = calculateDueDate('gc1', start)!;
     expect(due.toISOString().split('T')[0]).toBe('2025-01-31');
   });
 
   it('calculates due date 90 days from start for gc3', () => {
     const start = new Date('2025-01-01');
-    const due = calculateDueDate('gc3', start);
+    const due = calculateDueDate('gc3', start)!;
     expect(due.toISOString().split('T')[0]).toBe('2025-04-01');
   });
 

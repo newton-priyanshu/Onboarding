@@ -21,7 +21,7 @@ describe('triggerNotification', () => {
 
   it('does nothing when no userId provided', async () => {
     await triggerNotification({
-      userId: null,
+      userId: undefined as unknown as string,
       fromUserId: 'reviewer-1',
       worksheetId: 'p1_w1',
       type: 'submitted',

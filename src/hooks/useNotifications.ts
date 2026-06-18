@@ -1,42 +1,86 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../api/supabase';
 
+// ─── Types ──────────────────────────────────────────────
+
+interface NotificationItem {
+  id: string;
+  user_id: string;
+  from_user_id: string | null;
+  worksheet_id: string;
+  type: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+interface NotificationsResult {
+  notifications: NotificationItem[];
+  unreadCount: number;
+  loading: boolean;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+interface TriggerOpts {
+  userId: string;
+  fromUserId?: string;
+  worksheetId: string;
+  type: string;
+  message: string;
+}
+
+const ROLE_MAP: Record<string, string> = {
+  buddy: 'lead_instructor',
+  manager: 'academic_head',
+  onboarding_lead: 'onboarding_lead',
+  buddy_approved: 'academic_head',
+};
+
+// ─── Hook ───────────────────────────────────────────────
+
 /**
  * useNotifications — Fetches and manages notifications for a user.
- *
- * @param {object} user - Supabase auth user
- * @param {number} [pollInterval=15000] - How often to poll for new notifications (ms)
  */
-export function useNotifications(user, pollInterval = 15000) {
-  const [notifications, setNotifications] = useState([]);
+export function useNotifications(
+  user: object | null,
+  pollInterval: number = 15000
+): NotificationsResult {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const pollRef = useRef(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user?.id) return;
+    const u = user as { id?: string } | null;
+    if (!u?.id) return;
     try {
       const { data } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', u.id)
         .order('created_at', { ascending: false })
         .limit(50);
       if (data && mountedRef.current) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.read).length);
+        const items = data as NotificationItem[];
+        setNotifications(items);
+        setUnreadCount(items.filter(n => !n.read).length);
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
     }
     if (mountedRef.current) setLoading(false);
-  }, [user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(user as { id?: string } | null)?.id]);
 
   // Initial fetch + polling
   useEffect(() => {
     mountedRef.current = true;
-    if (!user?.id) {
+    const u = user as { id?: string } | null;
+    if (!u?.id) {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
@@ -52,10 +96,11 @@ export function useNotifications(user, pollInterval = 15000) {
       mountedRef.current = false;
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [user?.id, fetchNotifications, pollInterval]);
+  }, [(user as { id?: string } | null)?.id, fetchNotifications, pollInterval]);
 
-  const markAsRead = useCallback(async (notificationId) => {
-    if (!user?.id) return;
+  const markAsRead = useCallback(async (notificationId: string) => {
+    const u = user as { id?: string } | null;
+    if (!u?.id) return;
     try {
       await supabase
         .from('notifications')
@@ -68,10 +113,12 @@ export function useNotifications(user, pollInterval = 15000) {
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
-  }, [user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(user as { id?: string } | null)?.id]);
 
   const markAllAsRead = useCallback(async () => {
-    if (!user?.id) return;
+    const u = user as { id?: string } | null;
+    if (!u?.id) return;
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
     try {
@@ -84,7 +131,7 @@ export function useNotifications(user, pollInterval = 15000) {
     } catch (err) {
       console.error('Error marking all as read:', err);
     }
-  }, [user?.id, notifications]);
+  }, [(user as { id?: string } | null)?.id, notifications]);
 
   return {
     notifications,
@@ -96,18 +143,12 @@ export function useNotifications(user, pollInterval = 15000) {
   };
 }
 
+// ─── Standalone Helpers ─────────────────────────────────
+
 /**
  * triggerNotification — Creates a notification in the database.
- * Can be called from anywhere (submit, approve, revision actions).
- *
- * @param {object} opts
- * @param {string} opts.userId       - Who receives the notification
- * @param {string} opts.fromUserId   - Who triggered the notification
- * @param {string} opts.worksheetId  - Related worksheet
- * @param {string} opts.type         - Notification type
- * @param {string} opts.message      - Notification message text
  */
-export async function triggerNotification({ userId, fromUserId, worksheetId, type, message }) {
+export async function triggerNotification({ userId, fromUserId, worksheetId, type, message }: TriggerOpts): Promise<void> {
   if (!userId) return;
   try {
     const { error } = await supabase.from('notifications').insert({
@@ -126,18 +167,9 @@ export async function triggerNotification({ userId, fromUserId, worksheetId, typ
 /**
  * getReviewerUserIds — Returns the user IDs of all users who can review
  * a given reviewer type (buddy, manager, onboarding_lead).
- *
- * @param {string} reviewerType - 'buddy' | 'manager' | 'onboarding_lead'
- * @returns {Promise<string[]>} Array of user IDs
  */
-export async function getReviewerUserIds(reviewerType) {
-  const roleMap = {
-    buddy: 'lead_instructor',
-    manager: 'academic_head',
-    onboarding_lead: 'onboarding_lead',
-    buddy_approved: 'academic_head', // notify manager when buddy approves
-  };
-  const role = roleMap[reviewerType];
+export async function getReviewerUserIds(reviewerType: string): Promise<string[]> {
+  const role = ROLE_MAP[reviewerType];
   if (!role) return [];
 
   try {
@@ -145,7 +177,7 @@ export async function getReviewerUserIds(reviewerType) {
       .from('user_profiles')
       .select('id')
       .eq('role', role);
-    return (data || []).map(p => p.id);
+    return (data || []).map(p => (p as { id: string }).id);
   } catch (err) {
     console.error('Error fetching reviewer IDs:', err);
     return [];
@@ -153,14 +185,9 @@ export async function getReviewerUserIds(reviewerType) {
 }
 
 /**
- * getJoineeUserId — Returns the assigned reviewer user IDs for a specific joinee.
- * Checks both assigned_lead_id and assigned_buddy_id.
- *
- * @param {string} joineeUserId
- * @param {string} reviewerType - 'buddy' | 'manager'
- * @returns {Promise<string[]>} Array of user IDs
+ * getAssignedReviewerIds — Returns the assigned reviewer user IDs for a specific joinee.
  */
-export async function getAssignedReviewerIds(joineeUserId, reviewerType) {
+export async function getAssignedReviewerIds(joineeUserId: string, reviewerType: string): Promise<string[]> {
   try {
     const { data } = await supabase
       .from('user_profiles')
@@ -170,11 +197,13 @@ export async function getAssignedReviewerIds(joineeUserId, reviewerType) {
 
     if (!data) return [];
 
-    if (reviewerType === 'buddy' && data.assigned_buddy_id) {
-      return [data.assigned_buddy_id];
+    const d = data as { assigned_lead_id: string | null; assigned_buddy_id: string | null };
+
+    if (reviewerType === 'buddy' && d.assigned_buddy_id) {
+      return [d.assigned_buddy_id];
     }
-    if (reviewerType === 'manager' && data.assigned_lead_id) {
-      return [data.assigned_lead_id];
+    if (reviewerType === 'manager' && d.assigned_lead_id) {
+      return [d.assigned_lead_id];
     }
     return [];
   } catch (err) {

@@ -6,18 +6,18 @@ import {
   getBuddyApprovedSheets,
   getPhaseWorksheetsByStatus,
   PHASE_WORKSHEETS_MAP,
-} from '../../config/worksheetConfigData.js';
+} from '../../config/worksheetConfigData';
 
-/**
- * Helper: build a mock submission object for testing.
- */
-function sub(worksheetId, reviewStatus, userId = 'joinee-1') {
+// Helper: build a minimal mock submission for testing phase review functions.
+// Only includes fields accessed by getPhaseReviewStatus/getBuddyApprovedSheets.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sub(worksheetId: string, reviewStatus: string, userId: string = 'joinee-1'): any {
   return { user_id: userId, worksheet_id: worksheetId, review_status: reviewStatus };
 }
 
 describe('Phase-Level Review Flow', () => {
   const userId = 'joinee-1';
-  const p1Ids = PHASE_WORKSHEETS_MAP[1]; // 9 sheets: p1_w1..p1_w8 + gc1
+  const p1Ids = PHASE_WORKSHEETS_MAP[1] || []; // 9 sheets: p1_w1..p1_w8 + gc1
 
   // ── getPhaseReviewStatus ──────────────────────────────────────
 
@@ -102,8 +102,8 @@ describe('Phase-Level Review Flow', () => {
     });
 
     it('multiple phases work independently', () => {
-      const phase1Subs = PHASE_WORKSHEETS_MAP[1].map(id => sub(id, 'buddy_approved', userId));
-      const phase2Subs = PHASE_WORKSHEETS_MAP[2].map(id => sub(id, 'pending_review', userId));
+      const phase1Subs = (PHASE_WORKSHEETS_MAP[1] || []).map(id => sub(id, 'buddy_approved', userId));
+      const phase2Subs = (PHASE_WORKSHEETS_MAP[2] || []).map(id => sub(id, 'pending_review', userId));
 
       const allSubs = [...phase1Subs, ...phase2Subs];
 
@@ -176,27 +176,27 @@ describe('Phase-Level Review Flow', () => {
     });
 
     it('phase 1 has 9 worksheets (8 + 1 gate control)', () => {
-      expect(PHASE_WORKSHEETS_MAP[1].length).toBe(9);
-      expect(PHASE_WORKSHEETS_MAP[1]).toContain('gc1');
+      expect((PHASE_WORKSHEETS_MAP[1] || []).length).toBe(9);
+      expect(PHASE_WORKSHEETS_MAP[1] || []).toContain('gc1');
     });
 
     it('phase 2 has 5 worksheets (4 + 1 gate control)', () => {
-      expect(PHASE_WORKSHEETS_MAP[2].length).toBe(5);
-      expect(PHASE_WORKSHEETS_MAP[2]).toContain('gc2');
+      expect((PHASE_WORKSHEETS_MAP[2] || []).length).toBe(5);
+      expect(PHASE_WORKSHEETS_MAP[2] || []).toContain('gc2');
     });
 
     it('phase 3 has 6 worksheets (5 + 1 gate control)', () => {
-      expect(PHASE_WORKSHEETS_MAP[3].length).toBe(6);
-      expect(PHASE_WORKSHEETS_MAP[3]).toContain('gc3');
+      expect((PHASE_WORKSHEETS_MAP[3] || []).length).toBe(6);
+      expect(PHASE_WORKSHEETS_MAP[3] || []).toContain('gc3');
     });
 
     it('total across all phases is 20 worksheets', () => {
-      const total = [1, 2, 3].reduce((sum, p) => sum + PHASE_WORKSHEETS_MAP[p].length, 0);
+      const total = [1, 2, 3].reduce((sum, p) => sum + (PHASE_WORKSHEETS_MAP[p] || []).length, 0);
       expect(total).toBe(20);
     });
 
     it('no duplicate worksheet IDs across phases', () => {
-      const allIds = [1, 2, 3].flatMap(p => PHASE_WORKSHEETS_MAP[p]);
+      const allIds = [1, 2, 3].flatMap(p => PHASE_WORKSHEETS_MAP[p] || []);
       const uniqueIds = new Set(allIds);
       expect(uniqueIds.size).toBe(allIds.length);
     });

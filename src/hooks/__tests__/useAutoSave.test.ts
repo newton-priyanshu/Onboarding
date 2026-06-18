@@ -42,7 +42,6 @@ describe('loadWorksheetData', () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: mockData, error: null }),
     };
     mockFrom.mockReturnValue(chain);
@@ -51,13 +50,12 @@ describe('loadWorksheetData', () => {
 
     expect(mockFrom).toHaveBeenCalledWith('worksheet_submissions');
     expect(result).toEqual(mockData);
-    expect(result.worksheet_data.employeeName).toBe('Test User');
+    expect((result as { worksheet_data: { employeeName: string } }).worksheet_data.employeeName).toBe('Test User');
   });
 
   it('handles supabase errors gracefully', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: { message: 'Error' } }),
     };
