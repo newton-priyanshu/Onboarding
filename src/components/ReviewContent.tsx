@@ -1,17 +1,61 @@
 import { CheckCircle2, XCircle, Star, Calendar, FileText, ClipboardCheck, Signature, Shield } from 'lucide-react';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────
 
-function toLabel(str) {
+interface ReviewContentProps {
+  data: Record<string, unknown>;
+  worksheetId: string;
+}
+
+interface SignatureBadgeProps {
+  value: string;
+}
+
+interface DateBadgeProps {
+  value: string;
+}
+
+interface StringFieldProps {
+  keyProp: string;
+  value: string | number | boolean;
+}
+
+interface TableRendererProps {
+  data: Record<string, unknown>[];
+  headers: string[];
+}
+
+interface ChecklistRendererProps {
+  items: boolean[];
+  label: string;
+}
+
+interface ScoreGridRendererProps {
+  scores: number[][];
+  labels: string[] | null;
+}
+
+interface MilestoneRendererProps {
+  worksheetId: string;
+  values: string[];
+  label: string;
+}
+
+interface MilestoneLabel {
+  outcome: string;
+  verify: string;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+
+function toLabel(str: string): string {
   if (!str) return '';
-  // Handle camelCase and lowercase with underscores
   const label = str
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, s => s.toUpperCase())
     .replace(/_/g, ' ')
     .trim();
-  // Override common keys with friendly labels
-  const overrides = {
+  const overrides: Record<string, string> = {
     'Employee Name': 'Employee Name',
     'Employee Signature': 'Employee Signature',
     'Demo Signature': 'Faculty Lead Signature',
@@ -41,7 +85,6 @@ function toLabel(str) {
     'Lead Decision': 'Faculty Lead Decision',
     'Lead Comments': 'Faculty Lead Comments',
     'Lead Timeline': 'Implementation Timeline',
-    'Lead Signature': 'Faculty Lead Signature',
     'Self Natural': 'Most Natural Framework',
     'Self Effort': 'Requires Most Effort',
     'Self Moment': 'Proud Moment',
@@ -49,33 +92,33 @@ function toLabel(str) {
   return overrides[label] || label;
 }
 
-function isSignature(key) {
+function isSignature(key: string): boolean {
   const k = key.toLowerCase();
   return k.includes('signature');
 }
 
-function isDateField(key) {
+function isDateField(key: string): boolean {
   const k = key.toLowerCase();
   return k === 'date' || k === 'startdate' || k === 'enddate' || k === 'demoDate'
     || k === 'datedemo' || k === 'dateknownames' || k === 'buddyassignmentdate'
     || k === 'datesubmitted' || k === 'datesubmittedmeta';
 }
 
-function shouldSkip(key) {
+function shouldSkip(key: string): boolean {
   if (key.startsWith('_')) return true;
   const skipFields = ['status', 'datesubmitted', 'datesubmittedmeta'];
   return skipFields.includes(key.toLowerCase());
 }
 
-function isBooleanField(key) {
+function isBooleanField(key: string): boolean {
   const k = key.toLowerCase();
   const booleans = ['mentorsignoff', 'selfassessed', 'verified', 'submitted', 'approved', 'tested', 'self'];
   return booleans.includes(k);
 }
 
-// ─── Sub-renderers ──────────────────────────────────────────────────────────
+// ─── Sub-renderers ──────────────────────────────────────────────────────
 
-function renderValue(value, key) {
+function renderValue(value: unknown, _key: string): React.ReactNode {
   if (value === null || value === undefined) return null;
   if (typeof value === 'boolean') {
     return value
@@ -88,7 +131,7 @@ function renderValue(value, key) {
   return String(value);
 }
 
-function SignatureBadge({ value }) {
+function SignatureBadge({ value }: SignatureBadgeProps) {
   if (!value?.trim()) return <span className="body-small text-muted" style={{ fontStyle: 'italic' }}>Not signed</span>;
   return (
     <div style={{
@@ -104,7 +147,7 @@ function SignatureBadge({ value }) {
   );
 }
 
-function DateBadge({ value }) {
+function DateBadge({ value }: DateBadgeProps) {
   if (!value) return null;
   return (
     <span style={{
@@ -117,24 +160,23 @@ function DateBadge({ value }) {
   );
 }
 
-function StringField({ keyProp, value }) {
-  if (!value && value !== 0) return null;
+function StringField({ keyProp, value }: StringFieldProps) {
+  if (!value && value !== 0 && typeof value !== 'boolean') return null;
   return (
     <div className="review-field" style={{ marginBottom: '0.5rem' }}>
       <span className="label-medium" style={{ display: 'block', fontSize: '0.7rem', color: 'var(--md-outline)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
         {toLabel(keyProp)}
       </span>
       <span className="body-medium" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--md-on-surface)' }}>
-        {value}
+        {String(value)}
       </span>
     </div>
   );
 }
 
-function TableRenderer({ data, headers }) {
+function TableRenderer({ data, headers }: TableRendererProps) {
   if (!data || data.length === 0) return <p className="body-small text-muted" style={{ fontStyle: 'italic' }}>No entries</p>;
 
-  // Filter out empty rows (all values empty/null)
   const filled = data.filter(row => Object.values(row).some(v => v !== '' && v !== null && v !== undefined && v !== false));
   if (filled.length === 0) return <p className="body-small text-muted" style={{ fontStyle: 'italic' }}>No entries</p>;
 
@@ -163,8 +205,8 @@ function TableRenderer({ data, headers }) {
                   {isBooleanField(h)
                     ? renderValue(row[h], h)
                     : isDateField(h)
-                      ? <DateBadge value={row[h]} />
-                      : row[h] || <span className="text-muted" style={{ fontStyle: 'italic', opacity: 0.5 }}>-</span>
+                      ? <DateBadge value={String(row[h] || '')} />
+                      : String(row[h] ?? '') || <span className="text-muted" style={{ fontStyle: 'italic', opacity: 0.5 }}>-</span>
                   }
                 </td>
               ))}
@@ -176,7 +218,7 @@ function TableRenderer({ data, headers }) {
   );
 }
 
-function ChecklistRenderer({ items, label }) {
+function ChecklistRenderer({ items, label }: ChecklistRendererProps) {
   const checked = items.filter(Boolean).length;
   const total = items.length;
   return (
@@ -190,13 +232,13 @@ function ChecklistRenderer({ items, label }) {
         }}>{checked}/{total}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {items.map((checked, i) => (
+        {items.map((checkedItem, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px',
             borderRadius: 'var(--md-radius-sm)',
-            color: checked ? 'var(--md-on-surface)' : 'var(--md-outline)',
+            color: checkedItem ? 'var(--md-on-surface)' : 'var(--md-outline)',
           }}>
-            {checked
+            {checkedItem
               ? <CheckCircle2 size={14} style={{ color: '#2E7D32', flexShrink: 0 }} />
               : <XCircle size={14} style={{ color: '#BDBDBD', flexShrink: 0 }} />
             }
@@ -208,7 +250,7 @@ function ChecklistRenderer({ items, label }) {
   );
 }
 
-function ScoreGridRenderer({ scores, labels }) {
+function ScoreGridRenderer({ scores, labels }: ScoreGridRendererProps) {
   if (!scores || scores.length === 0) return null;
   return (
     <div>
@@ -242,9 +284,9 @@ function ScoreGridRenderer({ scores, labels }) {
   );
 }
 
-// ─── Gate Control Milestone Renderer ───────────────────────────────────────
+// ─── Gate Control Milestone Renderer ───────────────────────────────────
 
-const GC_MILESTONE_LABELS = {
+const GC_MILESTONE_LABELS: Record<string, MilestoneLabel[]> = {
   gc1: [
     { outcome: 'Portal proficiency — end-to-end', verify: 'Live demo with Faculty Lead' },
     { outcome: 'Clear understanding of course objectives', verify: 'Verbal explanation or short written summary' },
@@ -269,7 +311,7 @@ const GC_MILESTONE_LABELS = {
   ],
 };
 
-function MilestonesRenderer({ worksheetId, values, label }) {
+function MilestonesRenderer({ worksheetId, values, label }: MilestoneRendererProps) {
   const labels = GC_MILESTONE_LABELS[worksheetId];
   if (!values || values.length === 0) return null;
 
@@ -323,10 +365,14 @@ function MilestonesRenderer({ worksheetId, values, label }) {
   );
 }
 
-// ─── Main Exported Component ────────────────────────────────────────────────
+// ─── Section Layout Configuration ───────────────────────────────────────
 
-const FIELD_SECTIONS = {
-  // Phase 1 Worksheet 1
+interface SectionLayout {
+  sections: string[];
+  sectionMap: Record<string, string[]>;
+}
+
+const FIELD_SECTIONS: Record<string, SectionLayout> = {
   p1_w1: {
     sections: ['About You', 'Stakeholders', 'Conversations', 'Buddy Assignment', 'Reflection'],
     sectionMap: {
@@ -485,7 +531,7 @@ const FIELD_SECTIONS = {
     }
   },
 
-  // Gate Control 1 — 30-Day Milestone Review
+  // Gate Controls
   gc1: {
     sections: ['About You', 'Self Assessment', 'Milestone Outcomes', 'Manager Assessment', 'Sign-Off'],
     sectionMap: {
@@ -496,7 +542,6 @@ const FIELD_SECTIONS = {
       'Sign-Off': ['managerSignature', 'instructorSignature'],
     }
   },
-  // Gate Control 2 — 60-Day Milestone Review
   gc2: {
     sections: ['About You', 'Self Assessment', 'Milestone Outcomes', 'Manager Review', 'Sign-Off'],
     sectionMap: {
@@ -507,7 +552,6 @@ const FIELD_SECTIONS = {
       'Sign-Off': ['managerSignature', 'instructorSignature'],
     }
   },
-  // Gate Control 3 — 90-Day Final Readiness Assessment
   gc3: {
     sections: ['About You', 'Self Reflection', 'Faculty Assessment', 'Milestone Outcomes', 'Final Decision', 'Sign-Off'],
     sectionMap: {
@@ -521,13 +565,12 @@ const FIELD_SECTIONS = {
   },
 };
 
-// Default section layout for unknown worksheets
-function getSectionLayout(worksheetId) {
+function getSectionLayout(worksheetId: string): SectionLayout | null {
   return FIELD_SECTIONS[worksheetId] || null;
 }
 
-function getArrayHeaders(key) {
-  const headerMap = {
+function getArrayHeaders(key: string): string[] | null {
+  const headerMap: Record<string, string[]> = {
     stakeholders: ['name', 'role', 'team', 'responsibility'],
     conversations: ['instructorName', 'date', 'takeaways'],
     weeks: ['date', 'topics', 'actions', 'mentorSignoff'],
@@ -544,7 +587,6 @@ function getArrayHeaders(key) {
     assessments: ['title', 'type', 'questions', 'date', 'tested', 'approved'],
     frameworks: ['applied', 'outcome', 'effectiveness'],
     bloomsGrid: ['example', 'count', 'percent'],
-    // For items with object + boolean array combo
     studentLog: ['date', 'friction'],
     instructorTasks: ['selfAssessed', 'verified'],
     tasks: ['self', 'verified'],
@@ -552,28 +594,27 @@ function getArrayHeaders(key) {
   return headerMap[key] || null;
 }
 
-function getScoreLabels(key) {
-  const labelMap = {
+function getScoreLabels(key: string): string[] | null {
+  const labelMap: Record<string, string[]> = {
     dimScores: ['Explained problem statement clearly', 'Circulated and helped multiple students', 'Debugged without giving answers', 'Managed 90-min lab time', 'Maintained student engagement'],
   };
   return labelMap[key] || null;
 }
 
-export default function ReviewContent({ data, worksheetId }) {
+// ─── Main Exported Component ────────────────────────────────────────────
+
+export default function ReviewContent({ data, worksheetId }: ReviewContentProps) {
   if (!data || Object.keys(data).length === 0) {
     return <p className="body-medium text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>No content submitted yet.</p>;
   }
 
-  // For simple worksheets without specific section layouts, do a generic render
   const layout = getSectionLayout(worksheetId);
 
-  // Store worksheetId globally for milestone renderer to access
   if (typeof window !== 'undefined') {
-    window.__reviewWorksheetId = worksheetId;
+    (window as unknown as Record<string, unknown>).__reviewWorksheetId = worksheetId;
   }
 
-  // Dev-time check: warn if FIELD_SECTIONS is stale (new fields in data but not in layout)
-  if (process.env.NODE_ENV === 'development' && layout) {
+  if (import.meta.env.DEV && layout) {
     const allLayoutFields = new Set(Object.values(layout.sectionMap).flat());
     const dataKeys = Object.keys(data).filter(k => !k.startsWith('_') && k !== 'status' && k !== 'dateSubmitted' && k !== '__reviewWorksheetId');
     const missingFields = dataKeys.filter(k => !allLayoutFields.has(k) && typeof data[k] !== 'object');
@@ -582,7 +623,7 @@ export default function ReviewContent({ data, worksheetId }) {
         `[ReviewContent] FIELD_SECTIONS drift for ${worksheetId}: ` +
         `These fields exist in submitted data but are missing from the layout config: ` +
         missingFields.join(', ') +
-        `. Update FIELD_SECTIONS in ReviewContent.jsx to include them.`
+        `. Update FIELD_SECTIONS in ReviewContent.tsx to include them.`
       );
     }
   }
@@ -594,7 +635,7 @@ export default function ReviewContent({ data, worksheetId }) {
   return renderGeneric(data);
 }
 
-function renderWithLayout(data, layout) {
+function renderWithLayout(data: Record<string, unknown>, layout: SectionLayout): React.ReactNode {
   const renderedSections = layout.sections.map((sectionTitle) => {
     const fields = layout.sectionMap[sectionTitle];
     if (!fields) return null;
@@ -648,7 +689,7 @@ function renderWithLayout(data, layout) {
   );
 }
 
-function renderGeneric(data) {
+function renderGeneric(data: Record<string, unknown>): React.ReactNode {
   const entries = Object.entries(data).filter(([key]) => !shouldSkip(key) && data[key] !== undefined && data[key] !== null);
   if (entries.length === 0) {
     return <p className="body-medium text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>No content submitted yet.</p>;
@@ -668,10 +709,8 @@ function renderGeneric(data) {
   );
 }
 
-function renderField(key, value) {
-  // Skip empty booleans (false is valid, show it)
-  // Signatures
-  if (isSignature(key) && value) {
+function renderField(key: string, value: unknown): React.ReactNode {
+  if (isSignature(key) && value && typeof value === 'string') {
     return (
       <div key={key} className="review-field">
         <span className="label-medium" style={{ display: 'block', fontSize: '0.7rem', color: 'var(--md-outline)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
@@ -691,18 +730,18 @@ function renderField(key, value) {
           <span className="label-medium" style={{ display: 'block', fontSize: '0.7rem', color: 'var(--md-outline)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
             {toLabel(key)}
           </span>
-          <TableRenderer data={value} headers={headers} />
+          <TableRenderer data={value as Record<string, unknown>[]} headers={headers} />
         </div>
       );
     }
   }
 
-  // Gate control milestone string arrays (e.g. ['Not Met', 'Met', 'Partial', ...])
+  // Gate control milestone string arrays
   if (key === 'milestones' && Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
-    const worksheetId = window.__reviewWorksheetId || '';
+    const wid = typeof window !== 'undefined' ? (window as unknown as Record<string, string>).__reviewWorksheetId : '';
     return (
       <div key={key} className="review-field">
-        <MilestonesRenderer worksheetId={worksheetId} values={value} label="Milestone Outcomes" />
+        <MilestonesRenderer worksheetId={wid || ''} values={value as string[]} label="Milestone Outcomes" />
       </div>
     );
   }
@@ -712,7 +751,7 @@ function renderField(key, value) {
     const labels = getScoreLabels(key);
     return (
       <div key={key} className="review-field">
-        <ScoreGridRenderer scores={value} labels={labels} />
+        <ScoreGridRenderer scores={value as number[][]} labels={labels} />
       </div>
     );
   }
@@ -721,27 +760,25 @@ function renderField(key, value) {
   if (Array.isArray(value) && value.every(v => typeof v === 'boolean')) {
     return (
       <div key={key} className="review-field">
-        <ChecklistRenderer items={value} label={toLabel(key)} />
+        <ChecklistRenderer items={value as boolean[]} label={toLabel(key)} />
       </div>
     );
   }
 
   // Tasks arrays (objects with self/verified booleans)
   if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-    const sampleKeys = Object.keys(value[0]);
-    const allBooleans = sampleKeys.every(k => k === 'self' || k === 'verified' || k === 'selfAssessed' || k === 'verified' || k === 'submitted' || k === 'approved' || k === 'tested');
-    if (allBooleans && sampleKeys.every(k => typeof value[0][k] === 'boolean' || value[0][k] === true || value[0][k] === false)) {
-      // Render as paired checklist
+    const sampleKeys = Object.keys(value[0] as Record<string, unknown>);
+    const allBooleans = sampleKeys.every(k => k === 'self' || k === 'verified' || k === 'selfAssessed' || k === 'submitted' || k === 'approved' || k === 'tested');
+    if (allBooleans && sampleKeys.every(k => typeof (value[0] as Record<string, unknown>)[k] === 'boolean')) {
       return (
         <div key={key} className="review-field">
           <span className="label-medium" style={{ display: 'block', fontSize: '0.7rem', color: 'var(--md-outline)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
             {toLabel(key)}
           </span>
-          {renderBooleansList(value, sampleKeys)}
+          {renderBooleansList(value as Record<string, boolean>[], sampleKeys)}
         </div>
       );
     }
-    // Otherwise try table
     const headers = getArrayHeaders(key);
     if (headers) {
       return (
@@ -749,7 +786,7 @@ function renderField(key, value) {
           <span className="label-medium" style={{ display: 'block', fontSize: '0.7rem', color: 'var(--md-outline)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
             {toLabel(key)}
           </span>
-          <TableRenderer data={value} headers={headers} />
+          <TableRenderer data={value as Record<string, unknown>[]} headers={headers} />
         </div>
       );
     }
@@ -765,7 +802,7 @@ function renderField(key, value) {
           <span className="label-medium" style={{ display: 'block', fontSize: '0.7rem', color: 'var(--md-outline)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
             {toLabel(key)}
           </span>
-          <DateBadge value={value} />
+          <DateBadge value={String(value)} />
         </div>
       )
       : <StringField key={key} keyProp={key} value={value} />;
@@ -774,14 +811,17 @@ function renderField(key, value) {
   return null;
 }
 
-function renderBooleansList(items, keys) {
-  const taskLabels = {
+function renderBooleansList(items: Record<string, boolean>[], keys: string[]): React.ReactNode {
+  const taskLabels: Record<string, string[]> = {
     p1_w5: ['Browse course dashboard', 'View & attempt assignment', 'Submit code in contest', 'View grades & feedback', 'Navigate lab interface', 'Access lecture schedule'],
     p2_w3: ['Unambiguous problem statements', 'Complete test cases included', 'Plausible MCQs', 'Answer keys included', 'Appropriate difficulty', 'Reviewed by mentor'],
     p2_w4: ['Create coding question', 'Create MCQ', 'Create subjective question', 'Create fill-in-blank', 'Design assignment', 'Set lab exercise', 'Configure quiz', 'Set content release rules', 'View student reports', 'Reopen deadlines'],
   };
 
-  const labels = taskLabels[Object.keys(taskLabels).find(k => items.length === taskLabels[k].length)] || null;
+  const labels = taskLabels[Object.keys(taskLabels).find(k => {
+    const taskLen = taskLabels[k as keyof typeof taskLabels];
+    return taskLen !== undefined && items.length === taskLen.length;
+  }) || ''] || null;
 
   return (
     <div style={{ display: 'grid', gap: '4px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>

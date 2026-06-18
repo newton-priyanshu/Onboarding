@@ -2,29 +2,41 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { CheckCircle2, XCircle, MessageSquare, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown, Shield } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, WORKSHEET_INFO } from '../config/worksheetConfig.jsx';
-import ReviewContent from '../components/ReviewContent.jsx';
+import { CheckCircle2, XCircle, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown, Shield } from 'lucide-react';
+import { WORKSHEET_INFO, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import ReviewContent from '../components/ReviewContent';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
+import { t } from '../config/theme';
 
-import { t } from '../config/theme.js';
+interface ReviewParams {
+  userId: string;
+  worksheetId: string;
+  [key: string]: string | undefined;
+}
+
+interface ReviewHistoryEntry {
+  action: string;
+  reviewer_name: string;
+  reviewer_id: string;
+  comment: string | null;
+  timestamp: string;
+}
 
 export default function WorksheetReview() {
-  const { userId, worksheetId } = useParams();
+  const params = useParams<ReviewParams>();
+  const userId = params.userId;
+  const worksheetId = params.worksheetId;
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [submission, setSubmission] = useState(null);
-  const [instructor, setInstructor] = useState(null);
+  const [submission, setSubmission] = useState<WorksheetSubmission | null>(null);
+  const [instructor, setInstructor] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
 
-  const wsInfo = WORKSHEET_INFO[worksheetId] || { title: worksheetId, phase: 'Unknown' };
+  const wsInfo = WORKSHEET_INFO[worksheetId || ''] || { title: worksheetId || '', phase: 'Unknown' };
   const data = submission?.worksheet_data || {};
-  const displayReviewerType = WORKSHEET_REVIEWER[worksheetId] || 'buddy';
-  const displayReviewerStyle = REVIEWER_STYLES[displayReviewerType];
-  const displayReviewerLabel = REVIEWER_LABELS[displayReviewerType];
 
   // ── Role-based access ──
   const isBuddy = profile?.role === 'lead_instructor';
@@ -50,9 +62,9 @@ export default function WorksheetReview() {
         supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
       ]);
       if (subRes.error) console.error('Error loading submission:', subRes.error);
-      else if (subRes.data) setSubmission(subRes.data);
+      else if (subRes.data) setSubmission(subRes.data as unknown as WorksheetSubmission);
       if (instrRes.error) console.error('Error loading instructor:', instrRes.error);
-      else if (instrRes.data) setInstructor(instrRes.data);
+      else if (instrRes.data) setInstructor(instrRes.data as unknown as UserProfile);
     } catch (err) {
       console.error('Failed to load worksheet review data:', err);
     }
@@ -69,19 +81,19 @@ export default function WorksheetReview() {
 
     setActionLoading(true);
     setActionMessage('');
-    const update = {
+    const update: Record<string, unknown> = {
       review_status: 'buddy_approved',
       reviewed_by: profile?.id,
       reviewed_at: new Date().toISOString(),
       reviewer_name: profile?.full_name || profile?.email || 'Buddy',
     };
 
-    const historyEntry = {
+    const historyEntry: ReviewHistoryEntry = {
       action: 'buddy_approved',
       reviewer_name: profile?.full_name || profile?.email || 'Buddy',
-      reviewer_id: profile?.id,
+      reviewer_id: profile?.id || '',
       comment: comment.trim() || null,
-      timestamp: update.reviewed_at,
+      timestamp: update.reviewed_at as string,
     };
     const existingHistory = submission?.review_history || [];
 
@@ -95,22 +107,22 @@ export default function WorksheetReview() {
       setActionMessage('Error: ' + error.message);
     } else {
       setActionMessage('Worksheet approved by buddy. ✓');
-      setSubmission(prev => ({
+      setSubmission(prev => prev ? {
         ...prev, ...update,
-        review_history: [...(prev?.review_history || []), historyEntry],
-      }));
+        review_history: [...(prev.review_history || []), historyEntry],
+      } as unknown as WorksheetSubmission : null);
       setComment('');
 
       await triggerNotification({
-        userId,
+        userId: userId || '',
         fromUserId: profile?.id,
-        worksheetId,
+        worksheetId: worksheetId || '',
         type: 'buddy_approved',
         message: `Your worksheet (${worksheetId}) has been approved by your buddy (${profile?.full_name || 'Buddy'}). It's now pending manager phase approval.`,
       });
 
       // Notify the ASSIGNED manager that a worksheet is now buddy-approved
-      let managerIds = await getAssignedReviewerIds(userId, 'manager');
+      let managerIds = await getAssignedReviewerIds(userId || '', 'manager');
       // Fallback to all managers if no assigned manager found
       if (managerIds.length === 0) {
         managerIds = await getReviewerUserIds('manager');
@@ -119,7 +131,7 @@ export default function WorksheetReview() {
         await triggerNotification({
           userId: mgrId,
           fromUserId: profile?.id,
-          worksheetId,
+          worksheetId: worksheetId || '',
           type: 'buddy_approved',
           message: `Worksheet (${worksheetId}) for ${instructor?.full_name || 'joinee'} has been buddy-approved and is ready for phase-level review.`,
         });
@@ -137,19 +149,19 @@ export default function WorksheetReview() {
     }
     setActionLoading(true);
     setActionMessage('');
-    const update = {
+    const update: Record<string, unknown> = {
       review_status: 'needs_revision',
       reviewed_by: profile?.id,
       reviewed_at: new Date().toISOString(),
       reviewer_name: profile?.full_name || profile?.email || 'Buddy',
       review_comment: comment.trim(),
     };
-    const historyEntry = {
+    const historyEntry: ReviewHistoryEntry = {
       action: 'needs_revision',
       reviewer_name: profile?.full_name || profile?.email || 'Buddy',
-      reviewer_id: profile?.id,
+      reviewer_id: profile?.id || '',
       comment: comment.trim(),
-      timestamp: update.reviewed_at,
+      timestamp: update.reviewed_at as string,
     };
     const existingHistory = submission?.review_history || [];
 
@@ -163,16 +175,16 @@ export default function WorksheetReview() {
       setActionMessage('Error: ' + error.message);
     } else {
       setActionMessage('Revision requested.');
-      setSubmission(prev => ({
+      setSubmission(prev => prev ? {
         ...prev, ...update,
-        review_history: [...(prev?.review_history || []), historyEntry],
-      }));
+        review_history: [...(prev.review_history || []), historyEntry],
+      } as unknown as WorksheetSubmission : null);
       setComment('');
 
       await triggerNotification({
-        userId,
+        userId: userId || '',
         fromUserId: profile?.id,
-        worksheetId,
+        worksheetId: worksheetId || '',
         type: 'needs_revision',
         message: `Your worksheet (${worksheetId}) needs revision. Comment: ${comment.trim()}`,
       });
@@ -182,7 +194,7 @@ export default function WorksheetReview() {
     setActionLoading(false);
   }
 
-  const reviewHistory = (submission?.review_history || []).slice().reverse();
+  const reviewHistory: ReviewHistoryEntry[] = (submission?.review_history || []).slice().reverse();
 
   if (!isReviewer) {
     return (
@@ -244,16 +256,17 @@ export default function WorksheetReview() {
   const isPending = reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted';
   const isNeedsRevision = reviewStatus === 'needs_revision';
 
-  const canBuddyAct = canApprove && (isPending);
+  const canBuddyAct = canApprove && isPending;
 
-  const StatusBadge = ({ status }) => {
+  function StatusBadge({ status }: { status: string }) {
     if (status === 'approved') return <span className="lux-badge" style={{ borderColor: '#1B5E20', color: '#1B5E20', fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
     if (status === 'buddy_approved') return <span className="lux-badge" style={{ borderColor: '#381E72', color: '#381E72', fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
-    if (status === 'pending_review' || (status === '' && submission.status === 'submitted')) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (status === 'pending_review' || (status === '' && (submission!.status as string) === 'Submitted')) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
     if (status === 'needs_revision') return <span className="lux-badge" style={{ borderColor: '#C62828', color: '#C62828', fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
     if (status === 'revision_submitted') return <span className="lux-badge" style={{ borderColor: '#7D5260', color: '#7D5260', fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
     return null;
-  };
+  }
 
   return (
     <div className="lux-section">
@@ -310,7 +323,6 @@ export default function WorksheetReview() {
               <div style={{ position: 'absolute', left: '11px', top: '8px', bottom: '8px', width: '1px', background: 'rgba(26, 26, 26, 0.15)' }} />
               {reviewHistory.map((entry, idx) => {
                 const isApprove = entry.action === 'approved' || entry.action === 'buddy_approved' || entry.action === 'phase_approved';
-                const isRevision = entry.action === 'needs_revision';
                 const date = entry.timestamp ? new Date(entry.timestamp) : null;
                 return (
                   <div key={idx} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
@@ -352,7 +364,7 @@ export default function WorksheetReview() {
           <h3 style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Eye size={14} strokeWidth={1.5} /> Submitted Content
           </h3>
-          <ReviewContent data={data} worksheetId={worksheetId} />
+          <ReviewContent data={data as Record<string, unknown>} worksheetId={worksheetId || ''} />
         </div>
 
         {/* Review Actions — Buddy only */}
@@ -368,7 +380,7 @@ export default function WorksheetReview() {
               <label className="lux-label" htmlFor="review-comment">Review Comments <span style={{ fontFamily: t.body, fontWeight: 400, color: t.wg }}>(optional for approval, required for revision)</span></label>
               <textarea id="review-comment" className="lux-textarea" rows={4} value={comment}
                 onChange={e => setComment(e.target.value)}
-                placeholder="• What was done well?\n• What needs improvement?\n• Specific suggestions for revision..." />
+                placeholder={"• What was done well?\n• What needs improvement?\n• Specific suggestions for revision..."} />
             </div>
             {actionMessage && (
               <div className={`lux-alert ${actionMessage.includes('Error') ? 'lux-alert-error' : 'lux-alert-success'}`} style={{ marginBottom: '1rem' }}>

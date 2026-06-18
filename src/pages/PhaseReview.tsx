@@ -2,26 +2,50 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getBuddyApprovedSheets, WORKSHEET_INFO, PHASE_LABELS } from '../config/worksheetConfig.jsx';
-import ReviewContent from '../components/ReviewContent.jsx';
+import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp, LucideIcon } from 'lucide-react';
+import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO, PHASE_LABELS, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import ReviewContent from '../components/ReviewContent';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { checkAndPromote } from '../hooks/useAutoPromote';
+import { t } from '../config/theme';
 
-import { t } from '../config/theme.js';
+interface ReviewParams {
+  userId: string;
+  phaseNum: string;
+  [key: string]: string | undefined;
+}
+
+interface SummaryCardProps {
+  label: string;
+  value: number;
+  color: string;
+  icon?: LucideIcon;
+}
+
+function SummaryCard({ label, value, color, icon: Icon }: SummaryCardProps) {
+  return (
+    <div style={{ background: 'var(--color-alabaster)', padding: '1rem', textAlign: 'center' }}>
+      {Icon && <Icon size={18} strokeWidth={1.5} style={{ color, marginBottom: '4px' }} />}
+      <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch }}>{value}</p>
+      <p style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: t.wg }}>{label}</p>
+    </div>
+  );
+}
 
 export default function PhaseReview() {
-  const { userId, phaseNum } = useParams();
+  const params = useParams<ReviewParams>();
+  const userId = params.userId;
+  const phaseNum = params.phaseNum;
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [instructor, setInstructor] = useState(null);
-  const [submissions, setSubmissions] = useState([]);
+  const [instructor, setInstructor] = useState<UserProfile | null>(null);
+  const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
-  const [expandedSheet, setExpandedSheet] = useState(null);
+  const [expandedSheet, setExpandedSheet] = useState<string | null>(null);
 
-  const phaseNumber = parseInt(phaseNum, 10);
+  const phaseNumber = parseInt(phaseNum || '1', 10);
   const isManager = profile?.role === 'academic_head';
   const isOnboardingLead = profile?.role === 'onboarding_lead';
   const wsList = PHASE_WORKSHEETS_MAP[phaseNumber] || [];
@@ -38,8 +62,8 @@ export default function PhaseReview() {
         supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
         supabase.from('worksheet_submissions').select('*').eq('user_id', userId).in('worksheet_id', wsList),
       ]);
-      if (instrRes.data) setInstructor(instrRes.data);
-      if (wsRes.data) setSubmissions(wsRes.data);
+      if (instrRes.data) setInstructor(instrRes.data as unknown as UserProfile);
+      if (wsRes.data) setSubmissions(wsRes.data as unknown as WorksheetSubmission[]);
     } catch (err) {
       console.error('Failed to load phase review data:', err);
     }
@@ -58,7 +82,7 @@ export default function PhaseReview() {
       return;
     }
 
-    const historyEntry = {
+    const historyEntry: Record<string, unknown> = {
       action: 'phase_approved',
       reviewer_name: profile?.full_name || profile?.email || 'Manager',
       reviewer_id: profile?.id,
@@ -67,7 +91,7 @@ export default function PhaseReview() {
     };
 
     let allSucceeded = true;
-    let approvedNames = [];
+    const approvedNames: string[] = [];
 
     for (const sub of toApprove) {
       const existingHistory = sub.review_history || [];
@@ -90,7 +114,7 @@ export default function PhaseReview() {
         approvedNames.push(sub.worksheet_id);
         // Notify joinee for each approved worksheet
         await triggerNotification({
-          userId,
+          userId: userId || '',
           fromUserId: profile?.id,
           worksheetId: sub.worksheet_id,
           type: 'approved',
@@ -103,7 +127,7 @@ export default function PhaseReview() {
       setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved.`);
 
       // Notify the ASSIGNED buddy that the phase has been manager-approved
-      let buddyIds = await getAssignedReviewerIds(userId, 'buddy');
+      let buddyIds = await getAssignedReviewerIds(userId || '', 'buddy');
       // Fallback to all buddies if no assigned buddy found
       if (buddyIds.length === 0) {
         buddyIds = await getReviewerUserIds('buddy');
@@ -112,14 +136,14 @@ export default function PhaseReview() {
         await triggerNotification({
           userId: buddyId,
           fromUserId: profile?.id,
-          worksheetId: wsList[0], // reference the first sheet in the phase
+          worksheetId: wsList[0] || '',
           type: 'approved',
           message: `Phase ${phaseNumber} for ${instructor?.full_name || 'joinee'} has been approved by the manager.`,
         });
       }
 
       // Check if all phases are now complete → auto-promote
-      const result = await checkAndPromote(userId);
+      const result = await checkAndPromote(userId || '');
       if (result.promoted) {
         setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved. 🎉 ${result.message}`);
       }
@@ -129,7 +153,7 @@ export default function PhaseReview() {
         loadData();
       }, 1500);
     } else {
-      setActionMessage(`⚠️ Some worksheets could not be approved. Check console for details.`);
+      setActionMessage('⚠️ Some worksheets could not be approved. Check console for details.');
     }
 
     setActionLoading(false);
@@ -209,8 +233,8 @@ export default function PhaseReview() {
           <SummaryCard label="Buddy Approved" value={buddyApproved.length} color="#381E72" icon={Shield} />
           <SummaryCard label="Already Approved" value={alreadyApproved.length} color="#1B5E20" icon={CheckCircle2} />
           <SummaryCard label="Pending Review" value={pending.length} color="#D4AF37" icon={Clock} />
-          <SummaryCard label="Needs Revision" value={needsRevision.length} color="#C62828" />
-          <SummaryCard label="Not Started" value={notSubmitted.length} color={t.wg} />
+          {needsRevision.length > 0 && <SummaryCard label="Needs Revision" value={needsRevision.length} color="#C62828" />}
+          {notSubmitted.length > 0 && <SummaryCard label="Not Started" value={notSubmitted.length} color={t.wg} />}
         </div>
 
         {/* Approve Phase Button */}
@@ -248,17 +272,17 @@ export default function PhaseReview() {
             const sub = submissions.find(s => s.worksheet_id === wsId);
             const status = sub?.review_status || 'not_started';
             const data = sub?.worksheet_data || {};
-            const info = WORKSHEET_INFO[wsId] || { title: wsId };
+            const info = WORKSHEET_INFO[wsId] || { title: wsId, phase: '' };
             const isExpanded = expandedSheet === wsId;
 
-            const statusColors = {
+            const statusColors: Record<string, string> = {
               approved: '#1B5E20',
               buddy_approved: '#381E72',
               pending_review: '#D4AF37',
               revision_submitted: '#7D5260',
               needs_revision: '#C62828',
             };
-            const statusLabels = {
+            const statusLabels: Record<string, string> = {
               approved: 'Approved (Manager)',
               buddy_approved: 'Buddy Approved',
               pending_review: 'Pending Buddy Review',
@@ -291,7 +315,7 @@ export default function PhaseReview() {
                 </div>
                 {(isExpanded || expandedSheet === 'all') && data && Object.keys(data).length > 0 && (
                   <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(26, 26, 26, 0.02)', border: '1px solid rgba(26, 26, 26, 0.08)' }}>
-                    <ReviewContent data={data} worksheetId={wsId} />
+                    <ReviewContent data={data as Record<string, unknown>} worksheetId={wsId} />
                   </div>
                 )}
               </div>
@@ -299,16 +323,6 @@ export default function PhaseReview() {
           })}
         </div>
       </div>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, color, icon: Icon }) {
-  return (
-    <div style={{ background: 'var(--color-alabaster)', padding: '1rem', textAlign: 'center' }}>
-      {Icon && <Icon size={18} strokeWidth={1.5} style={{ color, marginBottom: '4px' }} />}
-      <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch }}>{value}</p>
-      <p style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: t.wg }}>{label}</p>
     </div>
   );
 }
