@@ -3,8 +3,27 @@ import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight, Loade
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
+import type { UserRole } from '../types/supabase';
 
-const roleLabels = {
+// ─── Types ──────────────────────────────────────────────
+
+interface NavLink {
+  path: string;
+  label: string;
+  icon?: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+}
+
+interface RoleLabels {
+  [key: string]: string;
+}
+
+interface NavbarProps {
+  progress?: number;
+}
+
+// ─── Constants ──────────────────────────────────────────
+
+const roleLabels: RoleLabels = {
   new_joinee: 'New Joinee',
   lab_instructor: 'Lab Instructor',
   lead_instructor: 'Buddy / Mentor',
@@ -13,47 +32,52 @@ const roleLabels = {
   acad_ops: 'Acad Ops',
 };
 
-export default function Navbar({ progress }) {
+// ─── Component ──────────────────────────────────────────
+
+export default function Navbar({ progress }: NavbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
-  const userMenuRef = useRef(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const { user, profile, signOut } = useAuth();
 
   // Close user menu on outside click
   useEffect(() => {
     if (!userMenuOpen) return;
-    const handleClick = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+    const handleClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [userMenuOpen]);
-  const role = profile?.role;
+
+  const role = profile?.role as UserRole | undefined;
 
   // Role-specific links
-  const roleLinks = [];
+  const roleLinks: NavLink[] = [];
   if (role === 'lead_instructor' || role === 'academic_head') roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
   if (role === 'onboarding_lead') roleLinks.push({ path: '/onboarding-lead', label: 'Monitoring', icon: Shield });
   if (role === 'academic_head' || role === 'onboarding_lead') roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
 
-  const baseLinks = [
-  { path: '/', label: 'Dashboard' },
-  { path: '/stakeholders', label: 'Stakeholders' },
-];
-const joineeLinks = ['new_joinee', 'lab_instructor'].includes(role) ? [
-  { path: '/phase-1', label: 'Phase 1' },
-  // Phase 2 and 3 are gated — the phase pages themselves handle the lock check.
-  // Navbar always shows them as navigable; the phase page will redirect if locked.
-  { path: '/phase-2', label: 'Phase 2' },
-  { path: '/phase-3', label: 'Phase 3' },
-] : [];
-const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
+  const baseLinks: NavLink[] = [
+    { path: '/', label: 'Dashboard' },
+    { path: '/stakeholders', label: 'Stakeholders' },
+  ];
+
+  const joineeLinks: NavLink[] = (role === 'new_joinee' || role === 'lab_instructor') ? [
+    { path: '/phase-1', label: 'Phase 1' },
+    // Phase 2 and 3 are gated — the phase pages themselves handle the lock check.
+    // Navbar always shows them as navigable; the phase page will redirect if locked.
+    { path: '/phase-2', label: 'Phase 2' },
+    { path: '/phase-3', label: 'Phase 3' },
+  ] : [];
+
+  const allLinks: NavLink[] = [...roleLinks, ...baseLinks, ...joineeLinks];
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -66,7 +90,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
     setConfirmingSignOut(false);
   };
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string): boolean => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
     <header style={{
@@ -124,8 +148,8 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                     borderBottom: active ? '1px solid var(--color-charcoal)' : '1px solid transparent',
                     transition: 'color 500ms var(--ease-lux), border-color 500ms var(--ease-lux)',
                   }}
-                    onMouseOver={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-gold)'; }}
-                    onMouseOut={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-warm-grey)'; }}
+                    onMouseOver={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--color-gold)'; }}
+                    onMouseOut={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--color-warm-grey)'; }}
                   >
                     {Icon && <Icon size={14} strokeWidth={1.5} />}
                     {item.label}
@@ -171,7 +195,6 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                     zIndex: 200,
                     fontFamily: 'var(--font-body)',
                     fontSize: '0.8rem',
-                    animation: 'menuFadeIn 200ms ease-out',
                   }}>
                     <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid rgba(26, 26, 26, 0.12)' }}>
                       <p style={{ fontWeight: 500, color: 'var(--color-charcoal)', fontSize: '0.85rem' }}>{profile?.full_name}</p>
@@ -261,7 +284,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
         </div>
 
         {/* Progress bar - only for instructors */}
-        {(role === 'lab_instructor' || role === 'new_joinee') && progress > 0 && (
+        {(role === 'lab_instructor' || role === 'new_joinee') && (progress ?? 0) > 0 && (
           <div style={{ padding: '0 0 12px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="lux-progress" style={{ flex: 1 }}>
@@ -275,7 +298,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                 color: 'var(--color-warm-grey)',
                 whiteSpace: 'nowrap',
               }}>
-                {Math.round(progress)}%
+                {Math.round(progress ?? 0)}%
               </span>
             </div>
           </div>
@@ -335,7 +358,7 @@ const allLinks = [...roleLinks, ...baseLinks, ...joineeLinks];
                     }}>
                     Cancel
                   </button>
-                  <button onClick={() => { handleSignOut(); setMobileOpen(false); }} disabled={signingOut}
+                  <button onClick={() => { void handleSignOut(); setMobileOpen(false); }} disabled={signingOut}
                     style={{
                       flex: 1, padding: '10px 0', border: '1px solid #C62828', background: '#C62828',
                       cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',

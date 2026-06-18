@@ -1,12 +1,14 @@
 // =====================================================
-// worksheetConfig.jsx — React-specific re-exports
+// worksheetConfig.tsx — React-specific re-exports
 //
-// Pure data/config/helper functions live in worksheetConfig.js
+// Pure data/config/helper functions live in worksheetConfigData.ts
 // (no React dependencies, directly testable).
-// This file re-exports everything from worksheetConfig.js
+// This file re-exports everything from worksheetConfigData.ts
 // and adds React-dependent components (ReviewerBadge,
 // WORKSHEET_COMPONENTS).
 // =====================================================
+
+import type { FC } from 'react';
 
 export {
   WORKSHEET_REVIEWER,
@@ -28,7 +30,7 @@ export {
   getApprovedPhases,
   getMaxAccessiblePhase,
   canAccessPhase,
-} from './worksheetConfigData.js';
+} from './worksheetConfigData';
 
 import Phase1Worksheet1 from '../pages/worksheets/Phase1Worksheet1';
 import Phase1Worksheet2 from '../pages/worksheets/Phase1Worksheet2';
@@ -51,12 +53,16 @@ import GateControl1 from '../pages/gate-controls/GateControl1';
 import GateControl2 from '../pages/gate-controls/GateControl2';
 import GateControl3 from '../pages/gate-controls/GateControl3';
 
-import { getReviewerType, REVIEWER_LABELS, REVIEWER_STYLES } from './worksheetConfigData.js';
+import { getReviewerType, REVIEWER_LABELS, REVIEWER_STYLES } from './worksheetConfigData';
 
 /**
  * Map of worksheet ID → React component for dynamic worksheet routing.
  */
-export const WORKSHEET_COMPONENTS = {
+// GateControl components need targetUserId prop, worksheets don't.
+// Using `any` here is acceptable since these are runtime-mapped components
+// that receive props dynamically from the routing system.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const WORKSHEET_COMPONENTS: Record<string, FC<any>> = {
   p1_w1: Phase1Worksheet1, p1_w2: Phase1Worksheet2, p1_w3: Phase1Worksheet3,
   p1_w4: Phase1Worksheet4, p1_w5: Phase1Worksheet5, p1_w6: Phase1Worksheet6,
   p1_w7: Phase1Worksheet7, p1_w8: Phase1Worksheet8, gc1: GateControl1,
@@ -66,14 +72,19 @@ export const WORKSHEET_COMPONENTS = {
   p3_w4: Phase3Worksheet4, p3_w5: Phase3Worksheet5, gc3: GateControl3,
 };
 
+interface ReviewerBadgeProps {
+  worksheetId: string;
+  style?: React.CSSProperties;
+}
+
 /**
  * ReviewerBadge — Shows the reviewer type for a worksheet.
  * Renders with Luxury/Editorial styling (0px radius, uppercase tracking).
  */
-export function ReviewerBadge({ worksheetId, style: extraStyle = {} }) {
+export function ReviewerBadge({ worksheetId, style: extraStyle = {} }: ReviewerBadgeProps) {
   const type = getReviewerType(worksheetId);
-  const style = REVIEWER_STYLES[type];
-  const label = REVIEWER_LABELS[type];
+  const style = REVIEWER_STYLES[type]!;
+  const label = REVIEWER_LABELS[type] || 'Reviewer';
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',

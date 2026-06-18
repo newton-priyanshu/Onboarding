@@ -1,36 +1,47 @@
-import { Component } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
-export default class ErrorBoundary extends Component {
-  constructor(props) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+  locationKey?: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
   // Automatically reset when route/key changes (passed from parent via locationKey prop)
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Readonly<ErrorBoundaryProps>): void {
     if (this.state.hasError && this.props.locationKey !== prevProps.locationKey) {
       this.setState({ hasError: false, error: null });
     }
   }
 
-  handleReset = () => {
+  handleReset = (): void => {
     this.setState({ hasError: false, error: null });
   };
 
-  handleReload = () => {
+  handleReload = (): void => {
     window.location.reload();
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
 

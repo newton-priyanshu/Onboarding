@@ -3,24 +3,22 @@
 // component tree. Components subscribe to receive toast notifications,
 // and non-React code dispatches events via dispatchToast.
 
-const listeners = new Set();
+type ToastListener = (message: string, type: 'error' | 'warning' | 'success' | 'info') => void;
+
+const listeners = new Set<ToastListener>();
 
 /**
  * Subscribe to toast events. Returns an unsubscribe function.
- * @param {(message: string, type: 'error'|'warning'|'success'|'info') => void} listener
- * @returns {() => void} unsubscribe
  */
-export function onToast(listener) {
+export function onToast(listener: ToastListener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
 /**
  * Dispatch a toast notification from anywhere in the app.
- * @param {string} message
- * @param {'error'|'warning'|'success'|'info'} type
  */
-export function dispatchToast(message, type = 'info') {
+export function dispatchToast(message: string, type: 'error' | 'warning' | 'success' | 'info' = 'info'): void {
   listeners.forEach(fn => {
     try { fn(message, type); } catch (e) { console.error('Toast listener error:', e); }
   });
@@ -28,12 +26,8 @@ export function dispatchToast(message, type = 'info') {
 
 /**
  * Log an error to the console AND show a toast notification.
- * Future: Replace with a more sophisticated error reporting service.
- *
- * @param {string} message - Human-readable description of the error
- * @param {any} [details] - Optional error object or details to log
  */
-export function notifyError(message, details = null) {
+export function notifyError(message: string, details: unknown = null): void {
   console.error(message, details);
   dispatchToast(
     typeof message === 'string' ? message : 'An unexpected error occurred.',

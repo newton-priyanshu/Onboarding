@@ -1,5 +1,6 @@
-import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle, type LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 
 const t = {
   body: 'var(--font-body)', heading: 'var(--font-heading)',
@@ -7,8 +8,97 @@ const t = {
   ease: 'var(--ease-lux)',
 };
 
-/* ─── Worksheet Header ─────────────────────────────────────── */
-export function WorksheetHeader({ icon: Icon, title, subtitle, badge, saveStatus }) {
+// ─── Types ──────────────────────────────────────────────
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+interface WorksheetHeaderProps {
+  icon: LucideIcon;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  saveStatus?: SaveStatus;
+}
+
+interface SectionProps {
+  title?: string;
+  subtitle?: string;
+  children: ReactNode;
+}
+
+interface FieldGroupProps {
+  label: string;
+  required?: boolean;
+  id?: string;
+  children: ReactNode;
+  hint?: string;
+}
+
+interface FieldGridProps {
+  cols: number;
+  children: ReactNode;
+}
+
+interface SaveIndicatorProps {
+  status?: SaveStatus;
+}
+
+interface ActionBarProps {
+  onCancel?: () => void;
+  onSubmit?: () => void;
+  submitting?: boolean;
+  submitLabel?: string;
+}
+
+interface StatusViewProps {
+  msg: string;
+  path: string;
+  title?: string;
+}
+
+interface ApprovedViewProps {
+  msg: string;
+  path: string;
+  title?: string;
+  reviewerName?: string;
+  date?: string;
+}
+
+interface ReviewFeedbackProps {
+  data?: Record<string, unknown>;
+}
+
+interface ErrorAlertProps {
+  message?: string | null;
+  onDismiss?: () => void;
+}
+
+interface GridTableProps {
+  headers: Array<{ key: string; label: string; width?: string }>;
+  rows: Array<Record<string, unknown>>;
+  renderCell?: (row: Record<string, unknown>, key: string, index: number) => ReactNode;
+}
+
+interface SliderProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+interface BackButtonProps {
+  to?: string;
+  label?: string;
+}
+
+interface ReviewHistoryEntry {
+  action: string;
+  reviewer_name?: string;
+  comment?: string;
+  timestamp?: string;
+}
+
+/* ─── Worksheet Header ────────────────────────────────── */
+export function WorksheetHeader({ icon: Icon, title, subtitle, badge }: WorksheetHeaderProps) {
   return (
     <div style={{ marginBottom: '2.5rem' }}>
       <div className="lux-line lux-line-gold" style={{ marginBottom: '1rem' }} />
@@ -25,16 +115,13 @@ export function WorksheetHeader({ icon: Icon, title, subtitle, badge, saveStatus
           </div>
           <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, margin: 0 }}>{subtitle}</p>
         </div>
-        <div style={{ flexShrink: 0 }}>
-          <SaveIndicator status={saveStatus} />
-        </div>
       </div>
     </div>
   );
 }
 
-/* ─── Worksheet Section (Card) ─────────────────────────────── */
-export function WorksheetSection({ title, subtitle, children }) {
+/* ─── Worksheet Section (Card) ────────────────────────── */
+export function WorksheetSection({ title, subtitle, children }: SectionProps) {
   return (
     <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.5rem 0' }}>
       {title && (
@@ -48,8 +135,8 @@ export function WorksheetSection({ title, subtitle, children }) {
   );
 }
 
-/* ─── Field Group ──────────────────────────────────────────── */
-export function FieldGroup({ label, required, id, children, hint }) {
+/* ─── Field Group ─────────────────────────────────────── */
+export function FieldGroup({ label, required, id, children, hint }: FieldGroupProps) {
   return (
     <div className="lux-form-group">
       <label className="lux-label" htmlFor={id || undefined} style={{ marginBottom: '6px' }}>
@@ -61,8 +148,8 @@ export function FieldGroup({ label, required, id, children, hint }) {
   );
 }
 
-/* ─── Grid Layout Helper ───────────────────────────────────── */
-export function FieldGrid({ cols, children }) {
+/* ─── Grid Layout Helper ──────────────────────────────── */
+export function FieldGrid({ cols, children }: FieldGridProps) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '0.75rem' }}>
       {children}
@@ -70,11 +157,11 @@ export function FieldGrid({ cols, children }) {
   );
 }
 
-/* ─── Save Indicator ───────────────────────────────────────── */
-export function SaveIndicator({ status }) {
+/* ─── Save Indicator ──────────────────────────────────── */
+export function SaveIndicator({ status }: SaveIndicatorProps) {
   if (!status || status === 'idle') return null;
 
-  const configs = {
+  const configs: Record<string, { label: string; icon: LucideIcon; color: string }> = {
     saving: { label: 'Saving…', icon: Clock, color: '#E65100' },
     saved: { label: 'Saved', icon: CheckCircle2, color: '#1B5E20' },
     error: { label: 'Failed', icon: AlertCircle, color: '#C62828' },
@@ -97,8 +184,8 @@ export function SaveIndicator({ status }) {
   );
 }
 
-/* ─── Action Bar ───────────────────────────────────────────── */
-export function ActionBar({ onCancel, onSubmit, submitting, submitLabel = 'Submit for Review' }) {
+/* ─── Action Bar ──────────────────────────────────────── */
+export function ActionBar({ onCancel, onSubmit, submitting, submitLabel = 'Submit for Review' }: ActionBarProps) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'flex-end', gap: '12px',
@@ -118,8 +205,8 @@ export function ActionBar({ onCancel, onSubmit, submitting, submitLabel = 'Submi
   );
 }
 
-/* ─── Submitted View ───────────────────────────────────────── */
-export function SubmittedView({ msg, path, title = 'Worksheet Submitted' }) {
+/* ─── Submitted View ──────────────────────────────────── */
+export function SubmittedView({ msg, path, title = 'Worksheet Submitted' }: StatusViewProps) {
   const navigate = useNavigate();
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
@@ -140,8 +227,8 @@ export function SubmittedView({ msg, path, title = 'Worksheet Submitted' }) {
   );
 }
 
-/* ─── Buddy Approved View ──────────────────────────────────── */
-export function BuddyApprovedView({ msg, path, title = '✓ Buddy Approved' }) {
+/* ─── Buddy Approved View ─────────────────────────────── */
+export function BuddyApprovedView({ msg, path, title = '✓ Buddy Approved' }: StatusViewProps) {
   const navigate = useNavigate();
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
@@ -167,8 +254,8 @@ export function BuddyApprovedView({ msg, path, title = '✓ Buddy Approved' }) {
   );
 }
 
-/* ─── Approved View ────────────────────────────────────────── */
-export function ApprovedView({ msg, path, title = '✓ Worksheet Approved', reviewerName, date }) {
+/* ─── Approved View ───────────────────────────────────── */
+export function ApprovedView({ msg, path, title = '✓ Worksheet Approved', reviewerName, date }: ApprovedViewProps) {
   const navigate = useNavigate();
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
@@ -194,7 +281,7 @@ export function ApprovedView({ msg, path, title = '✓ Worksheet Approved', revi
   );
 }
 
-/* ─── Loading View ─────────────────────────────────────────── */
+/* ─── Loading View ────────────────────────────────────── */
 export function LoadingView() {
   return (
     <div className="lux-section" style={{ textAlign: 'center' }}>
@@ -205,24 +292,14 @@ export function LoadingView() {
   );
 }
 
-/* ─── Review Feedback Banner ──────────────────────────────── */
-/**
- * ReviewFeedback – Shows reviewer's comment and full review history
- * to the joinee when a worksheet is sent back for revision.
- * Props:
- *   status: 'needs_revision' | 'revision_submitted' | 'approved' | null
- *   comment: string (reviewer's comment/reason for revision)
- *   reviewerName: string
- *   history: array of { action, reviewer_name, comment, timestamp }
- */
-export function ReviewFeedback({ data }) {
+/* ─── Review Feedback Banner ──────────────────────────── */
+export function ReviewFeedback({ data }: ReviewFeedbackProps) {
   if (!data || !data._savedReviewStatus) return null;
 
-  const status = data._savedReviewStatus;
-  const comment = data._savedReviewComment;
-  const reviewerName = data._savedReviewerName;
-  const history = data._savedReviewHistory || [];
-  const submittedDate = data.dateSubmitted;
+  const status = data._savedReviewStatus as string;
+  const comment = data._savedReviewComment as string | undefined;
+  const reviewerName = data._savedReviewerName as string | undefined;
+  const history = (data._savedReviewHistory as ReviewHistoryEntry[]) || [];
 
   // Find the most recent 'needs_revision' entry for the latest reviewer feedback
   const latestRevision = history.find(e => e.action === 'needs_revision');
@@ -283,7 +360,7 @@ export function ReviewFeedback({ data }) {
             }}>
               Review History ({history.length})
             </span>
-            {history.slice().reverse().map((entry, idx) => {
+            {history.slice().reverse().map((entry: ReviewHistoryEntry, idx: number) => {
               const isApprove = entry.action === 'approved';
               const isRev = entry.action === 'needs_revision';
               const date = entry.timestamp ? new Date(entry.timestamp) : null;
@@ -336,8 +413,8 @@ export function ReviewFeedback({ data }) {
   );
 }
 
-/* ─── Error Alert ──────────────────────────────────────────── */
-export function ErrorAlert({ message, onDismiss }) {
+/* ─── Error Alert ─────────────────────────────────────── */
+export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
   if (!message) return null;
   return (
     <div className="lux-alert lux-alert-error" style={{ marginBottom: '1rem' }}>
@@ -350,8 +427,8 @@ export function ErrorAlert({ message, onDismiss }) {
   );
 }
 
-/* ─── Table Grid Renderer ──────────────────────────────────── */
-export function GridTable({ headers, rows, renderCell }) {
+/* ─── Table Grid Renderer ─────────────────────────────── */
+export function GridTable({ headers, rows, renderCell }: GridTableProps) {
   if (!rows || rows.length === 0) return null;
   const hasData = rows.some(row => Object.values(row).some(v => v !== '' && v !== null && v !== undefined));
   if (!hasData) return null;
@@ -369,7 +446,7 @@ export function GridTable({ headers, rows, renderCell }) {
         <div key={i} style={{ display: 'grid', gridTemplateColumns: headers.map(h => h.width || '1fr').join(' '), gap: '8px', padding: '8px 0', borderBottom: '1px solid rgba(26,26,26,0.06)' }}>
           {headers.map(h => (
             <div key={h.key}>
-              {renderCell ? renderCell(row, h.key, i) : <span style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.ch }}>{row[h.key] || '—'}</span>}
+              {renderCell ? renderCell(row, h.key, i) : <span style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.ch }}>{String(row[h.key] ?? '—')}</span>}
             </div>
           ))}
         </div>
@@ -378,9 +455,8 @@ export function GridTable({ headers, rows, renderCell }) {
   );
 }
 
-/* ─── GateControl Section ──────────────────────────────────── */
-export function Section({ title, subtitle, children }) {
-  const t = { body: 'var(--font-body)', heading: 'var(--font-heading)', ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)' };
+/* ─── GateControl Section ─────────────────────────────── */
+export function Section({ title, subtitle, children }: SectionProps) {
   return (
     <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.25rem 0' }}>
       <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.ch, marginBottom: subtitle ? '4px' : '0.75rem' }}>{title}</h3>
@@ -390,9 +466,8 @@ export function Section({ title, subtitle, children }) {
   );
 }
 
-/* ─── GateControl Slider (1-5 rating) ──────────────────────── */
-export function Slider({ label, value, onChange }) {
-  const t = { body: 'var(--font-body)', ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)', ease: 'var(--ease-lux)' };
+/* ─── GateControl Slider (1-5 rating) ─────────────────── */
+export function Slider({ label, value, onChange }: SliderProps) {
   return (
     <div style={{ marginBottom: '12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -409,8 +484,8 @@ export function Slider({ label, value, onChange }) {
               fontWeight: 500, cursor: 'pointer', fontFamily: t.body, fontSize: '0.85rem',
               transition: 'all 300ms var(--ease-lux)',
             }}
-            onMouseOver={e => { if (value < n) e.currentTarget.style.borderColor = 'var(--color-gold)'; }}
-            onMouseOut={e => { if (value < n) e.currentTarget.style.borderColor = 'rgba(26,26,26,0.15)'; }}
+            onMouseOver={e => { if (value < n) (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-gold)'; }}
+            onMouseOut={e => { if (value < n) (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(26,26,26,0.15)'; }}
           >{n}</button>
         ))}
       </div>
@@ -418,8 +493,8 @@ export function Slider({ label, value, onChange }) {
   );
 }
 
-/* ─── Back Button ──────────────────────────────────────────── */
-export function BackButton({ to, label = 'Back' }) {
+/* ─── Back Button ─────────────────────────────────────── */
+export function BackButton({ to, label = 'Back' }: BackButtonProps) {
   const navigate = useNavigate();
   return (
     <button onClick={() => to ? navigate(to) : navigate(-1)} className="lux-btn lux-btn-ghost" style={{ marginBottom: '0.5rem' }}>

@@ -1,12 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCheck, CheckCircle2, XCircle, RefreshCw, Clock, AlertTriangle, FileText, User, Shield } from 'lucide-react';
+import { Bell, CheckCheck, CheckCircle2, XCircle, RefreshCw, Clock, AlertTriangle, FileText, Shield, type LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../hooks/useNotifications';
 
-import { t } from '../config/theme.js';
+import { t } from '../config/theme';
 
-const NOTIFICATION_ICONS = {
+// ─── Types ──────────────────────────────────────────────
+
+interface NotificationIconConfig {
+  icon: LucideIcon;
+  color: string;
+}
+
+interface PhaseMap {
+  [key: string]: string;
+}
+
+// ─── Constants ──────────────────────────────────────────
+
+const NOTIFICATION_ICONS: Record<string, NotificationIconConfig> = {
   submitted: { icon: FileText, color: '#0369A1' },
   revision_submitted: { icon: RefreshCw, color: '#7D5260' },
   approved: { icon: CheckCircle2, color: '#1B5E20' },
@@ -16,17 +29,29 @@ const NOTIFICATION_ICONS = {
   overdue: { icon: AlertTriangle, color: '#C62828' },
 };
 
+const PHASE_MAP: PhaseMap = {
+  p1_w1: 'phase-1', p1_w2: 'phase-1', p1_w3: 'phase-1', p1_w4: 'phase-1',
+  p1_w5: 'phase-1', p1_w6: 'phase-1', p1_w7: 'phase-1', p1_w8: 'phase-1',
+  gc1: 'phase-1',
+  p2_w1: 'phase-2', p2_w2: 'phase-2', p2_w3: 'phase-2', p2_w4: 'phase-2',
+  gc2: 'phase-2',
+  p3_w1: 'phase-3', p3_w2: 'phase-3', p3_w3: 'phase-3', p3_w4: 'phase-3', p3_w5: 'phase-3',
+  gc3: 'phase-3',
+};
+
+// ─── Component ──────────────────────────────────────────
+
 export default function NotificationBell() {
   const { user, profile } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, refresh } = useNotifications(user);
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refresh } = useNotifications(user ?? null);
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
   // Close dropdown on outside click
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
@@ -37,12 +62,12 @@ export default function NotificationBell() {
   // Only show for users with notifications (all logged-in users)
   if (!user) return null;
 
-  const handleNotificationClick = async (notification) => {
+  const handleNotificationClick = async (notification: { id: string; from_user_id?: string | null; user_id?: string; worksheet_id: string }) => {
     await markAsRead(notification.id);
     setOpen(false);
 
     // Navigate to the relevant worksheet review or worksheet page
-    const isReviewer = ['lead_instructor', 'academic_head', 'onboarding_lead'].includes(profile?.role);
+    const isReviewer = ['lead_instructor', 'academic_head', 'onboarding_lead'].includes(profile?.role ?? '');
     if (isReviewer) {
       // Route to the correct review URL based on the reviewer's role
       const reviewPath = profile?.role === 'onboarding_lead' ? 'onboarding-lead'
@@ -51,24 +76,15 @@ export default function NotificationBell() {
       navigate(`/${reviewPath}/review/${notification.from_user_id || notification.user_id}/${notification.worksheet_id}`);
     } else {
       // Joinee — navigate to their worksheet
-      const phaseMap = {
-        p1_w1: 'phase-1', p1_w2: 'phase-1', p1_w3: 'phase-1', p1_w4: 'phase-1',
-        p1_w5: 'phase-1', p1_w6: 'phase-1', p1_w7: 'phase-1', p1_w8: 'phase-1',
-        gc1: 'phase-1',
-        p2_w1: 'phase-2', p2_w2: 'phase-2', p2_w3: 'phase-2', p2_w4: 'phase-2',
-        gc2: 'phase-2',
-        p3_w1: 'phase-3', p3_w2: 'phase-3', p3_w3: 'phase-3', p3_w4: 'phase-3', p3_w5: 'phase-3',
-        gc3: 'phase-3',
-      };
-      const phase = phaseMap[notification.worksheet_id] || 'phase-1';
+      const phase = PHASE_MAP[notification.worksheet_id] || 'phase-1';
       navigate(`/${phase}`);
     }
   };
 
-  const timeAgo = (dateStr) => {
+  const timeAgo = (dateStr: string): string => {
     const now = new Date();
     const date = new Date(dateStr);
-    const diffMs = now - date;
+    const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
@@ -94,8 +110,8 @@ export default function NotificationBell() {
           justifyContent: 'center',
           transition: 'border-color 500ms var(--ease-lux)',
         }}
-        onMouseOver={e => { e.currentTarget.style.borderColor = t.gd; }}
-        onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(26, 26, 26, 0.15)'; }}
+        onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.gd; }}
+        onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(26, 26, 26, 0.15)'; }}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell size={18} strokeWidth={1.5} />
@@ -179,7 +195,7 @@ export default function NotificationBell() {
                 <p style={{ fontSize: '0.8rem', color: t.wg }}>No notifications yet</p>
               </div>
             ) : (
-              notifications.slice(0, 30).map(n => {
+              notifications.slice(0, 30).map((n: { id: string; type: string; message: string; created_at: string; read: boolean; worksheet_id: string; from_user_id?: string | null }) => {
                 const config = NOTIFICATION_ICONS[n.type] || { icon: Bell, color: t.wg };
                 const Icon = config.icon;
                 const isUnread = !n.read;
@@ -195,8 +211,8 @@ export default function NotificationBell() {
                       borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
                       transition: 'background 300ms var(--ease-lux)',
                     }}
-                    onMouseOver={e => { e.currentTarget.style.background = 'rgba(26, 26, 26, 0.06)'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = isUnread ? 'rgba(26, 26, 26, 0.03)' : 'transparent'; }}
+                    onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(26, 26, 26, 0.06)'; }}
+                    onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.background = isUnread ? 'rgba(26, 26, 26, 0.03)' : 'transparent'; }}
                   >
                     <div style={{
                       width: '28px', height: '28px',

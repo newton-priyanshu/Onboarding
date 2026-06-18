@@ -1,16 +1,48 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import { X, CheckCircle2, AlertCircle, Info, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { onToast } from '../utils/errorHandling';
 
-const ToastContext = createContext(null);
+// ─── Types ──────────────────────────────────────────────
 
-export function useToast() {
+type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+interface ToastItem {
+  id: number;
+  message: string;
+  type: ToastType;
+  entering: boolean;
+}
+
+interface ToastContextValue {
+  showToast: (message: string, type?: ToastType, duration?: number) => number;
+  removeToast: (id: number) => void;
+  clearToasts: () => void;
+}
+
+interface ToastStyleConfig {
+  icon: LucideIcon;
+  bg: string;
+  border: string;
+  text: string;
+}
+
+interface TimersRef {
+  current: Record<number, ReturnType<typeof setTimeout>>;
+}
+
+// ─── Context ────────────────────────────────────────────
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export function useToast(): ToastContextValue {
   const context = useContext(ToastContext);
   if (!context) throw new Error('useToast must be used within ToastProvider');
   return context;
 }
 
-const TOAST_STYLES = {
+// ─── Styles ─────────────────────────────────────────────
+
+const TOAST_STYLES: Record<ToastType, ToastStyleConfig> = {
   success: { icon: CheckCircle2, bg: '#F9F8F6', border: '#1B5E20', text: '#1B5E20' },
   error: { icon: AlertCircle, bg: '#F9F8F6', border: '#C62828', text: '#C62828' },
   warning: { icon: AlertTriangle, bg: '#F9F8F6', border: '#E65100', text: '#E65100' },
@@ -19,17 +51,19 @@ const TOAST_STYLES = {
 
 let toastIdCounter = 0;
 
-export function ToastProvider({ children }) {
-  const [toasts, setToasts] = useState([]);
-  const timersRef = useRef({});
+// ─── Provider ───────────────────────────────────────────
 
-  const removeToast = useCallback((id) => {
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const timersRef = useRef<TimersRef['current']>({});
+
+  const removeToast = useCallback((id: number) => {
     if (timersRef.current[id]) clearTimeout(timersRef.current[id]);
     setToasts(prev => prev.filter(t => t.id !== id));
     delete timersRef.current[id];
   }, []);
 
-  const showToast = useCallback((message, type = 'info', duration = 5000) => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 5000): number => {
     const id = ++toastIdCounter;
     setToasts(prev => [...prev, { id, message, type, entering: true }]);
     requestAnimationFrame(() => {

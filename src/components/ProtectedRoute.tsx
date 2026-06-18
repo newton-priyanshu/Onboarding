@@ -1,7 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import type { UserRole } from '../types/supabase';
 
-export default function ProtectedRoute({ children, requiredRoles }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredRoles?: UserRole[];
+}
+
+export default function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
@@ -33,5 +39,5 @@ export default function ProtectedRoute({ children, requiredRoles }) {
     }
   }
 
-  return children;
+  return <>{children}</>;
 }
