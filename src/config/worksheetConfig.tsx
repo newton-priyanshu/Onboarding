@@ -32,6 +32,8 @@ export {
   canAccessPhase,
 } from './worksheetConfigData';
 
+export type { WorksheetSubmission, UserProfile } from '../types/supabase';
+
 import Phase1Worksheet1 from '../pages/worksheets/Phase1Worksheet1';
 import Phase1Worksheet2 from '../pages/worksheets/Phase1Worksheet2';
 import Phase1Worksheet3 from '../pages/worksheets/Phase1Worksheet3';

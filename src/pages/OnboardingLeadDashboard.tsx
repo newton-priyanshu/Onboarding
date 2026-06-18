@@ -2,15 +2,34 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { Users, Clock, CheckCircle2, RefreshCw, Shield, BadgeCheck, Eye, User, BookOpen } from 'lucide-react';
-import { WORKSHEET_REVIEWER, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, WORKSHEET_NAMES } from '../config/worksheetConfig.jsx';
-import { t } from '../config/theme.js';
+import { Users, Clock, RefreshCw, Shield, BadgeCheck, Eye, LucideIcon } from 'lucide-react';
+import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { t } from '../config/theme';
+
+interface PhaseInfo {
+  phase: number;
+  total: number;
+  done: number;
+  ready: boolean;
+}
+
+interface FilterOption {
+  id: string;
+  label: string;
+}
+
+interface StatItem {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  color: string;
+}
 
 export default function OnboardingLeadDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [instructors, setInstructors] = useState([]);
-  const [allWorksheets, setAllWorksheets] = useState([]);
+  const [instructors, setInstructors] = useState<UserProfile[]>([]);
+  const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('all');
   const [viewPhase, setViewPhase] = useState('all');
@@ -26,8 +45,8 @@ export default function OnboardingLeadDashboard() {
         supabase.from('user_profiles').select('*').in('role', ['new_joinee', 'lab_instructor']),
         supabase.from('worksheet_submissions').select('*'),
       ]);
-      if (instrRes.data) setInstructors(instrRes.data);
-      if (wsRes.data) setAllWorksheets(wsRes.data);
+      if (instrRes.data) setInstructors(instrRes.data as unknown as UserProfile[]);
+      if (wsRes.data) setAllWorksheets(wsRes.data as unknown as WorksheetSubmission[]);
     } catch (err) {
       console.error('Failed to load monitoring data:', err);
     }
@@ -79,7 +98,7 @@ export default function OnboardingLeadDashboard() {
     });
   }
 
-  const getPhaseForInstr = (userId) => {
+  const getPhaseForInstr = (userId: string): PhaseInfo[] => {
     return [1, 2, 3].map(p => {
       const wsIds = PHASE_WORKSHEETS_MAP[p] || [];
       const userSubs = allWorksheets.filter(w => w.user_id === userId && wsIds.includes(w.worksheet_id));
@@ -88,11 +107,18 @@ export default function OnboardingLeadDashboard() {
     });
   };
 
-  const filterOptions = [
+  const filterOptions: FilterOption[] = [
     { id: 'all', label: 'All' },
     { id: 'has_submissions', label: 'Has Submissions' },
     { id: 'no_submissions', label: 'No Submissions' },
     { id: 'phase_ready', label: 'Phase Ready' },
+  ];
+
+  const statItems: StatItem[] = [
+    { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
+    { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
+    { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: '#381E72' },
+    { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: '#1B5E20' },
   ];
 
   return (
@@ -119,12 +145,7 @@ export default function OnboardingLeadDashboard() {
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1px', background: 'rgba(26, 26, 26, 0.1)', marginBottom: '2rem' }}>
-          {[
-            { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
-            { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
-            { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: '#381E72' },
-            { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: '#1B5E20' },
-          ].map((item, i) => (
+          {statItems.map((item, i) => (
             <div key={i} style={{ background: 'var(--color-alabaster)', padding: '1.25rem', textAlign: 'center' }}>
               <item.icon size={20} strokeWidth={1.5} style={{ color: item.color, marginBottom: '8px' }} />
               <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch }}>{item.value}</p>

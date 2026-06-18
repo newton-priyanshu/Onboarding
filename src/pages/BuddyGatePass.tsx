@@ -1,26 +1,38 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { ArrowLeft, Shield, User } from 'lucide-react';
+import { ArrowLeft, Shield } from 'lucide-react';
 import GateControl1 from './gate-controls/GateControl1';
 import GateControl2 from './gate-controls/GateControl2';
 import GateControl3 from './gate-controls/GateControl3';
-import { WORKSHEET_NAMES, WORKSHEET_INFO } from '../config/worksheetConfig.jsx';
+import { WORKSHEET_NAMES } from '../config/worksheetConfig';
+import { t } from '../config/theme';
+import type { FC } from 'react';
 
-import { t } from '../config/theme.js';
+interface GateParams {
+  userId: string;
+  gateId: string;
+  [key: string]: string | undefined;
+}
 
-const GATE_COMPONENTS = {
+interface JoineeInfo {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+const GATE_COMPONENTS: Record<string, FC<{ targetUserId: string }>> = {
   gc1: GateControl1,
   gc2: GateControl2,
   gc3: GateControl3,
 };
 
 export default function BuddyGatePass() {
-  const { userId, gateId } = useParams();
-  const { profile } = useAuth();
+  const params = useParams<GateParams>();
+  const userId = params.userId;
+  const gateId = params.gateId;
   const navigate = useNavigate();
-  const [joinee, setJoinee] = useState(null);
+  const [joinee, setJoinee] = useState<JoineeInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,14 +43,13 @@ export default function BuddyGatePass() {
         .select('id, full_name, email')
         .eq('id', userId)
         .single();
-      if (data) setJoinee(data);
+      if (data) setJoinee(data as JoineeInfo);
       setLoading(false);
     })();
   }, [userId]);
 
-  const GateComponent = GATE_COMPONENTS[gateId];
-  const wsInfo = WORKSHEET_INFO[gateId] || { title: gateId };
-  const wsName = WORKSHEET_NAMES[gateId] || gateId;
+  const GateComponent = GATE_COMPONENTS[gateId || ''];
+  const wsName = WORKSHEET_NAMES[gateId || ''] || gateId || '';
 
   if (!gateId || !GATE_COMPONENTS[gateId]) {
     return (
@@ -47,7 +58,7 @@ export default function BuddyGatePass() {
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', color: t.ch }}>Invalid Gate Pass</h2>
           <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, margin: '1rem 0' }}>
-            No gate component found for "{gateId}".
+            No gate component found for &quot;{gateId}&quot;.
           </p>
           <button onClick={() => navigate('/buddy')} className="lux-btn lux-btn-secondary">Back to Dashboard</button>
         </div>
@@ -107,7 +118,7 @@ export default function BuddyGatePass() {
         )}
 
         {/* Render the specific GateControl component with targetUserId */}
-        <GateComponent targetUserId={userId} />
+        {GateComponent && <GateComponent targetUserId={userId || ''} />}
       </div>
     </div>
   );

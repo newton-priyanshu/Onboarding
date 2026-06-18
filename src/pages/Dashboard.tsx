@@ -2,23 +2,40 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { 
+import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
-  CheckCircle2, Clock, AlertCircle, FileText,
+  CheckCircle2, Clock, AlertCircle, FileText, LucideIcon,
 } from 'lucide-react';
-import { t } from '../config/theme.js';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge, WORKSHEET_NAMES, isPhaseApproved } from '../config/worksheetConfig.jsx';
+import { t } from '../config/theme';
+import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission } from '../config/worksheetConfig';
 
-const phases = [
+interface PhaseInfo {
+  num: number;
+  title: string;
+  days: string;
+  description: string;
+  icon: LucideIcon;
+  path: string;
+  worksheets: string[];
+}
+
+const phases: PhaseInfo[] = [
   { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes.', icon: BookOpen, path: '/phase-1', worksheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'] },
   { num: 2, title: 'Contribution & Guided Teaching', days: 'Days 31–60', description: 'Teach, create content, and develop your craft.', icon: Target, path: '/phase-2', worksheets: ['p2_w1','p2_w2','p2_w3','p2_w4'] },
   { num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90', description: 'Teach independently and propose improvements.', icon: Sparkles, path: '/phase-3', worksheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'] },
 ];
 
+interface StatusInfo {
+  status: string;
+  label: string;
+  color: string;
+  icon: LucideIcon | null;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [submissions, setSubmissions] = useState([]);
+  const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,8 +48,8 @@ export default function Dashboard() {
       const { data } = await supabase
         .from('worksheet_submissions')
         .select('*')
-        .eq('user_id', user.id);
-      if (data) setSubmissions(data);
+        .eq('user_id', user!.id);
+      if (data) setSubmissions(data as unknown as WorksheetSubmission[]);
     } catch (err) {
       console.error('Failed to load submissions:', err);
     } finally {
@@ -40,18 +57,18 @@ export default function Dashboard() {
     }
   }
 
-  function getWorksheetStatus(wsId) {
-    const sub = submissions.find(s => s.worksheet_id === wsId);
+  function getWorksheetStatus(wsId: string): StatusInfo {
+    const sub = submissions.find((s: WorksheetSubmission) => s.worksheet_id === wsId);
     if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
     if (sub.review_status === 'approved') return { status: 'approved', label: 'Reviewed', color: '#1B5E20', icon: CheckCircle2 };
     if (sub.review_status === 'buddy_approved') return { status: 'buddy_approved', label: 'Buddy Approved', color: '#381E72', icon: CheckCircle2 };
     if (sub.review_status === 'needs_revision') return { status: 'needs_revision', label: 'Needs Revision', color: '#C62828', icon: AlertCircle };
     if (sub.review_status === 'revision_submitted' || sub.review_status === 'pending_review') return { status: 'pending', label: 'Under Review', color: '#7D5260', icon: Clock };
-    if (sub.status === 'submitted') return { status: 'submitted', label: 'Submitted', color: '#7D5260', icon: Clock };
+    if ((sub.status as string) === 'Submitted') return { status: 'submitted', label: 'Submitted', color: '#7D5260', icon: Clock };
     return { status: 'in_progress', label: 'In Progress', color: t.ch, icon: FileText };
   }
 
-  function getPhaseProgress(phaseWorksheets) {
+  function getPhaseProgress(phaseWorksheets: string[]) {
     const total = phaseWorksheets.length;
     const done = phaseWorksheets.filter(wsId => {
       const s = getWorksheetStatus(wsId);
@@ -63,16 +80,16 @@ export default function Dashboard() {
   const totalApproved = submissions.filter(s => s.review_status === 'approved').length;
 
   // Phase gating
-  const phase1Approved = isPhaseApproved(user?.id, 1, submissions);
-  const phase2Approved = isPhaseApproved(user?.id, 2, submissions);
+  const phase1Approved = isPhaseApproved(user?.id || '', 1, submissions);
+  const phase2Approved = isPhaseApproved(user?.id || '', 2, submissions);
 
-  const lockedPhase = (phaseNum) => {
+  const lockedPhase = (phaseNum: number) => {
     if (phaseNum === 2 && !phase1Approved) return true;
     if (phaseNum === 3 && !phase2Approved) return true;
     return false;
   };
 
-  const phaseLockReason = (phaseNum) => {
+  const phaseLockReason = (phaseNum: number) => {
     if (phaseNum === 2 && !phase1Approved) return 'Complete Phase 1 to unlock';
     if (phaseNum === 3 && !phase2Approved) return 'Complete Phase 2 to unlock';
     return '';
@@ -116,14 +133,14 @@ export default function Dashboard() {
           {/* Status Legend */}
           {!loading && (
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              {[
+              {([
                 { label: 'Not Started', color: t.wg },
                 { label: 'In Progress', color: t.ch },
                 { label: 'Buddy Approved', color: '#381E72' },
                 { label: 'Under Review', color: '#7D5260' },
                 { label: 'Reviewed', color: '#1B5E20' },
                 { label: 'Needs Revision', color: '#C62828' },
-              ].map(b => (
+              ] as { label: string; color: string }[]).map(b => (
                 <span key={b.label} className="lux-badge lux-badge-light" style={{
                   borderColor: b.color, color: b.color, fontSize: '0.55rem',
                 }}>{b.label}</span>
@@ -248,7 +265,6 @@ export default function Dashboard() {
                       {phase.worksheets.map((wsId, i) => {
                         const ws = getWorksheetStatus(wsId);
                         const StatusIcon = ws.icon;
-                        const reviewerType = WORKSHEET_REVIEWER[wsId] || 'manager';
                         return (
                           <Link key={wsId} to={`/phase-${phase.num}/worksheet-${wsId.replace('p' + phase.num + '_w', '')}`}
                             style={{
@@ -294,13 +310,13 @@ export default function Dashboard() {
             Quick Links
           </h4>
           <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
-            {[
+            {([
               { to: '/phase-1', label: 'Start Phase 1', desc: 'Begin your orientation' },
               { to: '/phase-2', label: 'Phase 2 Worksheets', desc: 'Teaching & content creation' },
               { to: '/phase-3', label: 'Phase 3 Worksheets', desc: 'Independent teaching' },
               { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
               { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
-            ].map((link, i) => (
+            ] as { to: string; label: string; desc: string }[]).map((link, i) => (
               <Link key={i} to={link.to} style={{
                 textDecoration: 'none', padding: '1rem 0',
                 borderTop: '1px solid var(--color-charcoal)',

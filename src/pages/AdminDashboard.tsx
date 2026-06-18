@@ -2,21 +2,55 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { Users, ClipboardCheck, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, RefreshCw, UserCheck, Briefcase, User, Shield, BadgeCheck, XCircle } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, WORKSHEET_NAMES, PHASE_LABELS } from '../config/worksheetConfig.jsx';
+import { Users, Clock, RefreshCw, Briefcase, User, Shield, BadgeCheck, XCircle, LucideIcon } from 'lucide-react';
+import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { triggerNotification } from '../hooks/useNotifications';
+import { t } from '../config/theme';
 
-const PHASE_NAMES = { 1: 'Phase 1', 2: 'Phase 2', 3: 'Phase 3' };
 
-import { t } from '../config/theme.js';
+
+interface BuddyProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+}
+
+interface InstrStats {
+  total: number;
+  pending: number;
+  buddyApproved: number;
+  approved: number;
+  revision: number;
+  notStarted: number;
+}
+
+interface PhaseProgress {
+  total: number;
+  completed: number;
+  buddyApproved: number;
+  pct: number;
+}
+
+interface TabItem {
+  id: string;
+  label: string;
+}
+
+interface StatItem {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  color: string;
+}
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [instructors, setInstructors] = useState([]);
-  const [leadInstructors, setLeadInstructors] = useState([]);
-  const [allBuddyProfiles, setAllBuddyProfiles] = useState([]);
-  const [allWorksheets, setAllWorksheets] = useState([]);
+  const [instructors, setInstructors] = useState<UserProfile[]>([]);
+  const [, setLeadInstructors] = useState<BuddyProfile[]>([]);
+  const [allBuddyProfiles, setAllBuddyProfiles] = useState<BuddyProfile[]>([]);
+  const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -36,11 +70,14 @@ export default function AdminDashboard() {
         supabase.from('worksheet_submissions').select('*'),
         supabase.from('user_profiles').select('id, full_name, email, role').not('role', 'in', '("new_joinee","lab_instructor")'),
       ];
-      const [instrRes, wsRes, buddyRes] = await Promise.all(queries);
-      if (instrRes.data) setInstructors(instrRes.data);
-      if (wsRes.data) setAllWorksheets(wsRes.data);
-      if (buddyRes.data) {
-        setLeadInstructors(buddyRes.data.filter(p => p.role === 'academic_head'));
+      const results = await Promise.all(queries);
+      const instrRes = results[0];
+      const wsRes = results[1];
+      const buddyRes = results[2];
+      if (instrRes?.data) setInstructors(instrRes.data as unknown as UserProfile[]);
+      if (wsRes?.data) setAllWorksheets(wsRes.data as unknown as WorksheetSubmission[]);
+      if (buddyRes?.data) {
+        setLeadInstructors(buddyRes.data.filter((p: BuddyProfile) => p.role === 'academic_head'));
         setAllBuddyProfiles(buddyRes.data);
       }
     } catch (err) {
@@ -62,7 +99,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const getInstrStats = (userId) => {
+  const getInstrStats = (userId: string): InstrStats => {
     const userWs = allWorksheets.filter(w => w.user_id === userId);
     const pending = userWs.filter(w => w.review_status === 'pending_review' || w.review_status === 'revision_submitted').length;
     const buddyApproved = userWs.filter(w => w.review_status === 'buddy_approved').length;
@@ -71,7 +108,7 @@ export default function AdminDashboard() {
     return { total: userWs.length, pending, buddyApproved, approved, revision, notStarted: 20 - userWs.length };
   };
 
-  const getPhaseProgress = (userId, phase) => {
+  const getPhaseProgress = (userId: string, phase: number): PhaseProgress => {
     const wsList = PHASE_WORKSHEETS_MAP[phase] || [];
     const userWs = allWorksheets.filter(w => w.user_id === userId && wsList.includes(w.worksheet_id));
     const completed = userWs.filter(w => w.review_status === 'approved').length;
@@ -79,8 +116,8 @@ export default function AdminDashboard() {
     return { total: wsList.length, completed, buddyApproved, pct: wsList.length ? Math.round(((completed + buddyApproved) / wsList.length) * 100) : 0 };
   };
 
-  const getReadyPhases = (userId) => {
-    const ready = [];
+  const getReadyPhases = (userId: string): number[] => {
+    const ready: number[] = [];
     for (const phaseNum of [1, 2, 3]) {
       const status = getPhaseReviewStatus(phaseNum, allWorksheets, userId);
       if (status.ready) ready.push(phaseNum);
@@ -88,14 +125,13 @@ export default function AdminDashboard() {
     return ready;
   };
 
-  const filterInstructors = () => {
+  const filterInstructors = (): UserProfile[] => {
     let filtered = instructors;
     if (statusFilter !== 'all') {
       filtered = filtered.filter(instr => {
         const s = getInstrStats(instr.id);
         if (statusFilter === 'pending') return s.pending > 0;
         if (statusFilter === 'buddy_approved') {
-          // Has any phase ready for manager
           return getReadyPhases(instr.id).length > 0;
         }
         if (statusFilter === 'approved') return s.approved > 0;
@@ -127,13 +163,21 @@ export default function AdminDashboard() {
     return count;
   }, 0);
 
-  const tabs = [
+  const tabs: TabItem[] = [
     { id: 'overview', label: `Overview` },
     { id: 'pending_review', label: `Phases Ready (${totalReadyPhases > 0 ? totalReadyPhases : '0'})` },
-    ...(canAssign ? [{ id: 'assignments', label: 'Assignments' }] : []),
+    ...(canAssign ? [{ id: 'assignments' as const, label: 'Assignments' }] : []),
   ];
 
   const statusFilters = ['all', 'pending', 'buddy_approved', 'approved', 'revision', 'not_started'];
+
+  const statItems: StatItem[] = [
+    { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
+    { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
+    { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: '#381E72' },
+    { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: '#1B5E20' },
+    ...(isManager ? [{ label: 'Revision' as const, value: totalRevision, icon: XCircle as LucideIcon, color: '#C62828' }] : []),
+  ];
 
   return (
     <div className="lux-section">
@@ -160,13 +204,7 @@ export default function AdminDashboard() {
 
         {/* Summary stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1px', background: 'rgba(26, 26, 26, 0.1)', marginBottom: '2.5rem' }}>
-          {[
-            { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
-            { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
-            { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: '#381E72' },
-            { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: '#1B5E20' },
-            ...(isManager ? [{ label: 'Revision', value: totalRevision, icon: XCircle, color: '#C62828' }] : []),
-          ].map((item, i) => (
+          {statItems.map((item, i) => (
             <div key={i} style={{ background: 'var(--color-alabaster)', padding: '1.25rem', textAlign: 'center' }}>
               <item.icon size={20} strokeWidth={1.5} style={{ color: item.color, marginBottom: '8px' }} />
               <p style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, color: t.ch, marginBottom: '4px' }}>{item.value}</p>
@@ -306,16 +344,20 @@ export default function AdminDashboard() {
 }
 
 /** Shows phases that are ready for manager approval */
-function PhasesReadyTab({ allWorksheets, instructors, isManager }) {
+function PhasesReadyTab({ allWorksheets, instructors, isManager }: {
+  allWorksheets: WorksheetSubmission[];
+  instructors: UserProfile[];
+  isManager: boolean;
+}) {
   const navigate = useNavigate();
 
   // Collect all joinees that have a phase ready
-  const readyEntries = [];
+  const readyEntries: { userId: string; userName: string; phaseNum: number; status: ReturnType<typeof getPhaseReviewStatus> }[] = [];
   instructors.forEach(instr => {
     for (const phaseNum of [1, 2, 3]) {
       const status = getPhaseReviewStatus(phaseNum, allWorksheets, instr.id);
       if (status.ready) {
-        readyEntries.push({ userId: instr.id, userName: instr.full_name, phaseNum, status });
+        readyEntries.push({ userId: instr.id, userName: instr.full_name || instr.id, phaseNum, status });
       }
     }
   });
@@ -375,7 +417,11 @@ function PhasesReadyTab({ allWorksheets, instructors, isManager }) {
   );
 }
 
-function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
+function AssignmentsTab({ instructors, buddyProfiles, onRefresh }: {
+  instructors: UserProfile[];
+  buddyProfiles: BuddyProfile[];
+  onRefresh: () => void;
+}) {
   const { profile } = useAuth();
   const [selectedInstructor, setSelectedInstructor] = useState('');
   const [selectedManager, setSelectedManager] = useState('');
@@ -388,10 +434,10 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
   const assignedInstructors = instructors.filter(i => i.assigned_lead_id || i.assigned_buddy_id);
   const unassignedInstructors = instructors.filter(i => !i.assigned_lead_id && !i.assigned_buddy_id);
 
-  const styleLabel = { fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, display: 'block', marginBottom: '8px' };
-  const styleSelect = { fontFamily: t.body, fontSize: '0.8rem', color: t.ch, width: '100%', padding: '8px 0', border: 'none', borderBottom: '1px solid ' + t.ch, background: 'transparent', outline: 'none', marginBottom: '1.5rem' };
+  const styleLabel: React.CSSProperties = { fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, display: 'block', marginBottom: '8px' };
+  const styleSelect: React.CSSProperties = { fontFamily: t.body, fontSize: '0.8rem', color: t.ch, width: '100%', padding: '8px 0', border: 'none', borderBottom: '1px solid ' + t.ch, background: 'transparent', outline: 'none', marginBottom: '1.5rem' };
 
-  const btnPrimary = { fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid ' + t.ch, background: t.ch, color: '#F9F8F6', cursor: 'pointer', transition: 'all 500ms ' + t.ease };
+  const btnPrimary: React.CSSProperties = { fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid ' + t.ch, background: t.ch, color: '#F9F8F6', cursor: 'pointer', transition: 'all 500ms ' + t.ease };
 
   return (
     <div>
@@ -435,7 +481,6 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
           if (!error) {
             const managerName = buddyProfiles.find(p => p.id === selectedManager)?.full_name || 'Manager';
             const joineeName = instructors.find(p => p.id === selectedInstructor)?.full_name || 'Joinee';
-            // Notify the joinee
             await triggerNotification({
               userId: selectedInstructor,
               fromUserId: profile?.id,
@@ -443,7 +488,6 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
               type: 'approved',
               message: `A manager (${managerName}) has been assigned to you. They will oversee your Phase 2 & 3 approvals.`,
             });
-            // Notify the assigned manager
             await triggerNotification({
               userId: selectedManager,
               fromUserId: profile?.id,
@@ -464,7 +508,6 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
           if (!error) {
             const buddyName = buddyProfiles.find(p => p.id === selectedBuddy)?.full_name || 'Buddy';
             const joineeName = instructors.find(p => p.id === selectedInstructor)?.full_name || 'Joinee';
-            // Notify the joinee
             await triggerNotification({
               userId: selectedInstructor,
               fromUserId: profile?.id,
@@ -472,7 +515,6 @@ function AssignmentsTab({ instructors, buddyProfiles, onRefresh }) {
               type: 'approved',
               message: `A buddy/mentor (${buddyName}) has been assigned to you. They will review your Phase 1 worksheets.`,
             });
-            // Notify the assigned buddy
             await triggerNotification({
               userId: selectedBuddy,
               fromUserId: profile?.id,

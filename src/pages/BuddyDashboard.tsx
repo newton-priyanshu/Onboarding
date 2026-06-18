@@ -2,16 +2,44 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { ClipboardCheck, Users, Clock, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Star, User, Shield, FileCheck } from 'lucide-react';
-import { WORKSHEET_REVIEWER, REVIEWER_LABELS, REVIEWER_STYLES, PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, WORKSHEET_NAMES } from '../config/worksheetConfig.jsx';
+import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck } from 'lucide-react';
+import { WORKSHEET_NAMES, type WorksheetSubmission } from '../config/worksheetConfig';
+import { t } from '../config/theme';
 
-import { t } from '../config/theme.js';
+interface SimpleInstructor {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+interface GATE_INFO_ENTRY {
+  gateId: string;
+  regularSheets: string[];
+  label: string;
+}
+
+const GATE_INFO: Record<number, GATE_INFO_ENTRY> = {
+  1: { gateId: 'gc1', regularSheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'], label: 'Gate Pass 1 — Phase 1' },
+  2: { gateId: 'gc2', regularSheets: ['p2_w1','p2_w2','p2_w3','p2_w4'], label: 'Gate Pass 2 — Phase 2' },
+  3: { gateId: 'gc3', regularSheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'], label: 'Gate Pass 3 — Phase 3' },
+};
+
+interface TabItem {
+  id: string;
+  label: string;
+}
+
+interface StatsData {
+  pending: number;
+  buddyApproved: number;
+  approved: number;
+  revisionNeeded: number;
+}
 
 export default function BuddyDashboard() {
   const { profile, user } = useAuth();
-  const navigate = useNavigate();
-  const [myInstructors, setMyInstructors] = useState([]);
-  const [allWorksheets, setAllWorksheets] = useState([]);
+  const [myInstructors, setMyInstructors] = useState<SimpleInstructor[]>([]);
+  const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [viewMode, setViewMode] = useState('all');
@@ -24,15 +52,15 @@ export default function BuddyDashboard() {
     setLoading(true);
     try {
       const [asLead, asBuddy] = await Promise.all([
-        supabase.from('user_profiles').select('id, full_name, email').eq('assigned_lead_id', user.id),
-        supabase.from('user_profiles').select('id, full_name, email').eq('assigned_buddy_id', user.id),
+        supabase.from('user_profiles').select('id, full_name, email').eq('assigned_lead_id', user!.id),
+        supabase.from('user_profiles').select('id, full_name, email').eq('assigned_buddy_id', user!.id),
       ]);
       const unique = [...(asLead.data || []), ...(asBuddy.data || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-      setMyInstructors(unique);
+      setMyInstructors(unique as SimpleInstructor[]);
       const ids = unique.map(a => a.id);
       if (ids.length > 0) {
         const { data: worksheets } = await supabase.from('worksheet_submissions').select('*').in('user_id', ids).order('updated_at', { ascending: false });
-        if (worksheets) setAllWorksheets(worksheets);
+        if (worksheets) setAllWorksheets(worksheets as unknown as WorksheetSubmission[]);
       }
     } catch (err) {
       console.error('Failed to load buddy data:', err);
@@ -52,7 +80,7 @@ export default function BuddyDashboard() {
   // Needs revision (waiting for joinee)
   const revisionNeeded = allWorksheets.filter(w => w.review_status === 'needs_revision');
 
-  const stats = {
+  const stats: StatsData = {
     pending: pendingWorksheets.length,
     buddyApproved: buddyApprovedWorksheets.length,
     approved: approvedWorksheets.length,
@@ -71,13 +99,13 @@ export default function BuddyDashboard() {
     );
   }
 
-  const tabs = [
+  const tabs: TabItem[] = [
     { id: 'pending', label: `Pending Review (${stats.pending})` },
     { id: 'buddy_approved', label: `Buddy Approved (${stats.buddyApproved})` },
     { id: 'instructors', label: 'My Instructors' },
   ];
 
-  let displayWorksheets = [];
+  let displayWorksheets: WorksheetSubmission[] = [];
   if (activeTab === 'pending') displayWorksheets = pendingWorksheets;
   if (activeTab === 'buddy_approved') displayWorksheets = buddyApprovedWorksheets;
 
@@ -151,7 +179,7 @@ export default function BuddyDashboard() {
         {(activeTab === 'pending' || activeTab === 'buddy_approved') && (
           <>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-              {['all', 'approved'].map(m => (
+              {(['all', 'approved'] as const).map(m => (
                 <button key={m} onClick={() => setViewMode(m)} style={{
                   fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
                   background: viewMode === m ? t.ch : 'transparent',
@@ -178,7 +206,12 @@ export default function BuddyDashboard() {
   );
 }
 
-function WorksheetQueueTab({ title, worksheets, instructors, getLink }) {
+function WorksheetQueueTab({ title, worksheets, instructors, getLink }: {
+  title: string;
+  worksheets: WorksheetSubmission[];
+  instructors: SimpleInstructor[];
+  getLink: (userId: string, worksheetId: string) => string;
+}) {
   const navigate = useNavigate();
 
   return (
@@ -228,18 +261,15 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink }) {
   );
 }
 
-const GATE_INFO = {
-  1: { gateId: 'gc1', regularSheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'], label: 'Gate Pass 1 — Phase 1' },
-  2: { gateId: 'gc2', regularSheets: ['p2_w1','p2_w2','p2_w3','p2_w4'], label: 'Gate Pass 2 — Phase 2' },
-  3: { gateId: 'gc3', regularSheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'], label: 'Gate Pass 3 — Phase 3' },
-};
-
-function InstructorsTab({ myInstructors, allWorksheets }) {
+function InstructorsTab({ myInstructors, allWorksheets }: {
+  myInstructors: SimpleInstructor[];
+  allWorksheets: WorksheetSubmission[];
+}) {
   const navigate = useNavigate();
 
   /** Check if all regular worksheets in a phase are buddy-approved for this user */
-  function isPhaseReadyForGate(userId, phaseNum) {
-    const info = GATE_INFO[phaseNum];
+  function isPhaseReadyForGate(userId: string, phaseNum: number): boolean {
+    const info = GATE_INFO[phaseNum]!;
     if (!info) return false;
     const userSheets = allWorksheets.filter(w => w.user_id === userId);
     return info.regularSheets.every(wsId => {
@@ -249,7 +279,7 @@ function InstructorsTab({ myInstructors, allWorksheets }) {
   }
 
   /** Check if the gate pass has already been filled (= buddy_approved) */
-  function isGateFilled(userId, gateId) {
+  function isGateFilled(userId: string, gateId: string): boolean {
     const sub = allWorksheets.find(w => w.user_id === userId && w.worksheet_id === gateId);
     return sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved';
   }
@@ -273,7 +303,7 @@ function InstructorsTab({ myInstructors, allWorksheets }) {
           // Check which phases need a gate pass filled
           const gatePassNeeded = [1, 2, 3].filter(phaseNum =>
             isPhaseReadyForGate(instr.id, phaseNum) &&
-            !isGateFilled(instr.id, GATE_INFO[phaseNum].gateId)
+            !isGateFilled(instr.id, GATE_INFO[phaseNum]!.gateId)
           );
 
           return (
@@ -307,6 +337,7 @@ function InstructorsTab({ myInstructors, allWorksheets }) {
                 <div style={{ paddingLeft: '28px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {gatePassNeeded.map(phaseNum => {
                     const info = GATE_INFO[phaseNum];
+                    if (!info) return null;
                     return (
                       <button key={phaseNum}
                         onClick={() => navigate(`/buddy/gate-pass/${instr.id}/${info.gateId}`)}
