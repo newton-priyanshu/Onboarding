@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -14,9 +14,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const from = location.state?.from?.pathname || '/';
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!email.trim() || !password.trim()) {
@@ -28,12 +28,13 @@ export default function Login() {
       await signIn(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      if (err.message === 'Invalid login credentials') {
+      const msg = (err as { message?: string }).message || '';
+      if (msg === 'Invalid login credentials') {
         setError('Invalid email or password. Please try again or sign in with Google.');
-      } else if (err.message?.includes('Email not confirmed')) {
+      } else if (msg.includes('Email not confirmed')) {
         setError('Email not confirmed yet. Check your inbox or try signing in with Google.');
       } else {
-        setError(err.message || 'Sign in failed. Please try again.');
+        setError(msg || 'Sign in failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -46,7 +47,7 @@ export default function Login() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      setError(err.message || 'Google sign in failed. Please try again.');
+      setError((err as { message?: string }).message || 'Google sign in failed. Please try again.');
       setGoogleLoading(false);
     }
   };
@@ -58,99 +59,59 @@ export default function Login() {
     }}>
       <div className="lux-container" style={{ width: '100%' }}>
         <div style={{ maxWidth: '420px', margin: '0 auto' }}>
-          {/* Header */}
           <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
             <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
             <h1 style={{
               fontFamily: 'var(--font-heading)',
-              fontSize: '2.5rem',
-              fontWeight: 400,
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              marginBottom: '0.75rem',
-            }}>
-              Welcome Back
-            </h1>
-            <p style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.875rem',
-              color: 'var(--color-warm-grey)',
-              lineHeight: 1.6,
-            }}>
+              fontSize: '2.5rem', fontWeight: 400, lineHeight: 1.1,
+              letterSpacing: '-0.02em', marginBottom: '0.75rem',
+            }}>Welcome Back</h1>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)', lineHeight: 1.6 }}>
               Sign in to continue your onboarding journey
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit}>
             <div className="lux-form-group">
               <label className="lux-label" htmlFor="login-email">Email</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} strokeWidth={1.5} style={{
-                  position: 'absolute', left: '0', top: '14px',
-                  color: 'var(--color-warm-grey)',
-                }} />
+                <Mail size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="login-email" className="lux-input" type="email" value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane@newton.edu"
+                  onChange={(e) => setEmail(e.target.value)} placeholder="jane@newton.edu"
                   style={{ paddingLeft: '28px' }} required autoComplete="email" />
               </div>
             </div>
-
             <div className="lux-form-group">
               <label className="lux-label" htmlFor="login-password">Password</label>
               <div style={{ position: 'relative' }}>
-                <Lock size={16} strokeWidth={1.5} style={{
-                  position: 'absolute', left: '0', top: '14px',
-                  color: 'var(--color-warm-grey)',
-                }} />
+                <Lock size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="login-password" className="lux-input" type={showPw ? 'text' : 'password'}
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password"
                   style={{ paddingLeft: '28px', paddingRight: '32px' }} required autoComplete="current-password" />
                 <button type="button" onClick={() => setShowPw(!showPw)} style={{
                   position: 'absolute', right: '0', top: '14px',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--color-warm-grey)',
-                  padding: 0,
+                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0,
                 }}>
                   {showPw ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
               </div>
             </div>
-
             {error && (
               <div className="lux-alert lux-alert-error" style={{ marginBottom: '1.5rem' }}>
                 <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} />
                 <span>{error}</span>
               </div>
             )}
-
-            <button type="submit" className="lux-btn lux-btn-primary" disabled={loading}
-              style={{ width: '100%', marginTop: '0.5rem' }}>
+            <button type="submit" className="lux-btn lux-btn-primary" disabled={loading} style={{ width: '100%', marginTop: '0.5rem' }}>
               <span className="gold-overlay" />
-              <span className="btn-content">
-                {loading ? 'Signing in…' : 'Sign In'}
-              </span>
+              <span className="btn-content">{loading ? 'Signing in…' : 'Sign In'}</span>
             </button>
-
-            {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '1.5rem 0' }}>
               <div style={{ flex: 1, height: '1px', background: 'rgba(26, 26, 26, 0.15)' }} />
-              <span style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.65rem',
-                fontWeight: 500,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                color: 'var(--color-warm-grey)',
-              }}>or</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>or</span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(26, 26, 26, 0.15)' }} />
             </div>
-
-            {/* Google Sign In */}
-            <button type="button" onClick={handleGoogleSignIn} disabled={googleLoading}
-              className="lux-btn lux-btn-secondary" style={{ width: '100%' }}>
+            <button type="button" onClick={handleGoogleSignIn} disabled={googleLoading} className="lux-btn lux-btn-secondary" style={{ width: '100%' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -160,24 +121,9 @@ export default function Login() {
               {googleLoading ? 'Redirecting to Google…' : 'Sign in with Google'}
             </button>
           </form>
-
-          <p style={{
-            textAlign: 'center',
-            marginTop: '2rem',
-            fontFamily: 'var(--font-body)',
-            fontSize: '0.8rem',
-            color: 'var(--color-warm-grey)',
-          }}>
+          <p style={{ textAlign: 'center', marginTop: '2rem', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>
             No account yet?{' '}
-            <Link to="/signup" style={{
-              color: 'var(--color-charcoal)',
-              fontWeight: 500,
-              textDecoration: 'underline',
-              textUnderlineOffset: '3px',
-              textDecorationColor: 'rgba(26, 26, 26, 0.3)',
-            }}>
-              Create one
-            </Link>
+            <Link to="/signup" style={{ color: 'var(--color-charcoal)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'rgba(26, 26, 26, 0.3)' }}>Create one</Link>
           </p>
         </div>
       </div>

@@ -1,46 +1,34 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { supabase } from '../api/supabase';
-import { Award, CheckCircle2, Send, AlertCircle, BarChart3, ArrowLeft } from 'lucide-react';
+import { Award, Send, AlertCircle, BarChart3, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { t } from '../config/theme';
 
-const levels = [
+interface AssessmentLevel {
+  id: string;
+  label: string;
+  description: string;
+  color: string;
+  criteria: string[];
+}
+
+const levels: AssessmentLevel[] = [
   {
-    id: 'fully_independent',
-    label: 'Fully Independent',
-    description: 'Ready for a full lecture schedule without supervision.',
-    color: '#1B5E20',
-    criteria: [
-      'Consistently delivers high-quality lectures',
-      'Manages classroom effectively',
-      'Designs assessments independently',
-      'Provides excellent student support',
-    ],
+    id: 'fully_independent', label: 'Fully Independent',
+    description: 'Ready for a full lecture schedule without supervision.', color: '#1B5E20',
+    criteria: ['Consistently delivers high-quality lectures', 'Manages classroom effectively', 'Designs assessments independently', 'Provides excellent student support'],
   },
   {
-    id: 'needs_minor_support',
-    label: 'Needs Minor Support',
-    description: 'Requires 2–3 more weeks of mentor shadowing.',
-    color: '#E65100',
-    criteria: [
-      'Delivers good lectures with occasional guidance',
-      'Shows promise in assessment design',
-      'May need support with challenging classroom situations',
-    ],
+    id: 'needs_minor_support', label: 'Needs Minor Support',
+    description: 'Requires 2–3 more weeks of mentor shadowing.', color: '#E65100',
+    criteria: ['Delivers good lectures with occasional guidance', 'Shows promise in assessment design', 'May need support with challenging classroom situations'],
   },
   {
-    id: 'needs_development',
-    label: 'Needs Further Development',
-    description: 'Requires a targeted 30-day improvement plan.',
-    color: '#C62828',
-    criteria: [
-      'Requires significant guidance for lecture delivery',
-      'Needs to strengthen content knowledge',
-      'Would benefit from structured mentoring plan',
-    ],
+    id: 'needs_development', label: 'Needs Further Development',
+    description: 'Requires a targeted 30-day improvement plan.', color: '#C62828',
+    criteria: ['Requires significant guidance for lecture delivery', 'Needs to strengthen content knowledge', 'Would benefit from structured mentoring plan'],
   },
 ];
-
-import { t } from '../config/theme.js';
 
 export default function Assessment() {
   const navigate = useNavigate();
@@ -53,7 +41,7 @@ export default function Assessment() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!instructorName.trim() || !email.trim() || !facultyLeadName.trim() || !selectedLevel) {
@@ -69,32 +57,34 @@ export default function Assessment() {
         overall_status: 'assessed',
       };
       let result;
-      if (existing) result = await supabase.from('onboarding_submissions').update(data).eq('id', existing.id);
-      else result = await supabase.from('onboarding_submissions').insert({ new_instructor_name: instructorName, email, ...data });
+      if (existing) {
+        result = await supabase.from('onboarding_submissions').update(data).eq('id', (existing as { id: string }).id);
+      } else {
+        result = await supabase.from('onboarding_submissions').insert({ new_instructor_name: instructorName, email, ...data });
+      }
       if (result.error) {
         if (result.error.code === '42P01') setError('Database table not found. Please run the SQL schema first (see supabase_schema.sql).');
         else setError(`Submission error: ${result.error.message}`);
         setSubmitting(false); return;
       }
       setSubmitted(true);
-    } catch (err) { setError(`Network error: ${err.message}`); setSubmitting(false); }
+    } catch (err) {
+      setError(`Network error: ${(err as { message?: string }).message || 'Unknown error'}`);
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
+    const level = levels.find(l => l.id === selectedLevel);
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="lux-container" style={{ width: '100%', textAlign: 'center' }}>
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>Assessment Submitted</h1>
-          <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '0.5rem' }}>
-            Assessment recorded for <strong>{instructorName}</strong>.
-          </p>
-          <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem' }}>
-            Level: <strong style={{ color: levels.find(l => l.id === selectedLevel)?.color }}>{levels.find(l => l.id === selectedLevel)?.label}</strong>
-          </p>
+          <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '0.5rem' }}>Assessment recorded for <strong>{instructorName}</strong>.</p>
+          {level && <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem' }}>Level: <strong style={{ color: level.color }}>{level.label}</strong></p>}
           <button onClick={() => navigate('/')} className="lux-btn lux-btn-primary">
-            <span className="gold-overlay" />
-            <span className="btn-content">Back to Dashboard</span>
+            <span className="gold-overlay" /><span className="btn-content">Back to Dashboard</span>
           </button>
         </div>
       </div>
@@ -108,7 +98,6 @@ export default function Assessment() {
           <ArrowLeft size={14} strokeWidth={1.5} /> Back
         </button>
 
-        {/* Header */}
         <div style={{ marginBottom: '2.5rem' }}>
           <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
@@ -119,9 +108,7 @@ export default function Assessment() {
               <h1 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>
                 Final Readiness <em style={{ fontStyle: 'italic', color: t.gd }}>Assessment</em>
               </h1>
-              <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
-                To be completed by the Faculty Lead after all 3 phases
-              </p>
+              <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>To be completed by the Faculty Lead after all 3 phases</p>
             </div>
           </div>
           <div className="lux-alert lux-alert-info" style={{ marginTop: '1rem' }}>
@@ -131,11 +118,8 @@ export default function Assessment() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Section 1: Information */}
           <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '2rem 0' }}>
-            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.5rem' }}>
-              Assessment Information
-            </h3>
+            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.5rem' }}>Assessment Information</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div className="lux-form-group">
                 <label className="lux-label" htmlFor="assess-name">Instructor Name *</label>
@@ -152,29 +136,19 @@ export default function Assessment() {
             </div>
           </div>
 
-          {/* Section 2: Readiness Level */}
           <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '2rem 0' }}>
-            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.5rem' }}>
-              Readiness Level *
-            </h3>
+            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.5rem' }}>Readiness Level *</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {levels.map((level) => {
                 const isSelected = selectedLevel === level.id;
                 return (
-                  <label key={level.id} style={{
-                    display: 'flex', gap: '1rem', padding: '1.25rem 1.5rem',
+                  <label key={level.id} style={{ display: 'flex', gap: '1rem', padding: '1.25rem 1.5rem',
                     borderTop: isSelected ? `3px solid ${level.color}` : '1px solid rgba(26, 26, 26, 0.15)',
-                    cursor: 'pointer', transition: 'border-color 500ms var(--ease-lux)',
-                    background: isSelected ? 'rgba(249, 248, 246, 0.5)' : 'transparent',
-                  }}>
-                    <div style={{
-                      width: '20px', height: '20px', flexShrink: 0, marginTop: '2px',
-                      border: isSelected ? `6px solid ${level.color}` : '1px solid var(--color-warm-grey)',
-                      transition: 'border 500ms var(--ease-lux)',
-                    }} />
-                    <input type="radio" name="readiness" value={level.id}
-                      checked={isSelected} onChange={() => setSelectedLevel(level.id)}
-                      style={{ display: 'none' }} />
+                    cursor: 'pointer', transition: 'border-color 500ms var(--ease-lux)', background: isSelected ? 'rgba(249, 248, 246, 0.5)' : 'transparent' }}>
+                    <div style={{ width: '20px', height: '20px', flexShrink: 0, marginTop: '2px',
+                      border: isSelected ? `6px solid ${level.color}` : '1px solid var(--color-warm-grey)', transition: 'border 500ms var(--ease-lux)' }} />
+                    <input type="radio" name="readiness" value={level.id} checked={isSelected}
+                      onChange={() => setSelectedLevel(level.id)} style={{ display: 'none' }} />
                     <div>
                       <div style={{ fontFamily: t.body, fontSize: '0.9rem', fontWeight: 500, color: level.color, marginBottom: '4px' }}>{level.label}</div>
                       <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, marginBottom: '8px', lineHeight: 1.5 }}>{level.description}</p>
@@ -190,11 +164,8 @@ export default function Assessment() {
             </div>
           </div>
 
-          {/* Section 3: Comments */}
           <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.5rem 0', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '0.75rem' }}>
-              Assessor Comments
-            </h3>
+            <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '0.75rem' }}>Assessor Comments</h3>
             <div className="lux-form-group">
               <textarea className="lux-textarea" value={comments} onChange={(e) => setComments(e.target.value)}
                 placeholder="Provide detailed feedback on the instructor's readiness, strengths, and areas for improvement..." rows={5} />
@@ -203,18 +174,14 @@ export default function Assessment() {
 
           {error && (
             <div className="lux-alert lux-alert-error" style={{ marginBottom: '1.5rem' }}>
-              <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} />
-              <span>{error}</span>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} /><span>{error}</span>
             </div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '1rem', borderTop: '1px solid rgba(26, 26, 26, 0.1)' }}>
             <button type="button" onClick={() => navigate('/')} className="lux-btn lux-btn-secondary">Cancel</button>
             <button type="submit" className="lux-btn lux-btn-primary" disabled={submitting}>
-              <span className="gold-overlay" />
-              <span className="btn-content">
-                {submitting ? 'Saving…' : <><Send size={16} strokeWidth={1.5} /> Submit Assessment</>}
-              </span>
+              <span className="gold-overlay" /><span className="btn-content">{submitting ? 'Saving…' : <><Send size={16} strokeWidth={1.5} /> Submit Assessment</>}</span>
             </button>
           </div>
         </form>

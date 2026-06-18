@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import type { UserRole } from '../types/supabase';
 
-const roles = [
+interface RoleOption {
+  value: UserRole;
+  label: string;
+  desc: string;
+}
+
+const roles: RoleOption[] = [
   { value: 'new_joinee', label: 'New Joinee', desc: 'I am a new instructor going through onboarding' },
   { value: 'lead_instructor', label: 'Buddy / Mentor', desc: 'I will mentor and review new joinees' },
   { value: 'onboarding_lead', label: 'Onboarding Lead', desc: 'I oversee the onboarding process and procedural reviews' },
@@ -16,14 +23,14 @@ export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('new_joinee');
+  const [role, setRole] = useState<UserRole>('new_joinee');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!fullName.trim() || !email.trim() || !password.trim()) {
@@ -39,7 +46,7 @@ export default function Signup() {
       await signUp(email, password, fullName, role);
       setSuccess(true);
     } catch (err) {
-      setError(err.message);
+      setError((err as { message?: string }).message || 'Sign up failed.');
     } finally {
       setLoading(false);
     }
@@ -50,15 +57,12 @@ export default function Signup() {
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="lux-container" style={{ width: '100%', textAlign: 'center' }}>
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 400, marginBottom: '1rem' }}>
-            Account Created
-          </h1>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 400, marginBottom: '1rem' }}>Account Created</h1>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-warm-grey)', marginBottom: '2rem' }}>
             Check your email to confirm your account. You can sign in once confirmed.
           </p>
           <button onClick={() => navigate('/login')} className="lux-btn lux-btn-primary" style={{ minWidth: '200px' }}>
-            <span className="gold-overlay" />
-            <span className="btn-content">Go to Sign In</span>
+            <span className="gold-overlay" /><span className="btn-content">Go to Sign In</span>
           </button>
         </div>
       </div>
@@ -66,32 +70,13 @@ export default function Signup() {
   }
 
   return (
-    <div className="lux-section" style={{
-      minHeight: 'calc(100vh - 64px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="lux-container" style={{ width: '100%' }}>
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-          {/* Header */}
           <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
             <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
-            <h1 style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: '2.5rem',
-              fontWeight: 400,
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              marginBottom: '0.75rem',
-            }}>
-              Create Account
-            </h1>
-            <p style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.875rem',
-              color: 'var(--color-warm-grey)',
-            }}>
-              Join the faculty onboarding portal
-            </p>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>Create Account</h1>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)' }}>Join the faculty onboarding portal</p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -99,59 +84,46 @@ export default function Signup() {
               <label className="lux-label" htmlFor="signup-name">Full Name</label>
               <div style={{ position: 'relative' }}>
                 <User size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
-                <input id="signup-name" className="lux-input" value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                <input id="signup-name" className="lux-input" value={fullName} onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Jane Smith" style={{ paddingLeft: '28px' }} required autoComplete="name" />
               </div>
             </div>
-
             <div className="lux-form-group">
               <label className="lux-label" htmlFor="signup-email">Email</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="signup-email" className="lux-input" type="email" value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane@newton.edu" style={{ paddingLeft: '28px' }} required autoComplete="email" />
+                  onChange={(e) => setEmail(e.target.value)} placeholder="jane@newton.edu" style={{ paddingLeft: '28px' }} required autoComplete="email" />
               </div>
             </div>
-
             <div className="lux-form-group">
               <label className="lux-label" htmlFor="signup-password">Password</label>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="signup-password" className="lux-input" type={showPw ? 'text' : 'password'}
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 6 characters" style={{ paddingLeft: '28px', paddingRight: '32px' }} required autoComplete="new-password" />
+                  value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 characters"
+                  style={{ paddingLeft: '28px', paddingRight: '32px' }} required autoComplete="new-password" />
                 <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '0', top: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0 }}>
                   {showPw ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
               </div>
             </div>
 
-            {/* Role selection */}
             <div className="lux-form-group">
               <span className="lux-label" style={{ marginBottom: '12px' }}>Role</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {roles.map((r) => (
-                  <label key={r.value} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 16px',
+                  <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
                     border: role === r.value ? '1px solid var(--color-charcoal)' : '1px solid rgba(26, 26, 26, 0.15)',
-                    cursor: 'pointer', transition: 'border-color 500ms var(--ease-lux)',
-                  }}>
-                    <div style={{
-                      width: '18px', height: '18px',
-                      borderRadius: '50%',
+                    cursor: 'pointer', transition: 'border-color 500ms var(--ease-lux)' }}>
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%',
                       border: role === r.value ? '5px solid var(--color-charcoal)' : '1px solid var(--color-warm-grey)',
-                      transition: 'border 500ms var(--ease-lux)',
-                      flexShrink: 0,
-                    }} />
+                      transition: 'border 500ms var(--ease-lux)', flexShrink: 0 }} />
                     <input type="radio" name="role" value={r.value}
                       checked={role === r.value} onChange={() => setRole(r.value)}
-                      className="sr-only"
-                      style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
-                      onFocus={(e) => { e.target.closest('label').style.borderColor = 'var(--color-gold)'; }}
-                      onBlur={(e) => { e.target.closest('label').style.borderColor = role === r.value ? 'var(--color-charcoal)' : 'rgba(26, 26, 26, 0.15)'; }} />
+                      className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
+                      onFocus={(e) => { (e.target.closest('label') as HTMLElement).style.borderColor = 'var(--color-gold)'; }}
+                      onBlur={(e) => { (e.target.closest('label') as HTMLElement).style.borderColor = role === r.value ? 'var(--color-charcoal)' : 'rgba(26, 26, 26, 0.15)'; }} />
                     <div>
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-charcoal)' }}>{r.label}</div>
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-warm-grey)', marginTop: '2px' }}>{r.desc}</div>
@@ -162,24 +134,20 @@ export default function Signup() {
             </div>
 
             {error && <div className="lux-alert lux-alert-error" style={{ marginBottom: '1.5rem' }}>
-              <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} />
-              <span>{error}</span>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} /><span>{error}</span>
             </div>}
 
             <button type="submit" className="lux-btn lux-btn-primary" disabled={loading} style={{ width: '100%' }}>
-              <span className="gold-overlay" />
-              <span className="btn-content">{loading ? 'Creating account…' : 'Create Account'}</span>
+              <span className="gold-overlay" /><span className="btn-content">{loading ? 'Creating account…' : 'Create Account'}</span>
             </button>
 
-            {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '1.5rem 0' }}>
               <div style={{ flex: 1, height: '1px', background: 'rgba(26, 26, 26, 0.15)' }} />
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>or</span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(26, 26, 26, 0.15)' }} />
             </div>
 
-            {/* Google Sign Up */}
-            <button type="button" onClick={async () => { setError(''); setGoogleLoading(true); try { await signInWithGoogle(); } catch (err) { setError(err.message || 'Google sign in failed.'); setGoogleLoading(false); } }}
+            <button type="button" onClick={async () => { setError(''); setGoogleLoading(true); try { await signInWithGoogle(); } catch (err) { setError((err as { message?: string }).message || 'Google sign in failed.'); setGoogleLoading(false); } }}
               disabled={googleLoading} className="lux-btn lux-btn-secondary" style={{ width: '100%' }}>
               <svg width="16" height="16" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -193,9 +161,7 @@ export default function Signup() {
 
           <p style={{ textAlign: 'center', marginTop: '2rem', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>
             Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--color-charcoal)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'rgba(26, 26, 26, 0.3)' }}>
-              Sign in
-            </Link>
+            <Link to="/login" style={{ color: 'var(--color-charcoal)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'rgba(26, 26, 26, 0.3)' }}>Sign in</Link>
           </p>
         </div>
       </div>
