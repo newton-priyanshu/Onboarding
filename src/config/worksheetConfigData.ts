@@ -42,12 +42,14 @@
 // WORKSHEET_COMPONENTS) are in worksheetConfig.jsx.
 // =====================================================
 
+import type { WorksheetId, ReviewerType, WorksheetSubmission } from '../types/supabase';
+
 /**
  * Map of worksheet ID → reviewer type (for display/metadata only)
  * In the NEW flow: ALL worksheets are first approved by the buddy.
  * Manager only approves at the PHASE level (after all buddy_approved).
  */
-export const WORKSHEET_REVIEWER = {
+export const WORKSHEET_REVIEWER: Record<string, ReviewerType> = {
   // Phase 1 — Orientation
   p1_w1: 'buddy',           // Team Introduction → Buddy
   p1_w2: 'buddy',           // Mentor Sync → Buddy
@@ -76,28 +78,41 @@ export const WORKSHEET_REVIEWER = {
 };
 
 /** Human-readable reviewer labels */
-export const REVIEWER_LABELS = {
+export const REVIEWER_LABELS: Record<string, string> = {
   buddy: 'Buddy / Mentor',
   manager: 'Manager',
   onboarding_lead: 'Onboarding Lead',
 };
 
 /** Review badge styles */
-export const REVIEWER_STYLES = {
+export const REVIEWER_STYLES: Record<string, { bg: string; color: string; border: string }> = {
   buddy: { bg: '#E8DEF8', color: '#381E72', border: '#D0BCFF' },
   manager: { bg: '#FFF8E1', color: '#E65100', border: '#FFE082' },
   onboarding_lead: { bg: '#E0F2FE', color: '#0369A1', border: '#7DD3FC' },
 };
 
 /** Review icons — brief text labels for reviewer type badges */
-export const REVIEWER_ICONS = {
+export const REVIEWER_ICONS: Record<string, string> = {
   buddy: '',
   manager: '',
   onboarding_lead: '',
 };
 
+interface WorksheetSheet {
+  id: string;
+  title: string;
+  reviewer: string;
+  color: string;
+  isGate?: boolean;
+}
+
+interface PhaseGroup {
+  num: number;
+  sheets: WorksheetSheet[];
+}
+
 /** All worksheets grouped by phase with reviewer info */
-export const ALL_WORKSHEETS = {
+export const ALL_WORKSHEETS: Record<string, PhaseGroup> = {
   'Phase 1': {
     num: 1,
     sheets: [
@@ -127,7 +142,7 @@ export const ALL_WORKSHEETS = {
     sheets: [
       { id: 'p3_w1', title: 'Independent Lecture Delivery Log', reviewer: 'buddy', color: '#6750A4' },
       { id: 'p3_w2', title: 'Student Cohort Profiling', reviewer: 'buddy', color: '#006D40' },
-      { id: 'p3_w3', title: 'Assessment Blueprint & Bloom\'s Grid', reviewer: 'buddy', color: '#7D5260' },
+      { id: 'p3_w3', title: "Assessment Blueprint & Bloom's Grid", reviewer: 'buddy', color: '#7D5260' },
       { id: 'p3_w4', title: 'Pedagogical Frameworks Journal', reviewer: 'buddy', color: '#625B71' },
       { id: 'p3_w5', title: 'Course Improvement Proposal', reviewer: 'buddy', color: '#006494' },
       { id: 'gc3', title: 'Gate Control 3 — 90-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
@@ -136,27 +151,34 @@ export const ALL_WORKSHEETS = {
 };
 
 /** Get the reviewer type for a worksheet. Falls back to 'buddy' since ALL worksheets go through buddy first. */
-export function getReviewerType(worksheetId) {
+export function getReviewerType(worksheetId: string): string {
   return WORKSHEET_REVIEWER[worksheetId] || 'buddy';
 }
 
 // ─── Phase-level Helper Functions ──────────────────────────────
 
 /** Map of phase number → worksheet IDs */
-export const PHASE_WORKSHEETS_MAP = {
+export const PHASE_WORKSHEETS_MAP: Record<number, WorksheetId[]> = {
   1: ['p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8', 'gc1'],
   2: ['p2_w1', 'p2_w2', 'p2_w3', 'p2_w4', 'gc2'],
   3: ['p3_w1', 'p3_w2', 'p3_w3', 'p3_w4', 'p3_w5', 'gc3'],
 };
 
+interface PhaseReviewResult {
+  ready: boolean;
+  total: number;
+  buddyApproved: number;
+  notSubmitted: number;
+}
+
 /**
  * Check if a phase is ready for manager approval (all worksheets buddy_approved).
- * @param {number} phaseNum - 1, 2, or 3
- * @param {Array} submissions - Array of worksheet submission objects from ALL users
- * @param {string} userId - The joinee's user ID
- * @returns {{ ready: boolean, total: number, buddyApproved: number, notSubmitted: number }}
  */
-export function getPhaseReviewStatus(phaseNum, submissions, userId) {
+export function getPhaseReviewStatus(
+  phaseNum: number,
+  submissions: WorksheetSubmission[],
+  userId: string
+): PhaseReviewResult {
   const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
   const userSubs = submissions.filter(s => s.user_id === userId);
   const total = wsList.length;
@@ -186,10 +208,14 @@ export function getPhaseReviewStatus(phaseNum, submissions, userId) {
 /**
  * Get buddy_approved worksheet IDs for a phase (ready for manager approval).
  */
-export function getBuddyApprovedSheets(phaseNum, submissions, userId) {
+export function getBuddyApprovedSheets(
+  phaseNum: number,
+  submissions: WorksheetSubmission[],
+  userId: string
+): string[] {
   const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
   const userSubs = submissions.filter(s => s.user_id === userId);
-  return wsList.filter(wsId => {
+  return wsList.filter((wsId: string) => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
     return sub?.review_status === 'buddy_approved';
   });
@@ -198,42 +224,45 @@ export function getBuddyApprovedSheets(phaseNum, submissions, userId) {
 /**
  * Get worksheet IDs in a phase filtered by review status.
  */
-export function getPhaseWorksheetsByStatus(phaseNum, submissions, userId, status) {
+export function getPhaseWorksheetsByStatus(
+  phaseNum: number,
+  submissions: WorksheetSubmission[],
+  userId: string,
+  status: string
+): string[] {
   const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
   const userSubs = submissions.filter(s => s.user_id === userId);
-  return wsList.filter(wsId => {
+  return wsList.filter((wsId: string) => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
     return sub?.review_status === status;
   });
 }
 
 /** Get all worksheet IDs assigned to a specific reviewer type */
-export function getWorksheetsForReviewer(reviewerType) {
+export function getWorksheetsForReviewer(reviewerType: string): string[] {
   return Object.entries(WORKSHEET_REVIEWER)
     .filter(([, type]) => type === reviewerType)
     .map(([id]) => id);
 }
 
 /** Get reviewer label for a worksheet */
-export function getReviewerLabel(worksheetId) {
+export function getReviewerLabel(worksheetId: string): string {
   const type = getReviewerType(worksheetId);
   return REVIEWER_LABELS[type] || 'Manager';
 }
 
-const PHASE_WORKSHEET_IDS = [PHASE_WORKSHEETS_MAP[1], PHASE_WORKSHEETS_MAP[2], PHASE_WORKSHEETS_MAP[3]];
-
 /**
  * Check if a specific phase has been fully approved by the manager.
  * A phase is "approved" when ALL its worksheets have review_status === 'approved'.
- * @param {string} userId
- * @param {number} phaseNum - 1, 2, or 3
- * @param {Array} submissions - Array of worksheet submission objects
- * @returns {boolean}
  */
-export function isPhaseApproved(userId, phaseNum, submissions) {
+export function isPhaseApproved(
+  userId: string,
+  phaseNum: number,
+  submissions: WorksheetSubmission[]
+): boolean {
   const wsIds = PHASE_WORKSHEETS_MAP[phaseNum] || [];
   const userSubs = submissions.filter(s => s.user_id === userId);
-  return wsIds.every(wsId => {
+  return wsIds.every((wsId: string) => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
     return sub?.review_status === 'approved';
   });
@@ -241,9 +270,8 @@ export function isPhaseApproved(userId, phaseNum, submissions) {
 
 /**
  * For a given user, get all phases that are fully manager-approved.
- * @returns {number[]} Array of approved phase numbers
  */
-export function getApprovedPhases(userId, submissions) {
+export function getApprovedPhases(userId: string, submissions: WorksheetSubmission[]): number[] {
   return [1, 2, 3].filter(p => isPhaseApproved(userId, p, submissions));
 }
 
@@ -252,9 +280,8 @@ export function getApprovedPhases(userId, submissions) {
  * - Phase 1 is always accessible.
  * - Phase 2 requires Phase 1 to be manager-approved.
  * - Phase 3 requires Phase 1 AND Phase 2 to be manager-approved.
- * @returns {number} The maximum accessible phase number (1, 2, or 3)
  */
-export function getMaxAccessiblePhase(userId, submissions) {
+export function getMaxAccessiblePhase(userId: string, submissions: WorksheetSubmission[]): number {
   const approved = getApprovedPhases(userId, submissions);
   if (approved.includes(1) && approved.includes(2)) return 3;
   if (approved.includes(1)) return 2;
@@ -264,7 +291,11 @@ export function getMaxAccessiblePhase(userId, submissions) {
 /**
  * Check if a joinee can access a specific phase.
  */
-export function canAccessPhase(userId, phaseNum, submissions) {
+export function canAccessPhase(
+  userId: string,
+  phaseNum: number,
+  submissions: WorksheetSubmission[]
+): boolean {
   if (phaseNum === 1) return true; // Phase 1 always accessible
   if (phaseNum === 2) return isPhaseApproved(userId, 1, submissions);
   if (phaseNum === 3) return isPhaseApproved(userId, 1, submissions) && isPhaseApproved(userId, 2, submissions);
@@ -276,7 +307,7 @@ export function canAccessPhase(userId, phaseNum, submissions) {
  * Single source of truth (was duplicated across Dashboard.jsx, BuddyDashboard.jsx,
  * AdminDashboard.jsx, OnboardingLeadDashboard.jsx, PhaseReview.jsx).
  */
-export const WORKSHEET_NAMES = {
+export const WORKSHEET_NAMES: Record<string, string> = {
   p1_w1: 'Team Introduction', p1_w2: 'Faculty Mentor Sync', p1_w3: 'Teaching Philosophy',
   p1_w4: 'University Governance', p1_w5: 'Portal Walkthrough', p1_w6: 'Observation Journal',
   p1_w7: 'Courseware Review', p1_w8: 'Slack Audit',
@@ -289,7 +320,7 @@ export const WORKSHEET_NAMES = {
 /**
  * PHASE_LABELS — Phase header info for review/admin pages.
  */
-export const PHASE_LABELS = {
+export const PHASE_LABELS: Record<number, { title: string; days: string }> = {
   1: { title: 'Phase 1 — Orientation', days: 'Days 1–30' },
   2: { title: 'Phase 2 — Contribution', days: 'Days 31–60' },
   3: { title: 'Phase 3 — Ownership', days: 'Days 61–90' },
@@ -299,7 +330,7 @@ export const PHASE_LABELS = {
  * WORKSHEET_INFO — Full worksheet titles and phase info.
  * Single source of truth (was duplicated across WorksheetReview.jsx and PhaseReview.jsx).
  */
-export const WORKSHEET_INFO = {
+export const WORKSHEET_INFO: Record<string, { title: string; phase: string }> = {
   p1_w1: { title: 'Team Introduction & Stakeholder Mapping Log', phase: 'Phase 1' },
   p1_w2: { title: 'Faculty Mentor Alignment & Weekly Sync Tracker', phase: 'Phase 1' },
   p1_w3: { title: 'Organisational Culture & Teaching Philosophy Reflection', phase: 'Phase 1' },
