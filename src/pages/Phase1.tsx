@@ -1,13 +1,27 @@
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Users, MessageSquare, BookText, Monitor, Eye, FileText, MessageCircle, Shield, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { BookOpen, Users, MessageSquare, BookText, Monitor, Eye, FileText, MessageCircle, Shield, ArrowRight, CheckCircle2, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
-import { t } from '../config/theme.js';
-import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../config/worksheetConfig.jsx';
-import { getDueDateInfo, formatDueDate } from '../hooks/useDueDates';
+import { t } from '../config/theme';
+import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge } from '../config/worksheetConfig';
+import { getDueDateInfo } from '../hooks/useDueDates';
 
-const worksheets = [
+interface WorksheetMeta {
+  id: string;
+  num: number;
+  path: string;
+  title: string;
+  icon: LucideIcon;
+  desc: string;
+}
+
+interface StatusInfo {
+  status: string | null;
+  review_status: string | null;
+}
+
+const worksheets: WorksheetMeta[] = [
   { id: 'p1_w1', num: 1, path: '/phase-1/worksheet-1', title: 'Team Introduction & Stakeholder Mapping Log', icon: Users, desc: 'Meet key people across teams and understand how they collaborate.' },
   { id: 'p1_w2', num: 2, path: '/phase-1/worksheet-2', title: 'Faculty Mentor Alignment & Weekly Sync Tracker', icon: MessageSquare, desc: 'Align with your mentor, document weekly syncs, and track feedback patterns.' },
   { id: 'p1_w3', num: 3, path: '/phase-1/worksheet-3', title: 'Organizational Culture & Teaching Philosophy Reflection', icon: BookText, desc: 'Reflect on the culture, teaching beliefs, and your evolving philosophy.' },
@@ -18,10 +32,31 @@ const worksheets = [
   { id: 'p1_w8', num: 8, path: '/phase-1/worksheet-8', title: 'Slack Historical Context & Student Bottleneck Audit', icon: MessageCircle, desc: 'Audit Slack history to identify recurring student pain points.' },
 ];
 
+interface BadgeInfo {
+  label: string;
+  color: string;
+}
+
+function getBadge(status: string | null, reviewStatus: string | null): BadgeInfo {
+  const isApproved = reviewStatus === 'approved';
+  const isBuddyApproved = reviewStatus === 'buddy_approved';
+  const needsRevision = reviewStatus === 'needs_revision';
+  const isSubmitted = status === 'submitted';
+  const pendingReview = reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted' || (isSubmitted && !reviewStatus);
+  const inProgress = status === 'In Progress';
+
+  if (isApproved) return { label: 'Reviewed', color: '#1B5E20' };
+  if (isBuddyApproved) return { label: 'Buddy Approved', color: '#381E72' };
+  if (needsRevision) return { label: 'Revise', color: '#C62828' };
+  if (isSubmitted || pendingReview) return { label: 'Pending', color: '#7D5260' };
+  if (inProgress) return { label: 'In Progress', color: t.ch };
+  return { label: 'Not Started', color: t.wg };
+}
+
 export default function Phase1() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [statuses, setStatuses] = useState({});
+  const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
 
   useEffect(() => {
     if (user) loadStatuses();
@@ -31,9 +66,9 @@ export default function Phase1() {
     const { data } = await supabase
       .from('worksheet_submissions')
       .select('worksheet_id, status, review_status')
-      .eq('user_id', user.id);
+      .eq('user_id', user?.id);
     if (data) {
-      const map = {};
+      const map: Record<string, StatusInfo> = {};
       data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
       setStatuses(map);
     }
@@ -43,22 +78,6 @@ export default function Phase1() {
     const s = statuses[w.id];
     return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
   }).length;
-
-  function getBadge(status, reviewStatus) {
-    const isApproved = reviewStatus === 'approved';
-    const isBuddyApproved = reviewStatus === 'buddy_approved';
-    const needsRevision = reviewStatus === 'needs_revision';
-    const isSubmitted = status === 'submitted';
-    const pendingReview = reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted' || (isSubmitted && !reviewStatus);
-    const inProgress = status === 'In Progress';
-
-    if (isApproved) return { label: 'Reviewed', color: '#1B5E20' };
-    if (isBuddyApproved) return { label: 'Buddy Approved', color: '#381E72' };
-    if (needsRevision) return { label: 'Revise', color: '#C62828' };
-    if (isSubmitted || pendingReview) return { label: 'Pending', color: '#7D5260' };
-    if (inProgress) return { label: 'In Progress', color: t.ch };
-    return { label: 'Not Started', color: t.wg };
-  }
 
   return (
     <div className="lux-section">
@@ -80,7 +99,6 @@ export default function Phase1() {
           <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>
             Build foundational knowledge of people, culture, systems, and processes.
           </p>
-          {/* Progress */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '1.25rem' }}>
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
               <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${(completed / (worksheets.length + 1)) * 100}%` }} />
@@ -99,7 +117,8 @@ export default function Phase1() {
           </span>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {Object.entries(REVIEWER_LABELS).map(([key, label]) => {
-              const style = REVIEWER_STYLES[key];
+              const style = REVIEWER_STYLES[key as keyof typeof REVIEWER_STYLES];
+              if (!style) return null;
               return (
                 <span key={key} style={{
                   fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
@@ -120,7 +139,7 @@ export default function Phase1() {
           {worksheets.map((ws, idx) => {
             const Icon = ws.icon;
             const wsStatus = statuses[ws.id];
-            const badge = getBadge(wsStatus?.status, wsStatus?.review_status);
+            const badge = getBadge(wsStatus?.status ?? null, wsStatus?.review_status ?? null);
             return (
               <div key={ws.id} onClick={() => navigate(ws.path)}
                 style={{
@@ -174,7 +193,6 @@ export default function Phase1() {
             );
           })}
         </div>
-
       </div>
     </div>
   );

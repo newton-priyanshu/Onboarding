@@ -2,10 +2,34 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../api/supabase';
-import { Shield, CheckCircle2, AlertCircle, Send, ArrowLeft, Star } from 'lucide-react';
+import { Shield, AlertCircle, Send, ArrowLeft } from 'lucide-react';
 import { Section, Slider, BuddyApprovedView } from '../../config/worksheetComponents';
+import { t } from '../../config/theme';
 
-const milestones = [
+interface GateData {
+  employeeName: string;
+  selfProud: string;
+  selfUncomfortable: string;
+  selfSkills: string;
+  selfPhilosophy: string;
+  teachingRating: number;
+  commRating: number;
+  contentRating: number;
+  studentRating: number;
+  assessmentRating: number;
+  ownershipRating: number;
+  professionalismRating: number;
+  milestones: string[];
+  decision: string;
+  finalComments: string;
+  facultyLeadSignature: string;
+  instructorSignature: string;
+  status: string;
+  submittedAt: string;
+  [key: string]: unknown;
+}
+
+const milestones: [string, string][] = [
   ['Independent lecture delivery (min. 2 full sessions)', 'Faculty Lead lecture observation'],
   ['Student awareness — knows names, cohorts, needs', 'Instructor-led student walkthrough'],
   ['End-to-end assessment creation and management', 'Review of created assessment artefacts'],
@@ -14,14 +38,16 @@ const milestones = [
   ['All Phase 3 worksheets submitted and reviewed', 'Compendium review by Faculty Lead'],
 ];
 
-import { t } from '../../config/theme.js';
+interface GateControlProps {
+  targetUserId?: string;
+}
 
-export default function GateControl3({ targetUserId }) {
+export default function GateControl3({ targetUserId }: GateControlProps) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const activeUserId = targetUserId || user?.id;
+  const activeUserId = (targetUserId || user?.id || '') as string;
   const isBuddyMode = !!targetUserId;
-  const [data, setData] = useState({
+  const [data, setData] = useState<GateData>({
     employeeName: '',
     selfProud: '', selfUncomfortable: '', selfSkills: '', selfPhilosophy: '',
     teachingRating: 3, commRating: 3, contentRating: 3, studentRating: 3, assessmentRating: 3, ownershipRating: 3, professionalismRating: 3,
@@ -36,8 +62,8 @@ export default function GateControl3({ targetUserId }) {
   useEffect(() => {
     if (!activeUserId) return;
     (async () => {
-      const saved = await supabase.from('worksheet_submissions').select('*').eq('user_id', activeUserId).eq('worksheet_id', 'gc3').maybeSingle();
-      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
+      const { data: saved } = await supabase.from('worksheet_submissions').select('*').eq('user_id', activeUserId).eq('worksheet_id', 'gc3').maybeSingle();
+      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data as Record<string, unknown>, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
       else {
         if (isBuddyMode && targetUserId) {
           const { data: joinee } = await supabase.from('user_profiles').select('full_name').eq('id', targetUserId).single();
@@ -61,11 +87,11 @@ export default function GateControl3({ targetUserId }) {
     return () => clearTimeout(t);
   }, [data, activeUserId, loaded]);
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
-  const toggleMs = (i) => setData(p => {
+  const u = (f: string, v: unknown) => setData(p => ({ ...p, [f]: v }));
+  const toggleMs = (i: number) => setData(p => {
     const arr = [...p.milestones];
-    const vals = ['Not Met', 'Partial', 'Met'];
-    arr[i] = vals[(vals.indexOf(arr[i]) + 1) % vals.length];
+    const vals: string[] = ['Not Met', 'Partial', 'Met'];
+    arr[i] = vals[(vals.indexOf(arr[i]!) + 1) % vals.length]!;
     return { ...p, milestones: arr };
   });
 
@@ -77,8 +103,8 @@ export default function GateControl3({ targetUserId }) {
     const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
     const d = { ...data, status: 'submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
     setData(d);
-    
-    const payload = {
+
+    const payload: Record<string, unknown> = {
       user_id: activeUserId,
       worksheet_id: 'gc3',
       worksheet_data: d,
@@ -88,7 +114,7 @@ export default function GateControl3({ targetUserId }) {
       updated_at: new Date().toISOString(),
       reviewed_by: isBuddyMode ? user?.id : null,
       reviewed_at: isBuddyMode ? new Date().toISOString() : null,
-      reviewer_name: isBuddyMode ? (profile?.full_name || 'Buddy') : null,
+      reviewer_name: isBuddyMode ? ((profile?.full_name as string) || 'Buddy') : null,
     };
     await supabase.from('worksheet_submissions').upsert(payload, { onConflict: 'user_id,worksheet_id' });
     setSubmitting(false);
@@ -130,7 +156,7 @@ export default function GateControl3({ targetUserId }) {
     );
   }
 
-  if (!loaded) return <div className="lux-section" style={{ textAlign: 'center' }}><div className="lux-container"><p style={{ fontFamily: t.body, color: t.wg }}>Loading…</p></div></div>;
+  if (!loaded) return <div className="lux-section" style={{ textAlign: 'center' }}><div className="lux-container"><p style={{ fontFamily: t.body, color: t.wg }}>Loading...</p></div></div>;
 
   return (
     <div className="lux-section">
@@ -154,14 +180,14 @@ export default function GateControl3({ targetUserId }) {
           </div>
         </div>
 
-        {(data._savedReviewStatus === 'needs_revision' || data._savedReviewStatus === 'revision_submitted') && data._savedReviewComment && (
+        {(data._savedReviewStatus === 'needs_revision' || data._savedReviewStatus === 'revision_submitted') && !!data._savedReviewComment && (
           <div style={{ marginBottom: '1.5rem', border: '1px solid #C62828', background: '#FFF5F5', padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
               <div style={{ width: '6px', height: '6px', background: '#C62828', flexShrink: 0 }} />
               <span style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C62828' }}>Revision Feedback</span>
             </div>
-            <div style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.ch, lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-wrap' }}>{data._savedReviewComment}</div>
-            {data._savedReviewerName && <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>— {data._savedReviewerName}</div>}
+            <div style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.ch, lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-wrap' }}>{data._savedReviewComment as string}</div>
+            {!!data._savedReviewerName && <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>— {data._savedReviewerName as string}</div>}
             <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(198, 40, 40, 0.06)', fontFamily: t.body, fontSize: '0.75rem', color: '#C62828' }}>Please review the feedback above, make changes, and resubmit.</div>
           </div>
         )}
@@ -175,7 +201,7 @@ export default function GateControl3({ targetUserId }) {
             ].map(item => (
               <div key={item.k} className="lux-form-group">
                 <label className="lux-label" htmlFor={`gc3-${item.k}`}>{item.l}</label>
-                <textarea id={`gc3-${item.k}`} className="lux-textarea" rows={2} value={data[item.k]} onChange={e => u(item.k, e.target.value)} />
+                <textarea id={`gc3-${item.k}`} className="lux-textarea" rows={2} value={data[item.k] as string} onChange={e => u(item.k, e.target.value)} />
               </div>
             ))}
           </Section>
@@ -190,7 +216,7 @@ export default function GateControl3({ targetUserId }) {
               { k: 'ownershipRating', l: 'Ownership' },
               { k: 'professionalismRating', l: 'Professionalism' },
             ].map(item => (
-              <Slider key={item.k} label={item.l} value={data[item.k]} onChange={v => u(item.k, v)} />
+              <Slider key={item.k} label={item.l} value={data[item.k] as number} onChange={v => u(item.k, v)} />
             ))}
           </Section>
 
@@ -254,7 +280,7 @@ export default function GateControl3({ targetUserId }) {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '1rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
             <button type="button" onClick={() => navigate('/phase-3')} className="lux-btn lux-btn-secondary">Cancel</button>
             <button type="button" onClick={handleSubmit} disabled={submitting} className="lux-btn lux-btn-primary" style={{ minWidth: '200px' }}>
-              <span className="gold-overlay" /><span className="btn-content">{submitting ? '…' : <><Send size={16} strokeWidth={1.5} /> Submit Final Assessment</>}</span>
+              <span className="gold-overlay" /><span className="btn-content">{submitting ? '...' : <><Send size={16} strokeWidth={1.5} /> Submit Final Assessment</>}</span>
             </button>
           </div>
         </form>
@@ -262,5 +288,3 @@ export default function GateControl3({ targetUserId }) {
     </div>
   );
 }
-
-

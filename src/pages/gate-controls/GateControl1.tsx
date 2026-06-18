@@ -2,10 +2,29 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../api/supabase';
-import { Shield, CheckCircle2, AlertCircle, Send, ArrowLeft } from 'lucide-react';
+import { Shield, AlertCircle, Send, ArrowLeft } from 'lucide-react';
 import { Section, Slider, LoadingView, BuddyApprovedView } from '../../config/worksheetComponents';
+import { t } from '../../config/theme';
 
-const milestones = [
+interface GateData {
+  employeeName: string;
+  portalRating: number;
+  courseRating: number;
+  studentRating: number;
+  commRating: number;
+  readinessRating: number;
+  milestones: string[];
+  managerStrengths: string;
+  managerRisks: string;
+  readinessDecision: string;
+  managerSignature: string;
+  instructorSignature: string;
+  status: string;
+  submittedAt: string;
+  [key: string]: unknown;
+}
+
+const milestones: [string, string][] = [
   ['Portal proficiency — end-to-end', 'Live demo with Faculty Lead'],
   ['Clear understanding of course objectives', 'Verbal explanation or short written summary'],
   ['Awareness of classroom management norms', 'Observation debrief with mentor'],
@@ -13,14 +32,16 @@ const milestones = [
   ['Ready for guided contribution', 'Faculty Lead sign-off'],
 ];
 
-import { t } from '../../config/theme.js';
+interface GateControlProps {
+  targetUserId?: string;
+}
 
-export default function GateControl1({ targetUserId }) {
+export default function GateControl1({ targetUserId }: GateControlProps) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const activeUserId = targetUserId || user?.id;
+  const activeUserId = (targetUserId || user?.id || '') as string;
   const isBuddyMode = !!targetUserId;
-  const [data, setData] = useState({
+  const [data, setData] = useState<GateData>({
     employeeName: '',
     portalRating: 3, courseRating: 3, studentRating: 3, commRating: 3, readinessRating: 3,
     milestones: milestones.map(() => 'Not Met'),
@@ -36,9 +57,8 @@ export default function GateControl1({ targetUserId }) {
     if (!activeUserId) return;
     (async () => {
       const { data: saved } = await supabase.from('worksheet_submissions').select('*').eq('user_id', activeUserId).eq('worksheet_id', 'gc1').maybeSingle();
-      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
+      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data as Record<string, unknown>, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
       else {
-        // In buddy mode, prefill the joinee's name
         if (isBuddyMode && targetUserId) {
           const { data: joinee } = await supabase.from('user_profiles').select('full_name').eq('id', targetUserId).single();
           if (joinee) setData(p => ({ ...p, employeeName: joinee.full_name }));
@@ -60,12 +80,12 @@ export default function GateControl1({ targetUserId }) {
     return () => clearTimeout(t);
   }, [data, activeUserId, loaded]);
 
-  const u = (f, v) => setData(p => ({ ...p, [f]: v }));
-  const toggleMilestone = (i) => setData(p => {
+  const u = (f: string, v: unknown) => setData(p => ({ ...p, [f]: v }));
+  const toggleMilestone = (i: number) => setData(p => {
     const arr = [...p.milestones];
-    const vals = ['Not Met', 'Partial', 'Met'];
-    const idx = vals.indexOf(arr[i]);
-    arr[i] = vals[(idx + 1) % vals.length];
+    const vals: string[] = ['Not Met', 'Partial', 'Met'];
+    const idx = vals.indexOf(arr[i]!);
+    arr[i] = vals[(idx + 1) % vals.length]!;
     return { ...p, milestones: arr };
   });
 
@@ -73,12 +93,11 @@ export default function GateControl1({ targetUserId }) {
     setError('');
     if (!data.employeeName.trim()) { setError('Please fill in the instructor name.'); return; }
     setSubmitting(true);
-    // In buddy mode, auto-set to buddy_approved on submit (buddy fills = buddy approves)
     const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
     const d = { ...data, status: 'submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
     setData(d);
-    
-    const payload = {
+
+    const payload: Record<string, unknown> = {
       user_id: activeUserId,
       worksheet_id: 'gc1',
       worksheet_data: d,
@@ -88,7 +107,7 @@ export default function GateControl1({ targetUserId }) {
       updated_at: new Date().toISOString(),
       reviewed_by: isBuddyMode ? user?.id : null,
       reviewed_at: isBuddyMode ? new Date().toISOString() : null,
-      reviewer_name: isBuddyMode ? (profile?.full_name || 'Buddy') : null,
+      reviewer_name: isBuddyMode ? ((profile?.full_name as string) || 'Buddy') : null,
     };
     await supabase.from('worksheet_submissions').upsert(payload, { onConflict: 'user_id,worksheet_id' });
     setSubmitting(false);
@@ -155,7 +174,7 @@ export default function GateControl1({ targetUserId }) {
             <span>Revision requested. Please review feedback, make changes, and resubmit.</span>
           </div>
         )}
-            {(data._savedReviewStatus === 'needs_revision' || data._savedReviewStatus === 'revision_submitted') && data._savedReviewComment && (
+        {(data._savedReviewStatus === 'needs_revision' || data._savedReviewStatus === 'revision_submitted') && !!data._savedReviewComment && (
           <div style={{ marginBottom: '1.5rem', border: '1px solid #C62828', background: '#FFF5F5', padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
               <div style={{ width: '6px', height: '6px', background: '#C62828', flexShrink: 0 }} />
@@ -164,10 +183,10 @@ export default function GateControl1({ targetUserId }) {
               </span>
             </div>
             <div style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.ch, lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-wrap' }}>
-              {data._savedReviewComment}
+              {data._savedReviewComment as string}
             </div>
-            {data._savedReviewerName && (
-              <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>— {data._savedReviewerName}</div>
+            {!!data._savedReviewerName && (
+              <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>— {data._savedReviewerName as string}</div>
             )}
             <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(198, 40, 40, 0.06)', fontFamily: t.body, fontSize: '0.75rem', color: '#C62828' }}>
               Please review the feedback above, make changes, and resubmit.
@@ -239,7 +258,7 @@ export default function GateControl1({ targetUserId }) {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '1rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
             <button type="button" onClick={() => navigate('/phase-1')} className="lux-btn lux-btn-secondary">Cancel</button>
             <button type="button" onClick={handleSubmit} disabled={submitting} className="lux-btn lux-btn-primary" style={{ minWidth: '180px' }}>
-              <span className="gold-overlay" /><span className="btn-content">{submitting ? '…' : <><Send size={16} strokeWidth={1.5} /> Submit Gate Review</>}</span>
+              <span className="gold-overlay" /><span className="btn-content">{submitting ? '...' : <><Send size={16} strokeWidth={1.5} /> Submit Gate Review</>}</span>
             </button>
           </div>
         </form>
@@ -247,5 +266,3 @@ export default function GateControl1({ targetUserId }) {
     </div>
   );
 }
-
-

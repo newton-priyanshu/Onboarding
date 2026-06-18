@@ -1,22 +1,51 @@
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookText, Users, FileText, ClipboardCheck, Shield, ArrowRight, CheckCircle2, AlertTriangle, Lock } from 'lucide-react';
+import { BookOpen, MessageSquare, ClipboardCheck, FileText, Monitor, ArrowRight, CheckCircle2, AlertTriangle, Lock, type LucideIcon } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
-import { t } from '../config/theme.js';
-import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge, canAccessPhase } from '../config/worksheetConfig.jsx';
+import { t } from '../config/theme';
+import { REVIEWER_LABELS, REVIEWER_STYLES, ReviewerBadge, canAccessPhase, type WorksheetSubmission } from '../config/worksheetConfig';
 import { getDueDateInfo } from '../hooks/useDueDates';
 
-const worksheets = [
-  { id: 'p3_w1', num: 1, path: '/phase-3/worksheet-1', title: 'Independent Lecture Delivery Log & Pacing Post-Mortem', icon: BookText, desc: 'Document 2+ independent lectures with post-mortem analysis.' },
-  { id: 'p3_w2', num: 2, path: '/phase-3/worksheet-2', title: 'Student Cohort Profiling & High/Low Performer Mapping', icon: Users, desc: 'Map high performers and at-risk students.' },
-  { id: 'p3_w3', num: 3, path: '/phase-3/worksheet-3', title: 'Assessment Design Blueprint & Bloom\'s Taxonomy Grid', icon: FileText, desc: 'Design assessments mapped to Bloom\'s Taxonomy.' },
-  { id: 'p3_w4', num: 4, path: '/phase-3/worksheet-4', title: 'Pedagogical Frameworks Application Journal', icon: BookOpen, desc: 'Document real classroom examples of pedagogical techniques.' },
-  { id: 'p3_w5', num: 5, path: '/phase-3/worksheet-5', title: 'Continuous Course Improvement Proposal', icon: ClipboardCheck, desc: 'Capstone project — propose a course improvement with evidence.' },
+interface WorksheetMeta {
+  id: string;
+  num: number;
+  path: string;
+  title: string;
+  icon: LucideIcon;
+  desc: string;
+}
+
+interface StatusInfo {
+  status: string | null;
+  review_status: string | null;
+}
+
+interface PhaseLockedViewProps {
+  phaseNum: number;
+  previousPhaseNum: number;
+  navigate: ReturnType<typeof useNavigate>;
+}
+
+const phaseLabels: Record<number, string> = { 1: 'Orientation', 2: 'Contribution', 3: 'Ownership' };
+
+const worksheets: WorksheetMeta[] = [
+  { id: 'p2_w1', num: 1, path: '/phase-2/worksheet-1', title: 'Student Doubt Resolution & Common Errors Diagnostic Log', icon: MessageSquare, desc: 'Track 30+ student interactions and identify confusion patterns.' },
+  { id: 'p2_w2', num: 2, path: '/phase-2/worksheet-2', title: 'Independent Lab Facilitation Scorecard', icon: ClipboardCheck, desc: 'Document 2+ independent labs with mentor feedback.' },
+  { id: 'p2_w3', num: 3, path: '/phase-2/worksheet-3', title: 'Courseware Content Creation Ledger', icon: FileText, desc: 'Track every content contribution — worksheets, MCQs, coding questions.' },
+  { id: 'p2_w4', num: 4, path: '/phase-2/worksheet-4', title: 'Advanced Portal Operations & Quiz Configuration Check', icon: Monitor, desc: 'Evidence-based quiz configuration and scenario challenges.' },
 ];
 
-function PhaseLockedView({ phaseNum, previousPhaseNum, navigate }) {
-  const phaseLabels = { 1: 'Orientation', 2: 'Contribution', 3: 'Ownership' };
+function getBadge(status: string | null, reviewStatus: string | null): { label: string; color: string } {
+  if (reviewStatus === 'approved') return { label: 'Reviewed', color: '#1B5E20' };
+  if (reviewStatus === 'buddy_approved') return { label: 'Buddy Approved', color: '#381E72' };
+  if (reviewStatus === 'needs_revision') return { label: 'Revise', color: '#C62828' };
+  if (status === 'submitted' || reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted') return { label: 'Pending', color: '#7D5260' };
+  if (status === 'In Progress') return { label: 'In Progress', color: t.ch };
+  return { label: 'Not Started', color: t.wg };
+}
+
+function PhaseLockedView({ phaseNum, previousPhaseNum, navigate }: PhaseLockedViewProps) {
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
@@ -44,39 +73,35 @@ function PhaseLockedView({ phaseNum, previousPhaseNum, navigate }) {
   );
 }
 
-export default function Phase3() {
-  const navigate = useNavigate(); const { user } = useAuth();
-  const [statuses, setStatuses] = useState({});
-  const [allSubmissions, setAllSubmissions] = useState([]);
+export default function Phase2() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
+  const [allSubmissions, setAllSubmissions] = useState<WorksheetSubmission[]>([]);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
   useEffect(() => {
     if (user) (async () => {
       const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user.id);
       if (data) {
-        const subs = data.map(s => ({ ...s, user_id: user.id }));
+        const subs = data.map(s => ({ ...s, user_id: user.id })) as unknown as WorksheetSubmission[];
         setAllSubmissions(subs);
-        const m = {}; data.forEach(s => { m[s.worksheet_id] = { status: s.status, review_status: s.review_status }; }); setStatuses(m);
+        const m: Record<string, StatusInfo> = {};
+        data.forEach(s => { m[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+        setStatuses(m);
       }
       setCheckingAccess(false);
     })();
   }, [user]);
 
-  // Phase-gate check
-  if (!checkingAccess && !canAccessPhase(user?.id, 3, allSubmissions)) {
-    return <PhaseLockedView phaseNum={3} previousPhaseNum={2} navigate={navigate} />;
+  if (!checkingAccess && !canAccessPhase(user?.id || '', 2, allSubmissions)) {
+    return <PhaseLockedView phaseNum={2} previousPhaseNum={1} navigate={navigate} />;
   }
 
-  const completed = worksheets.filter(w => { const s = statuses[w.id]; return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved'; }).length;
-
-  function getBadge(status, reviewStatus) {
-    if (reviewStatus === 'approved') return { label: 'Reviewed', color: '#1B5E20' };
-    if (reviewStatus === 'buddy_approved') return { label: 'Buddy Approved', color: '#381E72' };
-    if (reviewStatus === 'needs_revision') return { label: 'Revise', color: '#C62828' };
-    if (status === 'submitted' || reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted') return { label: 'Pending', color: '#7D5260' };
-    if (status === 'In Progress') return { label: 'In Progress', color: t.ch };
-    return { label: 'Not Started', color: t.wg };
-  }
+  const completed = worksheets.filter(w => {
+    const s = statuses[w.id];
+    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
+  }).length;
 
   return (
     <div className="lux-section">
@@ -89,13 +114,13 @@ export default function Phase3() {
             </div>
             <div style={{ flex: 1 }}>
               <h1 style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>
-                Phase 3: <em style={{ fontStyle: 'italic', color: t.gd }}>Ownership</em>
+                Phase 2: <em style={{ fontStyle: 'italic', color: t.gd }}>Contribution</em>
               </h1>
-              <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>Days 61–90 — 5 worksheets</span>
+              <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>Days 31–60 — 4 worksheets</span>
             </div>
           </div>
           <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>
-            Teach independently, design assessments, and propose course improvements.
+            Teach, create content, and develop your craft with mentor support.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '1.25rem' }}>
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
@@ -114,7 +139,8 @@ export default function Phase3() {
           </span>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {Object.entries(REVIEWER_LABELS).map(([key, label]) => {
-              const style = REVIEWER_STYLES[key];
+              const style = REVIEWER_STYLES[key as keyof typeof REVIEWER_STYLES];
+              if (!style) return null;
               return (
                 <span key={key} style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.1em', padding: '4px 12px', border: '1px solid ' + style.color, color: style.color }}>{label}</span>
               );
@@ -126,7 +152,7 @@ export default function Phase3() {
           {worksheets.map((ws, idx) => {
             const Icon = ws.icon;
             const wsStatus = statuses[ws.id];
-            const badge = getBadge(wsStatus?.status, wsStatus?.review_status);
+            const badge = getBadge(wsStatus?.status ?? null, wsStatus?.review_status ?? null);
             return (
               <div key={ws.id} onClick={() => navigate(ws.path)}
                 style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem 0', borderBottom: '1px solid rgba(26, 26, 26, 0.06)', cursor: 'pointer', transition: 'opacity 500ms var(--ease-lux)', opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards` }}
@@ -159,7 +185,6 @@ export default function Phase3() {
             );
           })}
         </div>
-
       </div>
     </div>
   );
