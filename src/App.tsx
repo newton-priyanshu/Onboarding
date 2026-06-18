@@ -56,12 +56,17 @@ export default function App() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const stored = localStorage.getItem('onboarding_progress');
-    if (stored) setProgress(Number(stored));
+    try {
+      const stored = localStorage.getItem('onboarding_progress');
+      if (stored) setProgress(Number(stored));
+    } catch { /* localStorage unavailable */ }
   }, []);
 
   useEffect(() => {
-    const handler = (e: CustomEvent) => { setProgress(e.detail); localStorage.setItem('onboarding_progress', String(e.detail)); };
+    const handler = (e: CustomEvent) => {
+      setProgress(e.detail);
+      try { localStorage.setItem('onboarding_progress', String(e.detail)); } catch { /* localStorage unavailable */ }
+    };
     window.addEventListener('progressUpdate', handler as EventListener);
     return () => window.removeEventListener('progressUpdate', handler as EventListener);
   }, []);

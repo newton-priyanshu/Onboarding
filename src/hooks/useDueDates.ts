@@ -37,7 +37,8 @@ const DEFAULT_DUE_OFFSETS: Record<string, number> = {
  * For demo/simulation, this is 30 days ago.
  */
 function getDefaultStartDate(): Date {
-  const stored = localStorage.getItem('onboarding_start_date');
+  let stored: string | null = null;
+  try { stored = localStorage.getItem('onboarding_start_date'); } catch { /* localStorage unavailable */ }
   if (stored) return new Date(stored);
   return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 }

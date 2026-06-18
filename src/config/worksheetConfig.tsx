@@ -61,10 +61,9 @@ import { getReviewerType, REVIEWER_LABELS, REVIEWER_STYLES } from './worksheetCo
  * Map of worksheet ID → React component for dynamic worksheet routing.
  */
 // GateControl components need targetUserId prop, worksheets don't.
-// Using `any` here is acceptable since these are runtime-mapped components
+// Using a loose prop type since these are runtime-mapped components
 // that receive props dynamically from the routing system.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const WORKSHEET_COMPONENTS: Record<string, FC<any>> = {
+export const WORKSHEET_COMPONENTS: Record<string, FC<Record<string, unknown>>> = {
   p1_w1: Phase1Worksheet1, p1_w2: Phase1Worksheet2, p1_w3: Phase1Worksheet3,
   p1_w4: Phase1Worksheet4, p1_w5: Phase1Worksheet5, p1_w6: Phase1Worksheet6,
   p1_w7: Phase1Worksheet7, p1_w8: Phase1Worksheet8, gc1: GateControl1,

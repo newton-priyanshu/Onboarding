@@ -1,18 +1,55 @@
 import { describe, it, expect } from 'vitest';
 
-// Import from worksheetConfig.js (pure functions, no React/Supabase dependency)
+// Import from worksheetConfigData (pure functions, no React/Supabase dependency)
 import {
   getPhaseReviewStatus,
   getBuddyApprovedSheets,
   getPhaseWorksheetsByStatus,
   PHASE_WORKSHEETS_MAP,
 } from '../../config/worksheetConfigData';
+import type { ReviewStatus, SubmissionStatus, ReviewerType, WorksheetId } from '../../types/supabase';
 
 // Helper: build a minimal mock submission for testing phase review functions.
-// Only includes fields accessed by getPhaseReviewStatus/getBuddyApprovedSheets.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function sub(worksheetId: string, reviewStatus: string, userId: string = 'joinee-1'): any {
-  return { user_id: userId, worksheet_id: worksheetId, review_status: reviewStatus };
+// Only includes fields accessed by the phase review functions.
+// Other required fields use empty/null defaults to satisfy WorksheetSubmission's shape.
+function sub(
+  worksheetId: string,
+  reviewStatus: string,
+  userId: string = 'joinee-1',
+): {
+  id: string;
+  user_id: string;
+  worksheet_id: WorksheetId;
+  worksheet_data: Record<string, unknown>;
+  phase: string;
+  status: SubmissionStatus;
+  review_status: ReviewStatus;
+  reviewer_type: ReviewerType;
+  reviewed_by: null;
+  reviewer_name: null;
+  review_comment: null;
+  reviewed_at: null;
+  review_history: [];
+  created_at: string;
+  updated_at: string;
+} {
+  return {
+    id: '',
+    user_id: userId,
+    worksheet_id: worksheetId as WorksheetId,
+    worksheet_data: {},
+    phase: '',
+    status: '' as SubmissionStatus,
+    review_status: reviewStatus as ReviewStatus,
+    reviewer_type: '' as ReviewerType,
+    reviewed_by: null,
+    reviewer_name: null,
+    review_comment: null,
+    reviewed_at: null,
+    review_history: [],
+    created_at: '',
+    updated_at: '',
+  };
 }
 
 describe('Phase-Level Review Flow', () => {
@@ -137,7 +174,7 @@ describe('Phase-Level Review Flow', () => {
       expect(result.length).toBe(3);
       result.forEach(id => {
         const s = submissions.find(s => s.worksheet_id === id);
-        expect(s.review_status).toBe('buddy_approved');
+        expect(s!.review_status).toBe('buddy_approved');
       });
     });
 
