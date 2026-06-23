@@ -506,16 +506,16 @@ Login/Signup → Dashboard → Phase 1 → Worksheet pages
 
 ### Leaf Components (Reusable)
 
-| Component | File | Props | Purpose |
-|-----------|------|-------|---------|
-| `Navbar` | `src/components/Navbar.tsx` | `progress?: number` | Navigation bar with role-based links, user menu, notification bell, mobile drawer |
-| `ProtectedRoute` | `src/components/ProtectedRoute.tsx` | `children`, `requiredRoles?: UserRole[]` | Route-level auth guard |
-| `NotificationBell` | `src/components/NotificationBell.tsx` | (none, reads auth context) | Bell icon with unread count + dropdown notification list |
-| `PhaseWorksheetList` | `src/components/PhaseWorksheetList.tsx` | `worksheets: WorksheetMeta[]`, `statuses: Record<string, StatusInfo>` | Worksheet list with badges, due dates, reviewer labels |
-| `WorksheetPage` | `src/components/WorksheetPage.tsx` | `worksheetId, phase, icon, title, subtitle, backTo, defaultData, children` | Shared wrapper for all 17 worksheet forms |
-| `ReviewContent` | `src/components/ReviewContent.tsx` | `data: Record<string, unknown>`, `worksheetId: string` | Renders submitted worksheet data in organized sections |
-| `Toast` | `src/components/Toast.tsx` | (provider pattern) | Toast notification system with success/error/warning/info types |
-| `ErrorBoundary` | `src/components/ErrorBoundary.tsx` | `children`, `fallback?`, `locationKey?` | React error boundary with retry/reload capabilities |
+| Component | File | Props | Internal State | Key Lifecycle | Event Handlers | Purpose |
+|-----------|------|-------|---------------|---------------|----------------|---------|
+| `Navbar` | `src/components/Navbar.tsx` | `progress?: number` | Mobile drawer open/close, user menu open/close | — | `handleLogout`, `handleMobileToggle` | Navigation bar with role-based links, user menu, notification bell, mobile drawer |
+| `ProtectedRoute` | `src/components/ProtectedRoute.tsx` | `children`, `requiredRoles?: UserRole[]` | (none — pure guard) | — | — | Route-level auth guard; redirects to `/login` with `from` state if unauthorized |
+| `NotificationBell` | `src/components/NotificationBell.tsx` | (none, reads auth context) | `open: boolean` (dropdown visibility), `ref: RefObject` (outside-click detection) | `useEffect` for outside-click listener (add/remove on open toggle) | `handleNotificationClick` (mark read + navigate), `handleClickOutside` (close dropdown) | Bell icon with unread count + dropdown notification list; navigates to worksheet/review on click |
+| `PhaseWorksheetList` | `src/components/PhaseWorksheetList.tsx` | `worksheets: WorksheetMeta[]`, `statuses: Record<string, StatusInfo>` | (none — pure render) | — | — | Worksheet list with badges, due dates, reviewer labels |
+| `WorksheetPage` | `src/components/WorksheetPage.tsx` | `worksheetId, phase, icon, title, subtitle, backTo, defaultData, children, requiredFields?, approvedMsg?, submittedMsg?, buddyApproveMsg?` | Delegates to `useWorksheet` hook | `useWorksheet` handles load/save lifecycle | `handleSubmit` (via hook), cancel (navigate back) | Shared wrapper for all 17 worksheet forms; renders status views (Submitted, Approved, BuddyApproved) or form via render-prop |
+| `ReviewContent` | `src/components/ReviewContent.tsx` | `data: Record<string, unknown>`, `worksheetId: string` | (none — pure render) | — | — | Renders submitted worksheet data in organized sections |
+| `Toast` | `src/components/Toast.tsx` | (provider pattern) | `toasts: ToastItem[]` (queue), `timersRef` (auto-dismiss timers) | `useEffect` subscribes to `onToast` event bridge on mount; cleanup on unmount | `showToast`, `removeToast`, `clearToasts` via context | Toast notification system with success/error/warning/info types; auto-dismiss after 5s; enter/exit animations |
+| `ErrorBoundary` | `src/components/ErrorBoundary.tsx` | `children`, `fallback?`, `locationKey?` | `hasError: boolean`, `error: Error | null` | `getDerivedStateFromError` (catch error), `componentDidCatch` (log), `componentDidUpdate` (auto-reset on route change) | `handleReset` (clear error), `handleReload` (window reload) | React class-based error boundary with retry/reload capabilities; auto-resets when locationKey prop changes |
 
 ### Worksheet Shared Components (from `src/config/worksheetComponents.tsx`)
 
@@ -549,25 +549,44 @@ Login/Signup → Dashboard → Phase 1 → Worksheet pages
 ### Component Hierarchy (Page-level)
 
 ```
-App
+App (BrowserRouter)
 ├── AuthProvider
 │   └── ToastProvider
-│       └── ErrorBoundaryRouteResetter
+│       └── ErrorBoundaryRouteResetter (resets on route change via location.key)
 │           ├── Navbar
-│           │   └── NotificationBell
+│           │   └── NotificationBell (uses useNotifications hook + outside-click detection)
 │           └── Routes
 │               ├── Dashboard
-│               ├── Phase1
-│               │   └── PhaseWorksheetList
-│               ├── WorksheetPage (wraps Phase1Worksheet1, etc.)
-│               │   ├── WorksheetHeader
-│               │   ├── WorksheetSection
-│               │   ├── FieldGroup / FieldGrid
-│               │   └── ActionBar
+│               │   └── Phase Roadmap → Links to Phase pages
+│               ├── Phase1 / Phase2 / Phase3
+│               │   └── PhaseWorksheetList (shared component)
+│               ├── WorksheetPage (wraps Phase1Worksheet1–Phase3Worksheet5 via render-prop)
+│               │   ├── BackButton
+│               │   ├── WorksheetHeader (icon, title, save indicator)
+│               │   ├── ReviewFeedback (revision banner with history timeline)
+│               │   ├── form → children (render-prop context: data, updateField, handleSubmit)
+│               │   │   ├── WorksheetSection
+│               │   │   ├── FieldGroup / FieldGrid
+│               │   │   └── ... (worksheet-specific fields)
+│               │   ├── ErrorAlert
+│               │   └── ActionBar (Cancel + Submit)
 │               ├── WorksheetReview
-│               │   └── ReviewContent
+│               │   └── ReviewContent (renders FIELD_SECTIONS)
+│               ├── GateControl1–3 (independent, NOT wrapped by WorksheetPage)
+│               │   ├── Section
+│               │   ├── Slider (1-5 rating)
+│               │   ├── Milestone toggles
+│               │   └── Approval Sign-Off fields
 │               └── ...
 ```
+
+### Component State Patterns
+
+- **Hook-driven data fetching:** `useWorksheet` manages loading/saving/submission; worksheets never call Supabase directly
+- **Status views as early returns:** `WorksheetPage` checks `isBuddyApproved → isApproved → isSubmitted → loaded` in order, returning different components
+- **Render-prop form pattern:** `children` can be a function receiving `WorksheetContext` (data, updateField, handleSubmit, etc.), giving worksheets full control over layout while sharing save/load logic
+- **Class-based ErrorBoundary:** Required because React error boundaries must use `componentDidCatch` — cannot be functional components
+- **Outside-click detection:** `NotificationBell` uses a `ref` + `mousedown` event listener, added only when dropdown is open
 
 ---
 
@@ -592,15 +611,40 @@ App
 | Hook | File | Return Value | Purpose |
 |------|------|--------------|---------|
 | `useAutoSave` | `src/hooks/useAutoSave.ts` | `{ saveStatus, flushSave }` | Periodic auto-save + explicit submission |
-| `useWorksheet` | `src/hooks/useWorksheet.ts` | `{ data, setData, loaded, submitting, submitError, saveStatus, updateField, handleSubmit, isApproved, isBuddyApproved, isSubmitted, reviewData, flushSave }` | Orchestrates entire worksheet lifecycle |
+| `useWorksheet` | `src/hooks/useWorksheet.ts` | `{ data, setData, loaded, submitting, submitError, saveStatus, updateField, handleSubmit, isApproved, isBuddyApproved, isSubmitted, reviewData, flushSave, setSubmitError, setSubmitting }` | Orchestrates entire worksheet lifecycle |
 | `useDueDates` | `src/hooks/useDueDates.ts` | `DueDateMap` (Record<string, string>) | Fetch/sync due dates for worksheets |
 | `useNotifications` | `src/hooks/useNotifications.ts` | `{ notifications, unreadCount, loading, markAsRead, markAllAsRead, refresh }` | Fetch/manage notifications with polling |
 
 ### Caching & Persistence
 
-- **localStorage:** `onboarding_progress` (progress percentage), `onboarding_start_date` (for due date calculations)
+| Storage Key | Purpose | Set By | Read By |
+|-------------|---------|--------|--------|
+| `onboarding_progress` | Percentage of total worksheets approved (0-100) | `App.tsx` via `progressUpdate` custom event | `App.tsx` on mount, `Navbar` for progress bar |
+| `onboarding_start_date` | Start date for due date calculations | `useDueDates` hook on first load | `useDueDates` hook for worksheet due dates |
+
 - **No client-side cache:** All Supabase queries are fresh on every load
-- **No offline support:** The app requires a live network connection
+- **No offline support:** The app requires a live network connection — auto-save fails gracefully with retry
+- **No stale-while-revalidate:** Every page navigation triggers a fresh Supabase query
+
+### Cross-Component Event System
+
+- **`progressUpdate` custom event:** Dispatched via `window.dispatchEvent(new CustomEvent('progressUpdate', { detail: percentage }))`. Used by worksheet components to update the Navbar progress bar without prop drilling. The App.tsx root listens for this event and syncs it to localStorage.
+- **Global toast events:** The `onToast`/`dispatchToast` pattern in `src/utils/errorHandling.ts` uses a subscriber list (`Set<ToastListener>`) to bridge non-React code (error utilities) with the React ToastProvider. Any module can call `dispatchToast(message, type)` without importing React.
+
+### The `_saved*` Property Convention
+
+Worksheet data objects use a convention of `_saved*` prefixed keys to persist review metadata alongside form data within the same JSONB `worksheet_data` column:
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `_savedReviewStatus` | string | Current review state (e.g., `approved`, `needs_revision`, `buddy_approved`) |
+| `_savedReviewComment` | string | Most recent reviewer feedback comment |
+| `_savedReviewerName` | string | Display name of the reviewer |
+| `_savedReviewedBy` | string (UUID) | ID of the reviewer |
+| `_savedReviewedAt` | string (ISO) | Timestamp of the review action |
+| `_savedReviewHistory` | array | Append-only timeline of all review actions (action, reviewer, comment, timestamp) |
+
+This convention allows the form state (name, fields, etc.) and review state to travel together through the same auto-save pipeline, avoiding separate Supabase columns for review metadata on every row.
 
 ---
 
@@ -959,25 +1003,63 @@ Role changes require **re-login** because the JWT token is not refreshed immedia
 
 ## 13. Forms
 
+### WorksheetPage Render-Prop Pattern
+
+The `WorksheetPage` component (`src/components/WorksheetPage.tsx`) uses a **render-prop** pattern where `children` can be either static JSX or a function receiving a `WorksheetContext` object:
+
+```tsx
+<WorksheetPage worksheetId="p1_w1" phase="phase-1" icon={Users} title="..." subtitle="..." backTo="/phase-1" defaultData={{...}}>
+  {(ctx) => (
+    <>
+      <WorksheetSection title="About You">
+        <FieldGroup label="Your Name" required>
+          <input className="lux-input" value={ctx.data.employeeName as string}
+            onChange={e => ctx.updateField('employeeName', e.target.value)} />
+        </FieldGroup>
+      </WorksheetSection>
+    </>
+  )}
+</WorksheetPage>
+```
+
+The `WorksheetContext` provides: `data, setData, loaded, submitting, submitError, saveStatus, updateField, updateArrayItem, updateArrayItemEvent, handleSubmit, isApproved, isBuddyApproved, isSubmitted`. This pattern eliminates the need for each worksheet to manage its own save/load/submit state.
+
+### FieldGroup / FieldGrid Composition
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `FieldGroup` | `src/config/worksheetComponents.tsx` | Wraps a form field with label, required asterisk, optional hint text. Props: `label`, `required?`, `id?`, `hint?` |
+| `FieldGrid` | `src/config/worksheetComponents.tsx` | Responsive CSS grid layout for fields. Props: `cols` (number of columns) |
+| `WorksheetSection` | `src/config/worksheetComponents.tsx` | Section card with title and subtitle, separates form into logical groups |
+
+Example: `<FieldGrid cols={2}><FieldGroup label="Name">...<FieldGroup label="Email">...</FieldGrid>`
+
 ### Worksheet Forms (17 worksheets + 3 gate controls)
 
 Each worksheet follows the same pattern:
 
 **Validation:**
-- Basic `requiredFields` array specifies which fields must be non-empty before submission
+- `requiredFields` array specifies which fields must be non-empty before submission
+- Example: `[{ key: 'employeeName', label: 'Instructor Name' }, { key: 'department', label: 'Department' }]`
 - Validation happens client-side before `flushSave`
-- Error message shows which fields need filling
+- Missing fields are listed in the error message
 
 **Submission Flow:**
 1. User edits form → local state updates
-2. Auto-save triggers after 1.5s of inactivity
-3. User clicks Submit → `handleSubmit()` validates → sets `status: 'submitted'`
-4. Page switches to `SubmittedView` (read-only) on reload
+2. Auto-save triggers after 1.5s of inactivity (debounced)
+3. User clicks Submit → `handleSubmit()` validates → `flushSave()` upserts with `status: 'submitted'`
+4. `useAutoSave` sets review_status based on previous state:
+   - If previous was `needs_revision` → `revision_submitted`
+   - If previous was `buddy_approved` → preserve `buddy_approved`
+   - If previous was `approved` → preserve `approved`
+   - Otherwise → `pending_review`
+5. Triggers notification to assigned reviewer
+6. Page switches to `SubmittedView` (read-only) on reload
 
 **Error Handling:**
 - Auto-save failures: `setSaveStatus('error')`, retries once after 5s
-- Submit validation errors: `setSubmitError('Please fill in: ...')`
-- Supabase errors: `notifyError()` triggers toast
+- Submit validation errors: `setSubmitError('Please fill in: [field names]')`
+- Supabase errors: `notifyError()` triggers toast via global event bridge
 
 **Loading State:**
 - `useWorksheet` returns `loaded` boolean
@@ -993,15 +1075,19 @@ Each worksheet follows the same pattern:
 - Radio buttons on Signup use visually-hidden pattern (clip: rect)
 - Form inputs have `required` attributes
 - Inputs have `autocomplete` attributes (name, email, new-password)
+- Select dropdowns have custom chevron via CSS background-image
+- Textareas have `rows` attribute and `resize: vertical`
 
 ### Gate Control Forms (GC1, GC2, GC3)
 
-- Custom form with `Section` and `Slider` components
-- Milestone toggles (click to cycle: Not Met → Partial → Met)
-- Self-assessment sliders (1-5)
-- Manager review section
-- Signature fields
-- Submit with idempotent `handleSubmit` that handles buddy mode and revision mode
+Gate controls **bypass** the `WorksheetPage` wrapper and use `useWorksheet` directly, duplicating form infrastructure:
+
+- **Self-assessment sliders** — `Slider` component renders 5 numbered buttons (1-5 rating). Clicking a number sets the value; value <= n buttons get dark fill. Hover transitions on buttons.
+- **Milestone toggles** — `toggleMilestone(i)` cycles through `['Not Met', 'Partial', 'Met']` on click. Visual indicator (colored dot + left border) changes with status color: green (Met), orange (Partial), grey (Not Met).
+- **Manager review section** — Textareas for strengths/risks, select for readiness decision
+- **Signature fields** — Two text inputs (manager + instructor signature)
+- **Submit** — `handleSubmit` directly manages `_saved*` fields, calls `flushSave(d)` with explicit data object (not relying on auto-save debounce)
+- **Revision banner** — Duplicated inline (not using shared `ReviewFeedback` component), shows revision feedback + resubmit instructions
 
 ### Assessment Form
 
@@ -1010,6 +1096,7 @@ Each worksheet follows the same pattern:
 - Criteria checklist for each level
 - Comments textarea
 - Submits to `onboarding_submissions` table
+- Handles both INSERT and UPDATE (checks for existing record via `onboarding_submissions.id`)
 
 ---
 
@@ -1036,34 +1123,47 @@ Each worksheet follows the same pattern:
 
 ### Error Boundary
 
-- `ErrorBoundary` component wraps the entire app below Navbar
-- Catches unhandled React errors
-- Shows error UI with "Refresh Page" and "Try Again" buttons
-- Automatically resets on route change via `locationKey` prop
-- Logs errors to console via `componentDidCatch`
+- `ErrorBoundary` component (`src/components/ErrorBoundary.tsx`) wraps the entire app below Navbar
+- **Class-based** React error boundary (must use `componentDidCatch`)
+- Catches unhandled React errors via `getDerivedStateFromError`
+- Shows error UI with "Refresh Page" (`window.location.reload()`) and "Try Again" (`setState({ hasError: false })`) buttons
+- Displays error message in monospace font for debugging
+- **Auto-resets on route change** via `ErrorBoundaryRouteResetter` wrapper in `App.tsx` — passes `locationKey={location.key}` prop. When `componentDidUpdate` detects a key change, it clears the error state, allowing seamless navigation recovery
+- Logs errors to console via `componentDidCatch(error, errorInfo)`
 
 ### Toast System
 
-- `ToastProvider` at app root
-- Dispatchable from anywhere via `dispatchToast(message, type)`
-- Types: `success`, `error`, `warning`, `info`
-- Auto-dismiss after 5 seconds
-- Stacked vertically at bottom-right
-- Enter animation (fade in + slide up)
+- `ToastProvider` at app root, wraps entire component tree
+- Provides `showToast`, `removeToast`, `clearToasts` via `ToastContext`
+- **Global bridge:** `src/utils/errorHandling.ts` exports `dispatchToast(message, type)` and `onToast(listener)`. `ToastProvider` subscribes via `onToast` on mount. This means ANY code (hooks, utilities, even non-React) can trigger toasts without importing React context.
+- Types: `success` (green left border), `error` (red), `warning` (orange), `info` (charcoal)
+- Auto-dismiss after 5000ms (configurable per call), uses `setTimeout` stored in `timersRef`
+- Stacked vertically at bottom-right, `z-index: 9999`
+- Enter animation: fade in + slide up (500ms `var(--ease-lux)`)
+- Dismiss button (`X`) on each toast
+- Cleanup on unmount clears all pending timers
 
 ### 404 Handling
 
 - `NotFound` page for unknown routes
 - Links back to Dashboard and Login
-- Gold line + large "404" heading
+- Gold decorative line + large "404" heading
+- Styled with the luxury design system (Playfair Display heading, Inter body)
 
 ### Loading States
 
-- `LoadingView` component (centered "Loading..." text)
-- Loading skeletons in `WorksheetReview` page
-- Loading spinners in auth callback
-- Loading indicators for all dashboard data fetches
+- `LoadingView` component (centered "Loading..." text in worksheet context)
+- Loading skeletons in `WorksheetReview` page (while fetching worksheet data)
+- Loading spinners in `AuthCallback` page (while resolving OAuth session)
+- Loading indicators for all dashboard data fetches (set `loading` state → conditional render)
 - `setLoading(false)` in `finally` blocks (with some gaps noted in Known Issues)
+
+### Dashboard Empty States
+
+- **Dashboard:** When no submissions exist, the phase roadmap shows worksheets as "Not Started" and overall progress bar is hidden. Status legend badges are shown regardless.
+- **Admin Dashboard:** When no phases are ready, shows "All Caught Up" message with explanation. When no assignments exist, shows "No assignments yet."
+- **Buddy Dashboard:** Shows empty states for each tab (Pending Review, Buddy Approved, My Instructors) when no worksheets match the filter.
+- **NotificationBell:** Shows "No notifications yet" with a subdued bell icon when the notifications list is empty.
 
 ---
 
@@ -1193,10 +1293,46 @@ The app follows a **Luxury/Editorial** design system defined in `src/styles/inde
 - ✅ Labels use `htmlFor` / `id` associations on admin dashboard selects
 - ✅ Autocomplete attributes on signup inputs (name, email, new-password)
 - ✅ Favicon exists at `/favicon.svg`
+- ✅ `lux-btn` has `:focus-visible` outline (1px solid charcoal, offset 2px)
+- ✅ `aria-label` on NotificationBell button (includes unread count when >0)
+- ✅ `aria-label="Dismiss"` on toast dismiss buttons
+- ✅ `role` and `tabIndex` on clickable phase cards for keyboard accessibility
+- ✅ Reduced motion media query (`prefers-reduced-motion: reduce`) disables all animations, removes gold overlay hover on primary buttons
 - ❌ Radio buttons on Signup use `display: none` on the actual input, removing native focus indicators (fixed with visually-hidden CSS instead)
-- ❌ No explicit focus-visible styles on most interactive elements
 - ❌ No skip-to-content link for keyboard users
-- ✅ Reduced motion media query (`prefers-reduced-motion: reduce`) disables animations
+- ❌ No ARIA landmarks beyond native HTML5 semantics
+- ❌ Form validation errors are not associated with inputs via `aria-describedby`
+- ❌ Focus order after submit error is not managed (focus stays on submit button)
+- ❌ No `aria-live` region for dynamic content updates (toast messages use their own rendering)
+
+### Mobile Responsiveness
+
+- **Desktop-first design:** The app is primarily designed for desktop (1600px max-width container)
+- **Breakpoints:** 768px (tablet), 850px (navbar collapse), 640px (grid single column), 1024px (section padding increase)
+- **Navbar:** Desktop nav at >=850px, mobile drawer (slide-in menu) at <850px. Hamburger toggle button appears below 850px.
+- **Page layouts:** `lux-container` uses `padding: 0 1rem` on mobile, `padding: 0 4rem` on desktop
+- **Phase layout:** 2-column grid collapses to 1 column at 640px
+- **Worksheet forms:** Single column layout (FieldGrid cols=2 may wrap on small screens)
+- **Admin dashboard:** Grid layouts use `auto-fit, minmax(200px, 1fr)` for flexible column wrapping
+- **Notification dropdown:** Fixed width 360px, max-height 480px with scroll — positioned at right edge
+- **Font scaling:** Dashboard hero uses `clamp(2.25rem, 4.5vw, 3.5rem)` for responsive heading sizing
+- **Touch targets:** Buttons have `min-height: 44px` (WCAG touch target recommendation). `-webkit-tap-highlight-color: transparent` removes mobile highlight.
+- **Paper noise texture:** Fixed position, z-index 50, pointer-events none — renders on all screen sizes
+
+### Color Contrast Analysis
+
+| Element | Foreground | Background | Ratio | WCAG AA |
+|---------|-----------|-----------|-------|---------|
+| Body text | #1A1A1A (charcoal) | #F9F8F6 (alabaster) | 15.8:1 | ✅ Pass |
+| Secondary text | #6C6863 (warm grey) | #F9F8F6 (alabaster) | 6.2:1 | ✅ Pass |
+| Gold accent text | #D4AF37 (gold) | #F9F8F6 (alabaster) | 2.4:1 | ❌ Fail (decorative only) |
+| White on black | #FFFFFF | #1A1A1A | 17.2:1 | ✅ Pass |
+| Purple badge | #381E72 | #F9F8F6 | 8.4:1 | ✅ Pass |
+| Red badge | #C62828 | #F9F8F6 | 5.8:1 | ✅ Pass |
+| Green badge | #1B5E20 | #F9F8F6 | 9.1:1 | ✅ Pass |
+| Hover state | #D4AF37 | #F9F8F6 | 2.4:1 | ❌ Fail (ghost button hover) |
+
+**Note:** Gold (#D4AF37) is used decoratively (accents, lines, hover overlays) and does not carry critical information. Ghost button hover to gold fails AA but is a transient interactive state.
 
 ### UI Components
 
@@ -1235,6 +1371,34 @@ The app follows a **Luxury/Editorial** design system defined in `src/styles/inde
 - ❌ No barrel exports for all pages (App.tsx has individual imports)
 - ❌ Gate controls have duplicated form logic (not using `WorksheetPage` wrapper)
 
+### Good Patterns (Concrete Examples)
+
+1. **`useWorksheet` hook abstraction** (`src/hooks/useWorksheet.ts`): Centralizes load, save, validate, and submit logic for all 17 worksheets. Each worksheet page only needs to call `useWorksheet()` and render fields. Saves ~60 lines of boilerplate per worksheet (~1,000 lines total saved).
+
+2. **`extractEventValue` helper**: Normalizes event values across input types (text inputs, textareas, checkboxes, selects) into a single pattern. Used by `updateField` to handle `e.target.value`, `e.target.checked`, and null edge cases.
+
+3. **Render-prop WorksheetPage** (`src/components/WorksheetPage.tsx`): Separates layout (header, action bar, status views) from content (form fields). Worksheets only provide JSX or a render function — layout and lifecycle are shared.
+
+4. **Barrel exports**: Each module folder has `index.ts` that re-exports all public symbols. Importers use `import { useWorksheet, useAutoSave } from '../hooks'` instead of deep imports.
+
+5. **Theme token object** (`src/config/theme.js`): The `t` object aliases CSS variables (`t.ch` → `var(--color-charcoal)`), providing both IDE autocomplete and runtime access for inline styles.
+
+6. **Error event bridge** (`src/utils/errorHandling.ts`): Uses a simple subscriber pattern (`Set<ToastListener>`) to decouple error utilities from React's component tree. Non-React code can call `dispatchToast()` without importing React.
+
+### Bad Patterns (Technical Debt)
+
+1. **Gate control duplication**: GC1, GC2, GC3 each independently manage save/load/submit, duplicating code from `useWorksheet` and `WorksheetPage`. Bug fixes to the shared hook don't apply to gate controls. Estimated ~80 lines of duplicated logic per gate control (240 total). Gate controls also use a different `handleSubmit` that directly sets `_savedReviewStatus` instead of going through the shared submission pipeline (e.g., no notifications triggered on gate control submit).
+
+2. **Hardcoded status colors**: Status badge colors (`#1B5E20`, `#C62828`, `#381E72`, `#7D5260`, `#E65100`) are hardcoded in 15+ component files instead of using CSS variables from `theme.js`. Changing the color scheme requires find-and-replace across the codebase.
+
+3. **Inline RevisionBanner in gate controls**: Regular worksheets use the shared `ReviewFeedback` component, but gate controls duplicate the revision feedback UI inline with hardcoded strings and styles.
+
+4. **Inconsistent import paths**: Some files import from `'../hooks/useNotifications'` while others import from `'../../hooks/useNotifications'` — barrel exports exist but aren't consistently used.
+
+5. **`index.html` references `main.jsx`**: Should reference `main.tsx` but Vite resolves the extension automatically.
+
+6. **Old `.jsx` files in git history**: The JSX-to-TSX migration added new `.tsx` files and deleted old `.jsx` files. The git history retains the deleted files, and any `git cherry-pick` or merge could reintroduce them.
+
 ### TypeScript Usage
 
 - ✅ Strict mode enabled in `tsconfig.json`
@@ -1243,18 +1407,6 @@ The app follows a **Luxury/Editorial** design system defined in `src/styles/inde
 - ✅ Union types for roles, worksheet IDs, review statuses
 - ✅ `as` casts used sparingly (mostly for Supabase response casting)
 - ❌ Some `any` usage (marked as warning in ESLint config)
-
-### Technical Debt
-
-1. **Gate controls bypass `useWorksheet`/`WorksheetPage`:** GC1, GC2, GC3 manage their own save/load/view logic, duplicating code from `useWorksheet.tsx` and `WorksheetPage.tsx`. Bug fixes to the shared hook don't apply to gate controls.
-
-2. **Old `.jsx` files deleted but git history shows:** The migration from JSX to TSX added new `.tsx` files and deleted old `.jsx` files, but the startup HTML still references `main.jsx` (works because Vite handles the extension resolution).
-
-3. **Gap between gate control approval flow and regular worksheet flow:** Gate controls use a different `handleSubmit` that directly sets `_savedReviewStatus`, `_savedReviewedBy`, etc., while regular worksheets use the `useWorksheet` flow. This creates inconsistent behavior (e.g., gate controls don't trigger notifications on submit).
-
-4. **Hardcoded hex status colors:** Status colors (`#1B5E20`, `#C62828`, `#381E72`, `#7D5260`) are hardcoded across 15+ files instead of being CSS variables.
-
-5. **`index.html` references `main.jsx`:** Should reference `main.tsx` but Vite resolves it anyway.
 
 ---
 
@@ -1367,6 +1519,34 @@ All tests are in `src/hooks/__tests__/` and use **Vitest**.
 - **Due date automated notifications:** The SQL function `check_due_date_notifications()` exists but `pg_cron` scheduling is commented out. Automated due_soon/overdue notifications are not running.
 - **Password reset:** Not implemented. The Login form has no "Forgot password?" link.
 - **Email confirmation:** Required by Supabase but the account creation message says "Check your email to confirm your account" without clear instructions.
+
+### The `_saved*` Convention (Hidden from New Developers)
+
+The entire worksheet data model relies on a convention of `_saved*` prefixed keys within the JSONB `worksheet_data` column. These keys are:
+1. Set by `loadWorksheetData()` when hydrating state from Supabase
+2. Read by `useAutoSave.flushSave()` to determine the new `review_status`
+3. Written by review actions (approve/revision) in `WorksheetReview` and gate controls
+4. Read by `ReviewFeedback` and status views (ApprovedView, BuddyApprovedView) for display
+
+This convention is **not documented in types** (they appear as `data['_savedReviewStatus']` without TypeScript definitions) and is invisible to anyone reading the database schema or worksheet components. New developers must discover this convention by tracing the full save/load pipeline.
+
+### `progressUpdate` Custom Event
+
+`App.tsx` registers a `window.addEventListener('progressUpdate', handler)` listener. Any component can dispatch:
+```js
+window.dispatchEvent(new CustomEvent('progressUpdate', { detail: 42 }));
+```
+This updates the Navbar progress bar without prop drilling through the component tree. The event also syncs the value to `localStorage.onboarding_progress`. This entirely bypasses React's state management — it was likely introduced to solve a specific cross-component communication need without adding a context.
+
+### `__reviewWorksheetId` (Window Global)
+
+The `WorksheetReview` page sets `window.__reviewWorksheetId = worksheetId` for debugging purposes. This allows developers to inspect the current review context from the browser console without navigating React devtools.
+
+### SQL-Level Hidden Features
+
+- **`pg_cron` scheduling for notifications:** The file `db/__due_date_notifications.sql` contains a complete `check_due_date_notifications()` function but the cron job call (`SELECT cron.schedule(...)`) is commented out. The SQL infrastructure exists but is dormant.
+- **Test user scripts:** `db/create_32_users.sql` creates 32 test users across all roles, but the passwords are hardcoded (security concern for production).
+- **Demo data seeding:** `db/seed_worksheets.sql` populates realistic worksheet submissions for QA users — useful for demos but would pollute production data.
 
 ### Commented Code
 
