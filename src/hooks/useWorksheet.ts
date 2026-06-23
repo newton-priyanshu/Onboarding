@@ -106,7 +106,7 @@ export function useWorksheet({
       ? { id: overrideUserId, email: '', app_metadata: {}, user_metadata: {}, aud: '', created_at: '' } as User
       : user;
 
-  const { saveStatus, flushSave } = useAutoSave(autoSaveUser, data, worksheetId, phase);
+  const { saveStatus, flushSave } = useAutoSave(autoSaveUser, data, worksheetId, phase, loaded);
 
   // ── Load saved data from Supabase ───────────────────────────────
   const effectiveUserId = overrideUserId || user?.id;

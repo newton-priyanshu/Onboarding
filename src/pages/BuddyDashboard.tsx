@@ -151,13 +151,13 @@ export default function BuddyDashboard() {
             <p style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg }}>Pending Review</p>
           </div>
           <div style={{ background: 'var(--color-alabaster)', padding: '1.25rem', textAlign: 'center' }}>
-            <Shield size={20} strokeWidth={1.5} style={{ color: '#381E72', marginBottom: '8px' }} />
-            <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: '#381E72' }}>{stats.buddyApproved}</p>
+            <Shield size={20} strokeWidth={1.5} style={{ color: t.purple, marginBottom: '8px' }} />
+            <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.purple }}>{stats.buddyApproved}</p>
             <p style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg }}>Buddy Approved</p>
           </div>
           <div style={{ background: 'var(--color-alabaster)', padding: '1.25rem', textAlign: 'center' }}>
-            <BadgeCheck size={20} strokeWidth={1.5} style={{ color: '#1B5E20', marginBottom: '8px' }} />
-            <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: '#1B5E20' }}>{stats.approved}</p>
+            <BadgeCheck size={20} strokeWidth={1.5} style={{ color: t.success, marginBottom: '8px' }} />
+            <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.success }}>{stats.approved}</p>
             <p style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg }}>Approved</p>
           </div>
         </div>
@@ -237,7 +237,7 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink }: {
                 cursor: 'pointer',
                 opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
               }}>
-              <div style={{ width: '36px', height: '36px', border: '1px solid ' + (isBuddyApproved ? '#381E72' : t.ch), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: isBuddyApproved ? '#381E72' : t.ch }}>
+              <div style={{ width: '36px', height: '36px', border: '1px solid ' + (isBuddyApproved ? t.purple : t.ch), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: isBuddyApproved ? t.purple : t.ch }}>
                 {instr?.full_name?.charAt(0) || '?'}
               </div>
               <div style={{ flex: 1, minWidth: '150px' }}>
@@ -246,9 +246,9 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink }: {
                 <p style={{ fontFamily: t.body, fontSize: '0.6rem', color: t.wg }}>{ws.updated_at ? new Date(ws.updated_at).toLocaleDateString() : 'N/A'}</p>
               </div>
               {isBuddyApproved ? (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: '#381E72' }}>Buddy Approved</span>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: t.purple }}>Buddy Approved</span>
               ) : ws.review_status === 'revision_submitted' ? (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #7D5260', color: '#7D5260' }}>Revised</span>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #7D5260', color: t.pending }}>Revised</span>
               ) : (
                 <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>Pending</span>
               )}
@@ -322,12 +322,12 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
                   </span>
                 )}
                 {buddyApproved.length > 0 && (
-                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: '#381E72' }}>
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: t.purple }}>
                     {buddyApproved.length} buddy approved
                   </span>
                 )}
                 {totalApproved > 0 && (
-                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: '#1B5E20' }}>
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: t.success }}>
                     {totalApproved} approved
                   </span>
                 )}
@@ -345,12 +345,12 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
                           fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
                           letterSpacing: '0.1em', textTransform: 'uppercase',
                           padding: '6px 14px', border: '1px solid #381E72',
-                          background: 'rgba(56, 30, 114, 0.06)', color: '#381E72',
+                          background: 'rgba(56, 30, 114, 0.06)', color: t.purple,
                           cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px',
                           transition: 'all 300ms var(--ease-lux)',
                         }}
-                        onMouseOver={e => { e.currentTarget.style.background = '#381E72'; e.currentTarget.style.color = '#FFF'; }}
-                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(56, 30, 114, 0.06)'; e.currentTarget.style.color = '#381E72'; }}
+                        onMouseOver={e => { e.currentTarget.style.background = t.purple; e.currentTarget.style.color = '#FFF'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = 'rgba(56, 30, 114, 0.06)'; e.currentTarget.style.color = t.purple; }}
                       >
                         <FileCheck size={12} strokeWidth={1.5} />
                         Fill {info.label}

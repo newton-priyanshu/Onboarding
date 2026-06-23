@@ -15,17 +15,17 @@ interface AssessmentLevel {
 const levels: AssessmentLevel[] = [
   {
     id: 'fully_independent', label: 'Fully Independent',
-    description: 'Ready for a full lecture schedule without supervision.', color: '#1B5E20',
+    description: 'Ready for a full lecture schedule without supervision.', color: t.success,
     criteria: ['Consistently delivers high-quality lectures', 'Manages classroom effectively', 'Designs assessments independently', 'Provides excellent student support'],
   },
   {
     id: 'needs_minor_support', label: 'Needs Minor Support',
-    description: 'Requires 2–3 more weeks of mentor shadowing.', color: '#E65100',
+    description: 'Requires 2–3 more weeks of mentor shadowing.', color: t.warning,
     criteria: ['Delivers good lectures with occasional guidance', 'Shows promise in assessment design', 'May need support with challenging classroom situations'],
   },
   {
     id: 'needs_development', label: 'Needs Further Development',
-    description: 'Requires a targeted 30-day improvement plan.', color: '#C62828',
+    description: 'Requires a targeted 30-day improvement plan.', color: t.error,
     criteria: ['Requires significant guidance for lecture delivery', 'Needs to strengthen content knowledge', 'Would benefit from structured mentoring plan'],
   },
 ];

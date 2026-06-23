@@ -259,12 +259,12 @@ export default function WorksheetReview() {
   const canBuddyAct = canApprove && isPending;
 
   function StatusBadge({ status }: { status: string }) {
-    if (status === 'approved') return <span className="lux-badge" style={{ borderColor: '#1B5E20', color: '#1B5E20', fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
-    if (status === 'buddy_approved') return <span className="lux-badge" style={{ borderColor: '#381E72', color: '#381E72', fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
+    if (status === 'approved') return <span className="lux-badge" style={{ borderColor: t.success, color: t.success, fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
+    if (status === 'buddy_approved') return <span className="lux-badge" style={{ borderColor: t.purple, color: t.purple, fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (status === 'pending_review' || (status === '' && (submission!.status as string) === 'Submitted')) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
-    if (status === 'needs_revision') return <span className="lux-badge" style={{ borderColor: '#C62828', color: '#C62828', fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
-    if (status === 'revision_submitted') return <span className="lux-badge" style={{ borderColor: '#7D5260', color: '#7D5260', fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
+    if (status === 'needs_revision') return <span className="lux-badge" style={{ borderColor: t.error, color: t.error, fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
+    if (status === 'revision_submitted') return <span className="lux-badge" style={{ borderColor: t.pending, color: t.pending, fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
     return null;
   }
 
@@ -328,15 +328,15 @@ export default function WorksheetReview() {
                   <div key={idx} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
                     <div style={{
                       width: '24px', height: '24px', border: '1px solid', flexShrink: 0, zIndex: 1,
-                      borderColor: isApprove ? '#1B5E20' : '#C62828',
+                      borderColor: isApprove ? t.success : '#C62828',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'var(--color-alabaster)',
                     }}>
-                      <div style={{ width: '8px', height: '8px', background: isApprove ? '#1B5E20' : '#C62828' }} />
+                      <div style={{ width: '8px', height: '8px', background: isApprove ? t.success : '#C62828' }} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: isApprove ? '#1B5E20' : '#C62828' }}>
+                        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: isApprove ? t.success : '#C62828' }}>
                           {entry.action === 'buddy_approved' ? 'Buddy Approved' : isApprove ? 'Approved' : 'Revision Requested'}
                         </span>
                         {entry.reviewer_name && (
@@ -396,7 +396,7 @@ export default function WorksheetReview() {
                 </span>
               </button>
               <button onClick={handleBuddyRevision} disabled={actionLoading}
-                className="lux-btn lux-btn-secondary" style={{ borderColor: '#C62828', color: '#C62828', minWidth: '200px' }}>
+                className="lux-btn lux-btn-secondary" style={{ borderColor: t.error, color: t.error, minWidth: '200px' }}>
                 {actionLoading ? 'Processing…' : <><ThumbsDown size={16} strokeWidth={1.5} /> Request Revision</>}
               </button>
             </div>
@@ -407,7 +407,7 @@ export default function WorksheetReview() {
         {isBuddyApproved && canApprove && (
           <div style={{ textAlign: 'center', padding: '2rem 0', borderTop: '1px solid rgba(26, 26, 26, 0.12)' }}>
             <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
-            <h3 style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: '#381E72', marginBottom: '0.5rem' }}>✓ Buddy Approved</h3>
+            <h3 style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.purple, marginBottom: '0.5rem' }}>✓ Buddy Approved</h3>
             <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, marginBottom: '1.5rem' }}>
               This worksheet is ready for manager phase-level approval.
             </p>
@@ -419,7 +419,7 @@ export default function WorksheetReview() {
         {isApproved && (
           <div style={{ textAlign: 'center', padding: '2rem 0', borderTop: '1px solid rgba(26, 26, 26, 0.12)' }}>
             <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
-            <h3 style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: '#1B5E20', marginBottom: '0.5rem' }}>✓ Fully Approved (Manager)</h3>
+            <h3 style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.success, marginBottom: '0.5rem' }}>✓ Fully Approved (Manager)</h3>
             <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, marginBottom: '1.5rem' }}>
               This worksheet has been approved at the phase level by {submission.reviewer_name || 'the manager'}.
             </p>

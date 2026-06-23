@@ -88,7 +88,7 @@ export default function BuddyGatePass() {
         <div style={{
           marginBottom: '1.5rem', padding: '12px 16px',
           background: 'rgba(56, 30, 114, 0.04)', border: '1px solid #D0BCFF',
-          fontFamily: t.body, fontSize: '0.75rem', color: '#381E72',
+          fontFamily: t.body, fontSize: '0.75rem', color: t.purple,
           display: 'flex', alignItems: 'center', gap: '10px',
         }}>
           <Shield size={16} strokeWidth={1.5} style={{ flexShrink: 0 }} />

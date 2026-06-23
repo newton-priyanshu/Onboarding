@@ -60,11 +60,11 @@ export default function Dashboard() {
   function getWorksheetStatus(wsId: string): StatusInfo {
     const sub = submissions.find((s: WorksheetSubmission) => s.worksheet_id === wsId);
     if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
-    if (sub.review_status === 'approved') return { status: 'approved', label: 'Reviewed', color: '#1B5E20', icon: CheckCircle2 };
-    if (sub.review_status === 'buddy_approved') return { status: 'buddy_approved', label: 'Buddy Approved', color: '#381E72', icon: CheckCircle2 };
-    if (sub.review_status === 'needs_revision') return { status: 'needs_revision', label: 'Needs Revision', color: '#C62828', icon: AlertCircle };
-    if (sub.review_status === 'revision_submitted' || sub.review_status === 'pending_review') return { status: 'pending', label: 'Under Review', color: '#7D5260', icon: Clock };
-    if ((sub.status as string) === 'Submitted') return { status: 'submitted', label: 'Submitted', color: '#7D5260', icon: Clock };
+    if (sub.review_status === 'approved') return { status: 'approved', label: 'Reviewed', color: t.success, icon: CheckCircle2 };
+    if (sub.review_status === 'buddy_approved') return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
+    if (sub.review_status === 'needs_revision') return { status: 'needs_revision', label: 'Needs Revision', color: t.error, icon: AlertCircle };
+    if (sub.review_status === 'revision_submitted' || sub.review_status === 'pending_review') return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
+    if ((sub.status as string) === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };
     return { status: 'in_progress', label: 'In Progress', color: t.ch, icon: FileText };
   }
 
@@ -136,10 +136,10 @@ export default function Dashboard() {
               {([
                 { label: 'Not Started', color: t.wg },
                 { label: 'In Progress', color: t.ch },
-                { label: 'Buddy Approved', color: '#381E72' },
-                { label: 'Under Review', color: '#7D5260' },
-                { label: 'Reviewed', color: '#1B5E20' },
-                { label: 'Needs Revision', color: '#C62828' },
+                { label: 'Buddy Approved', color: t.purple },
+                { label: 'Under Review', color: t.pending },
+                { label: 'Reviewed', color: t.success },
+                { label: 'Needs Revision', color: t.error },
               ] as { label: string; color: string }[]).map(b => (
                 <span key={b.label} className="lux-badge lux-badge-light" style={{
                   borderColor: b.color, color: b.color, fontSize: '0.55rem',

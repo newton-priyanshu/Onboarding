@@ -1,3 +1,4 @@
+import { t } from '../config/theme';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -61,7 +62,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 1.5rem',
             }}>
-              <AlertCircle size={28} strokeWidth={1.5} style={{ color: '#C62828' }} />
+              <AlertCircle size={28} strokeWidth={1.5} style={{ color: t.error }} />
             </div>
 
             <h2 style={{
@@ -107,7 +108,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                   fontFamily: 'var(--font-body)', fontSize: '0.75rem', fontWeight: 500,
                   letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer',
                 }}>
-                Try Again
+                Try Again 
               </button>
             </div>
           </div>

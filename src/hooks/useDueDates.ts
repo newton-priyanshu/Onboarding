@@ -1,3 +1,4 @@
+import { t } from '../config/theme';
 import { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 
@@ -92,7 +93,7 @@ export function getDueDateInfo(worksheetId: string, startDate: Date | null = nul
     statusColor = '#C62828';
   } else if (isDueSoon) {
     statusLabel = daysRemaining === 0 ? 'Due today' : `Due in ${daysRemaining}d`;
-    statusColor = '#E65100';
+    statusColor = t.warning;
   } else {
     statusLabel = `Due in ${daysRemaining}d`;
     statusColor = 'var(--color-warm-grey)';

@@ -2,20 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import type { UserRole } from '../types/supabase';
-
-interface RoleOption {
-  value: UserRole;
-  label: string;
-  desc: string;
-}
-
-const roles: RoleOption[] = [
-  { value: 'new_joinee', label: 'New Joinee', desc: 'I am a new instructor going through onboarding' },
-  { value: 'lead_instructor', label: 'Buddy / Mentor', desc: 'I will mentor and review new joinees' },
-  { value: 'onboarding_lead', label: 'Onboarding Lead', desc: 'I oversee the onboarding process and procedural reviews' },
-  { value: 'academic_head', label: 'Manager (Academic Head)', desc: 'I manage the faculty and review all worksheets' },
-];
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -23,7 +9,6 @@ export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('new_joinee');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,7 +28,7 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      await signUp(email, password, fullName, role);
+      await signUp(email, password, fullName, 'new_joinee');
       setSuccess(true);
     } catch (err) {
       setError((err as { message?: string }).message || 'Sign up failed.');
@@ -106,30 +91,6 @@ export default function Signup() {
                 <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '0', top: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0 }}>
                   {showPw ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
-              </div>
-            </div>
-
-            <div className="lux-form-group">
-              <span className="lux-label" style={{ marginBottom: '12px' }}>Role</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {roles.map((r) => (
-                  <label key={r.value} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-                    border: role === r.value ? '1px solid var(--color-charcoal)' : '1px solid rgba(26, 26, 26, 0.15)',
-                    cursor: 'pointer', transition: 'border-color 500ms var(--ease-lux)' }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '50%',
-                      border: role === r.value ? '5px solid var(--color-charcoal)' : '1px solid var(--color-warm-grey)',
-                      transition: 'border 500ms var(--ease-lux)', flexShrink: 0 }} />
-                    <input type="radio" name="role" value={r.value}
-                      checked={role === r.value} onChange={() => setRole(r.value)}
-                      className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
-                      onFocus={(e) => { (e.target.closest('label') as HTMLElement).style.borderColor = 'var(--color-gold)'; }}
-                      onBlur={(e) => { (e.target.closest('label') as HTMLElement).style.borderColor = role === r.value ? 'var(--color-charcoal)' : 'rgba(26, 26, 26, 0.15)'; }} />
-                    <div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-charcoal)' }}>{r.label}</div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-warm-grey)', marginTop: '2px' }}>{r.desc}</div>
-                    </div>
-                  </label>
-                ))}
               </div>
             </div>
 

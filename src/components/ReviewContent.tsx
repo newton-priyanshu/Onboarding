@@ -1,3 +1,4 @@
+import { t } from '../config/theme';
 import { CheckCircle2, XCircle, Star, Calendar, FileText, ClipboardCheck, Signature, Shield } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ function renderValue(value: unknown, _key: string): React.ReactNode {
   if (value === null || value === undefined) return null;
   if (typeof value === 'boolean') {
     return value
-      ? <span style={{ color: '#1B5E20', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={14} /> Yes</span>
+      ? <span style={{ color: t.success, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={14} /> Yes</span>
       : <span style={{ color: '#9E9E9E', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><XCircle size={14} /> No</span>;
   }
   if (typeof value === 'number') {
@@ -228,7 +229,7 @@ function ChecklistRenderer({ items, label }: ChecklistRendererProps) {
         <span className="label-medium" style={{ fontSize: '0.75rem' }}>{label || 'Checklist'}</span>
         <span style={{
           padding: '2px 8px', borderRadius: 'var(--md-radius-pill)', fontSize: '0.65rem', fontWeight: 600,
-          background: checked === total ? '#E8F5E9' : '#FFF8E1', color: checked === total ? '#1B5E20' : '#F57F17',
+          background: checked === total ? '#E8F5E9' : '#FFF8E1', color: checked === total ? t.success : '#F57F17',
         }}>{checked}/{total}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -271,7 +272,7 @@ function ScoreGridRenderer({ scores, labels }: ScoreGridRendererProps) {
               <div key={si} style={{
                 textAlign: 'center', padding: '2px 4px', borderRadius: '4px',
                 background: score >= 4 ? '#E8F5E9' : score >= 3 ? '#FFF8E1' : '#FFEBEE',
-                color: score >= 4 ? '#1B5E20' : score >= 3 ? '#F57F17' : '#C62828',
+                color: score >= 4 ? t.success : score >= 3 ? '#F57F17' : '#C62828',
                 fontWeight: 600, fontSize: '0.75rem',
               }}>
                 {score || '-'}
@@ -323,7 +324,7 @@ function MilestonesRenderer({ worksheetId, values, label }: MilestoneRendererPro
         <span style={{
           padding: '2px 8px', borderRadius: 'var(--md-radius-pill)', fontSize: '0.65rem', fontWeight: 600,
           background: values.every(v => v === 'Met') ? '#E8F5E9' : values.some(v => v === 'Met') ? '#FFF8E1' : '#F5F5F5',
-          color: values.every(v => v === 'Met') ? '#1B5E20' : values.some(v => v === 'Met') ? '#F57F17' : '#9E9E9E',
+          color: values.every(v => v === 'Met') ? t.success : values.some(v => v === 'Met') ? '#F57F17' : '#9E9E9E',
         }}>
           {values.filter(v => v === 'Met').length}/{values.length} Met
         </span>
@@ -331,7 +332,7 @@ function MilestonesRenderer({ worksheetId, values, label }: MilestoneRendererPro
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {values.map((status, i) => {
           const milestone = labels?.[i];
-          const statusColor = status === 'Met' ? '#1B5E20' : status === 'Partial' ? '#E65100' : '#9E9E9E';
+          const statusColor = status === 'Met' ? t.success : status === 'Partial' ? t.warning : '#9E9E9E';
           const statusBg = status === 'Met' ? '#E8F5E9' : status === 'Partial' ? '#FFF8E1' : '#F5F5F5';
           return (
             <div key={i} style={{
@@ -837,7 +838,7 @@ function renderBooleansList(items: Record<string, boolean>[], keys: string[]): R
               <span key={k} style={{
                 padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 600,
                 background: item[k] ? '#E8F5E9' : '#F5F5F5',
-                color: item[k] ? '#1B5E20' : '#9E9E9E',
+                color: item[k] ? t.success : '#9E9E9E',
               }}>
                 {k === 'self' || k === 'selfAssessed' ? 'S' : k === 'verified' ? 'V' : k === 'submitted' ? 'Sub' : k === 'approved' ? 'App' : k === 'tested' ? 'Test' : k}
               </span>

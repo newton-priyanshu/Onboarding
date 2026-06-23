@@ -43,7 +43,7 @@ export default function PhasesReadyTab({ allWorksheets, instructors, isManager }
           opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
         }}>
           <div style={{ width: '40px', height: '40px', border: '1px solid #381E72', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield size={18} strokeWidth={1.5} style={{ color: '#381E72' }} />
+            <Shield size={18} strokeWidth={1.5} style={{ color: t.purple }} />
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch }}>
@@ -56,7 +56,7 @@ export default function PhasesReadyTab({ allWorksheets, instructors, isManager }
           </div>
           {isManager ? (
             <button onClick={() => navigate(`/admin/review-phase/${entry.userId}/${entry.phaseNum}`)}
-              style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid #381E72', background: '#381E72', color: '#FFF', cursor: 'pointer' }}>
+              style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid #381E72', background: t.purple, color: '#FFF', cursor: 'pointer' }}>
               Approve Phase
             </button>
           ) : (

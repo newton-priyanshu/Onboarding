@@ -42,6 +42,7 @@
 // WORKSHEET_COMPONENTS) are in worksheetConfig.jsx.
 // =====================================================
 
+import { t } from './theme';
 import type { WorksheetId, ReviewerType, WorksheetSubmission } from '../types/supabase';
 
 /**
@@ -86,8 +87,8 @@ export const REVIEWER_LABELS: Record<string, string> = {
 
 /** Review badge styles */
 export const REVIEWER_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  buddy: { bg: '#E8DEF8', color: '#381E72', border: '#D0BCFF' },
-  manager: { bg: '#FFF8E1', color: '#E65100', border: '#FFE082' },
+  buddy: { bg: '#E8DEF8', color: t.purple, border: '#D0BCFF' },
+  manager: { bg: '#FFF8E1', color: t.warning, border: '#FFE082' },
   onboarding_lead: { bg: '#E0F2FE', color: '#0369A1', border: '#7DD3FC' },
 };
 
@@ -118,23 +119,23 @@ export const ALL_WORKSHEETS: Record<string, PhaseGroup> = {
     sheets: [
       { id: 'p1_w1', title: 'Team Introduction & Stakeholder Mapping', reviewer: 'buddy', color: '#6750A4' },
       { id: 'p1_w2', title: 'Faculty Mentor Weekly Sync', reviewer: 'buddy', color: '#006D40' },
-      { id: 'p1_w3', title: 'Teaching Philosophy Reflection', reviewer: 'buddy', color: '#7D5260' },
+      { id: 'p1_w3', title: 'Teaching Philosophy Reflection', reviewer: 'buddy', color: t.pending },
       { id: 'p1_w4', title: 'University Governance & Semester Map', reviewer: 'onboarding_lead', color: '#625B71' },
       { id: 'p1_w5', title: 'Portal Walkthrough & Verification', reviewer: 'onboarding_lead', color: '#006494' },
-      { id: 'p1_w6', title: 'Classroom Observation Journal', reviewer: 'buddy', color: '#E65100' },
+      { id: 'p1_w6', title: 'Classroom Observation Journal', reviewer: 'buddy', color: t.warning },
       { id: 'p1_w7', title: 'Courseware Review Matrix', reviewer: 'buddy', color: '#2E7D32' },
       { id: 'p1_w8', title: 'Slack Audit & Bottleneck Synthesis', reviewer: 'buddy', color: '#4A148C' },
-      { id: 'gc1', title: 'Gate Control 1 — 30-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
+      { id: 'gc1', title: 'Gate Control 1 — 30-Day Review', reviewer: 'buddy', color: t.pending, isGate: true },
     ],
   },
   'Phase 2': {
     num: 2,
     sheets: [
       { id: 'p2_w1', title: 'Doubt Resolution & Errors Log', reviewer: 'buddy', color: '#006D40' },
-      { id: 'p2_w2', title: 'Lab Facilitation Scorecard', reviewer: 'buddy', color: '#7D5260' },
+      { id: 'p2_w2', title: 'Lab Facilitation Scorecard', reviewer: 'buddy', color: t.pending },
       { id: 'p2_w3', title: 'Content Creation Ledger', reviewer: 'buddy', color: '#625B71' },
       { id: 'p2_w4', title: 'Advanced Portal Operations Check', reviewer: 'onboarding_lead', color: '#006494' },
-      { id: 'gc2', title: 'Gate Control 2 — 60-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
+      { id: 'gc2', title: 'Gate Control 2 — 60-Day Review', reviewer: 'buddy', color: t.pending, isGate: true },
     ],
   },
   'Phase 3': {
@@ -142,10 +143,10 @@ export const ALL_WORKSHEETS: Record<string, PhaseGroup> = {
     sheets: [
       { id: 'p3_w1', title: 'Independent Lecture Delivery Log', reviewer: 'buddy', color: '#6750A4' },
       { id: 'p3_w2', title: 'Student Cohort Profiling', reviewer: 'buddy', color: '#006D40' },
-      { id: 'p3_w3', title: "Assessment Blueprint & Bloom's Grid", reviewer: 'buddy', color: '#7D5260' },
+      { id: 'p3_w3', title: "Assessment Blueprint & Bloom's Grid", reviewer: 'buddy', color: t.pending },
       { id: 'p3_w4', title: 'Pedagogical Frameworks Journal', reviewer: 'buddy', color: '#625B71' },
       { id: 'p3_w5', title: 'Course Improvement Proposal', reviewer: 'buddy', color: '#006494' },
-      { id: 'gc3', title: 'Gate Control 3 — 90-Day Review', reviewer: 'buddy', color: '#7D5260', isGate: true },
+      { id: 'gc3', title: 'Gate Control 3 — 90-Day Review', reviewer: 'buddy', color: t.pending, isGate: true },
     ],
   },
 };

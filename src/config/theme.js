@@ -9,4 +9,10 @@ export const t = {
   wg: 'var(--color-warm-grey)',
   gd: 'var(--color-gold)',
   ease: 'var(--ease-lux)',
+  // Status colors
+  success: 'var(--color-success)',
+  error: 'var(--color-error)',
+  pending: 'var(--color-pending)',
+  warning: 'var(--color-warning)',
+  purple: 'var(--color-purple)',
 };

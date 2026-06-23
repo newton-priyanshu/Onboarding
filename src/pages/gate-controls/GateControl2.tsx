@@ -58,7 +58,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
       const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
       const d = {
         ...data,
-        status: 'submitted',
+        status: 'Submitted',
         submittedAt: new Date().toISOString(),
         _savedReviewStatus: review_status,
         _savedReviewedBy: isBuddyMode ? user?.id : null,
@@ -81,7 +81,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
         <div className="lux-container" style={{ textAlign: 'center' }}>
           <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
-          <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#1B5E20', marginBottom: '0.75rem' }}>✓ Gate Control 2 Approved</h1>
+          <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.success, marginBottom: '0.75rem' }}>✓ Gate Control 2 Approved</h1>
           <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem' }}>Your 60-day milestone review has been approved.</p>
           <button onClick={() => navigate('/phase-2')} className="lux-btn lux-btn-primary">
             <span className="gold-overlay" /><span className="btn-content">Back to Phase 2</span>
@@ -130,14 +130,14 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
         </div>
 
         {(data._savedReviewStatus === 'needs_revision' || data._savedReviewStatus === 'revision_submitted') && !!data._savedReviewComment && (
-          <div style={{ marginBottom: '1.5rem', border: '1px solid #C62828', background: '#FFF5F5', padding: '1.25rem' }}>
+          <div style={{ marginBottom: '1.5rem', border: '1px solid ' + t.error, background: '#FFF5F5', padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
               <div style={{ width: '6px', height: '6px', background: '#C62828', flexShrink: 0 }} />
-              <span style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#C62828' }}>Revision Feedback</span>
+              <span style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: t.error }}>Revision Feedback</span>
             </div>
             <div style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.ch, lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-wrap' }}>{data._savedReviewComment as string}</div>
             {!!data._savedReviewerName && <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>— {data._savedReviewerName as string}</div>}
-            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(198, 40, 40, 0.06)', fontFamily: t.body, fontSize: '0.75rem', color: '#C62828' }}>Please review the feedback above, make changes, and resubmit.</div>
+            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(198, 40, 40, 0.06)', fontFamily: t.body, fontSize: '0.75rem', color: t.error }}>Please review the feedback above, make changes, and resubmit.</div>
           </div>
         )}
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -156,7 +156,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
           <Section title="Required Milestone Outcomes" subtitle="Click to toggle: Met → Partial → Not Met">
             {milestones.map(([outcome, verify], i) => {
               const status = (data.milestones as string[])[i];
-              const statusColor = status === 'Met' ? '#1B5E20' : status === 'Partial' ? '#E65100' : t.wg;
+              const statusColor = status === 'Met' ? t.success : status === 'Partial' ? t.warning : t.wg;
               return (
                 <div key={i} onClick={() => toggleMs(i)}
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', cursor: 'pointer', borderLeft: '1px solid ' + statusColor }}>

@@ -5,6 +5,8 @@ import type { ReactNode } from 'react';
 const t = {
   body: 'var(--font-body)', heading: 'var(--font-heading)',
   ch: 'var(--color-charcoal)', wg: 'var(--color-warm-grey)', gd: 'var(--color-gold)',
+  success: 'var(--color-success)', error: 'var(--color-error)',
+  pending: 'var(--color-pending)', warning: 'var(--color-warning)', purple: 'var(--color-purple)',
   ease: 'var(--ease-lux)',
 };
 
@@ -130,7 +132,7 @@ export function FieldGroup({ label, required, id, children, hint }: FieldGroupPr
   return (
     <div className="lux-form-group">
       <label className="lux-label" htmlFor={id || undefined} style={{ marginBottom: '6px' }}>
-        {label}{required && <span style={{ color: '#C62828', marginLeft: '4px' }}>*</span>}
+        {label}{required && <span style={{ color: t.error, marginLeft: '4px' }}>*</span>}
       </label>
       {children}
       {hint && <p style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg, marginTop: '4px', fontStyle: 'italic' }}>{hint}</p>}
@@ -152,9 +154,9 @@ export function SaveIndicator({ status }: SaveIndicatorProps) {
   if (!status || status === 'idle') return null;
 
   const configs: Record<string, { label: string; icon: LucideIcon; color: string }> = {
-    saving: { label: 'Saving…', icon: Clock, color: '#E65100' },
-    saved: { label: 'Saved', icon: CheckCircle2, color: '#1B5E20' },
-    error: { label: 'Failed', icon: AlertCircle, color: '#C62828' },
+    saving: { label: 'Saving…', icon: Clock, color: t.warning },
+    saved: { label: 'Saved', icon: CheckCircle2, color: t.success },
+    error: { label: 'Failed', icon: AlertCircle, color: t.error },
   };
 
   const config = configs[status];
@@ -224,13 +226,13 @@ export function BuddyApprovedView({ msg, path, title = '✓ Buddy Approved' }: S
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
       <div className="lux-container" style={{ textAlign: 'center', maxWidth: '520px', margin: '0 auto' }}>
         <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
-        <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#381E72', marginBottom: '0.75rem' }}>
+        <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.purple, marginBottom: '0.75rem' }}>
           {title}
         </h1>
         <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '1rem', lineHeight: 1.6 }}>
           {msg}
         </p>
-        <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: '#381E72', marginBottom: '1.5rem', padding: '8px 12px', border: '1px solid #381E72', background: 'rgba(56, 30, 114, 0.04)' }}>
+        <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.purple, marginBottom: '1.5rem', padding: '8px 12px', border: '1px solid #381E72', background: 'rgba(56, 30, 114, 0.04)' }}>
           Your buddy has approved this worksheet. It now awaits manager-level phase approval.
           Once all worksheets in this phase are buddy-approved, the manager will review and
           finalize them in one go.
@@ -251,7 +253,7 @@ export function ApprovedView({ msg, path, title = '✓ Worksheet Approved', revi
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
       <div className="lux-container" style={{ textAlign: 'center', maxWidth: '520px', margin: '0 auto' }}>
         <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
-        <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: '#1B5E20', marginBottom: '0.75rem' }}>
+        <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.success, marginBottom: '0.75rem' }}>
           {title}
         </h1>
         <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '1rem', lineHeight: 1.6 }}>
@@ -302,7 +304,7 @@ export function ReviewFeedback({ data }: ReviewFeedbackProps) {
   return (
     <div style={{
       marginBottom: '1.5rem',
-      border: '1px solid ' + (isResubmitted ? '#7D5260' : '#C62828'),
+      border: '1px solid ' + (isResubmitted ? t.pending : t.error),
       background: isResubmitted ? '#F8F0F5' : '#FFF5F5',
     }}>
       <div style={{ padding: '1.25rem' }}>
@@ -312,13 +314,13 @@ export function ReviewFeedback({ data }: ReviewFeedbackProps) {
         }}>
           <div style={{
             width: '6px', height: '6px',
-            background: isResubmitted ? '#7D5260' : '#C62828',
+            background: isResubmitted ? t.pending : t.error,
             flexShrink: 0,
           }} />
           <span style={{
             fontFamily: t.body, fontSize: '0.7rem', fontWeight: 600,
             letterSpacing: '0.15em', textTransform: 'uppercase',
-            color: isResubmitted ? '#7D5260' : '#C62828',
+            color: isResubmitted ? t.pending : t.error,
           }}>
             {isResubmitted ? 'Resubmitted — Awaiting Review' : 'Revision Requested'}
           </span>
@@ -361,7 +363,7 @@ export function ReviewFeedback({ data }: ReviewFeedbackProps) {
                   fontSize: '0.75rem',
                 }}>
                   <span style={{
-                    color: isApprove ? '#1B5E20' : isRev ? '#C62828' : t.wg,
+                    color: isApprove ? t.success : isRev ? t.error : t.wg,
                     fontWeight: 600, flexShrink: 0,
                   }}>
                     {isApprove ? '✓' : isRev ? '✗' : '•'}
@@ -392,7 +394,7 @@ export function ReviewFeedback({ data }: ReviewFeedbackProps) {
           marginTop: '1rem', padding: '0.75rem',
           background: isResubmitted ? 'rgba(125, 82, 96, 0.06)' : 'rgba(198, 40, 40, 0.06)',
           fontFamily: t.body, fontSize: '0.75rem',
-          color: isResubmitted ? '#7D5260' : '#C62828',
+          color: isResubmitted ? t.pending : t.error,
         }}>
           {isResubmitted
             ? 'You have resubmitted this worksheet after revision. The reviewer will review it again.'
@@ -411,7 +413,7 @@ export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
       <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} />
       <span style={{ flex: 1 }}>{message}</span>
       {onDismiss && (
-        <button onClick={onDismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C62828', padding: '0 0 0 8px', fontSize: '0.8rem' }}>×</button>
+        <button onClick={onDismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.error, padding: '0 0 0 8px', fontSize: '0.8rem' }}>×</button>
       )}
     </div>
   );

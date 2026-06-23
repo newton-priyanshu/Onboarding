@@ -241,7 +241,7 @@ export default function PhaseReview() {
         {canApprove && (
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <div style={{ padding: '1.5rem', border: '2px solid #381E72', background: 'rgba(56, 30, 114, 0.03)' }}>
-              <Shield size={32} strokeWidth={1.5} style={{ color: '#381E72', marginBottom: '0.75rem' }} />
+              <Shield size={32} strokeWidth={1.5} style={{ color: t.purple, marginBottom: '0.75rem' }} />
               <h3 style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>
                 Phase {phaseNumber} Ready for Manager Approval
               </h3>
@@ -255,7 +255,7 @@ export default function PhaseReview() {
                 </span>
               </button>
               {actionMessage && (
-                <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: actionMessage.includes('✅') ? '#1B5E20' : '#C62828', marginTop: '0.75rem' }}>
+                <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: actionMessage.includes('✅') ? t.success : '#C62828', marginTop: '0.75rem' }}>
                   {actionMessage}
                 </p>
               )}
@@ -276,10 +276,10 @@ export default function PhaseReview() {
             const isExpanded = expandedSheet === wsId;
 
             const statusColors: Record<string, string> = {
-              approved: '#1B5E20',
-              buddy_approved: '#381E72',
+              approved: t.success,
+              buddy_approved: t.purple,
               pending_review: '#D4AF37',
-              revision_submitted: '#7D5260',
+              revision_submitted: t.pending,
               needs_revision: '#C62828',
             };
             const statusLabels: Record<string, string> = {

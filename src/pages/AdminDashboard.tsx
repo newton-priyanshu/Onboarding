@@ -175,9 +175,9 @@ export default function AdminDashboard() {
   const statItems: StatItem[] = [
     { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
     { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
-    { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: '#381E72' },
-    { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: '#1B5E20' },
-    ...(isManager ? [{ label: 'Revision' as const, value: totalRevision, icon: XCircle as LucideIcon, color: '#C62828' }] : []),
+    { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: t.purple },
+    { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: t.success },
+    ...(isManager ? [{ label: 'Revision' as const, value: totalRevision, icon: XCircle as LucideIcon, color: t.error }] : []),
   ];
 
   return (
@@ -271,7 +271,7 @@ export default function AdminDashboard() {
                         <div style={{ flex: 1, minWidth: '200px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                             <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch }}>{instr.full_name}</span>
-                            <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + (instr.assigned_lead_id ? '#381E72' : '#F57F17'), color: instr.assigned_lead_id ? '#381E72' : '#F57F17' }}>
+                            <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + (instr.assigned_lead_id ? t.purple : '#F57F17'), color: instr.assigned_lead_id ? t.purple : '#F57F17' }}>
                               {instr.assigned_lead_id ? 'Manager Assigned' : 'No Manager'}
                             </span>
                             <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + (instr.assigned_buddy_id ? '#0369A1' : '#F57F17'), color: instr.assigned_buddy_id ? '#0369A1' : '#F57F17' }}>
@@ -295,13 +295,13 @@ export default function AdminDashboard() {
                                     </span>
                                   </div>
                                   <div className="lux-progress" style={{ height: '2px' }}>
-                                    <div className="lux-progress-fill" style={{ width: `${p.pct}%`, background: phaseReady ? '#381E72' : p.pct === 100 ? '#1B5E20' : t.ch }} />
+                                    <div className="lux-progress-fill" style={{ width: `${p.pct}%`, background: phaseReady ? t.purple : p.pct === 100 ? t.success : t.ch }} />
                                   </div>
                                   {phaseReady && isManager && (
                                     <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/review-phase/${instr.id}/${phaseNum}`); }}
                                       style={{
                                         fontFamily: t.body, fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.1em',
-                                        marginTop: '4px', padding: '2px 6px', background: '#381E72', color: '#FFF',
+                                        marginTop: '4px', padding: '2px 6px', background: t.purple, color: '#FFF',
                                         border: 'none', cursor: 'pointer', width: '100%',
                                       }}>
                                       Review Phase
@@ -320,9 +320,9 @@ export default function AdminDashboard() {
                           {/* Status badges */}
                           <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                             {s.pending > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>{s.pending} pending</span>}
-                            {s.buddyApproved > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: '#381E72' }}>{s.buddyApproved} buddy approved</span>}
-                            {s.approved > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: '#1B5E20' }}>{s.approved} approved</span>}
-                            {s.revision > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #C62828', color: '#C62828' }}>{s.revision} revision</span>}
+                            {s.buddyApproved > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: t.purple }}>{s.buddyApproved} buddy approved</span>}
+                            {s.approved > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: t.success }}>{s.approved} approved</span>}
+                            {s.revision > 0 && <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.error, color: t.error }}>{s.revision} revision</span>}
                           </div>
                         </div>
                       </div>

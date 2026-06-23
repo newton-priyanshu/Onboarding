@@ -1,3 +1,4 @@
+import { t } from '../config/theme';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight, Loader2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
@@ -240,7 +241,7 @@ export default function Navbar({ progress }: NavbarProps) {
                           </button>
                           <button onClick={handleSignOut} disabled={signingOut}
                             style={{
-                              flex: 1, padding: '8px 0', border: '1px solid #C62828', background: '#C62828',
+                              flex: 1, padding: '8px 0', border: '1px solid ' + t.error, background: '#C62828',
                               cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',
                               fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
                               letterSpacing: '0.15em', textTransform: 'uppercase',
@@ -360,7 +361,7 @@ export default function Navbar({ progress }: NavbarProps) {
                   </button>
                   <button onClick={() => { void handleSignOut(); setMobileOpen(false); }} disabled={signingOut}
                     style={{
-                      flex: 1, padding: '10px 0', border: '1px solid #C62828', background: '#C62828',
+                      flex: 1, padding: '10px 0', border: '1px solid ' + t.error, background: '#C62828',
                       cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',
                       fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
                       letterSpacing: '0.15em', textTransform: 'uppercase',

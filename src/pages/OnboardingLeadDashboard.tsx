@@ -117,8 +117,8 @@ export default function OnboardingLeadDashboard() {
   const statItems: StatItem[] = [
     { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
     { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
-    { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: '#381E72' },
-    { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: '#1B5E20' },
+    { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: t.purple },
+    { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: t.success },
   ];
 
   return (
@@ -209,7 +209,7 @@ export default function OnboardingLeadDashboard() {
                               <span style={{ fontFamily: t.body, fontSize: '0.55rem', color: t.wg }}>{p.done}/{p.total}</span>
                             </div>
                             <div className="lux-progress" style={{ height: '2px' }}>
-                              <div className="lux-progress-fill" style={{ width: `${p.total ? Math.round((p.done / p.total) * 100) : 0}%`, background: p.ready ? '#381E72' : p.done === p.total ? '#1B5E20' : t.ch }} />
+                              <div className="lux-progress-fill" style={{ width: `${p.total ? Math.round((p.done / p.total) * 100) : 0}%`, background: p.ready ? t.purple : p.done === p.total ? t.success : t.ch }} />
                             </div>
                             {p.ready && (
                               <button onClick={() => navigate(`/onboarding-lead/review-phase/${instr.id}/${p.phase}`)}

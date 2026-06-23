@@ -21,12 +21,12 @@ interface PhaseMap {
 
 const NOTIFICATION_ICONS: Record<string, NotificationIconConfig> = {
   submitted: { icon: FileText, color: '#0369A1' },
-  revision_submitted: { icon: RefreshCw, color: '#7D5260' },
-  approved: { icon: CheckCircle2, color: '#1B5E20' },
-  buddy_approved: { icon: Shield, color: '#381E72' },
-  needs_revision: { icon: XCircle, color: '#C62828' },
-  due_soon: { icon: Clock, color: '#E65100' },
-  overdue: { icon: AlertTriangle, color: '#C62828' },
+  revision_submitted: { icon: RefreshCw, color: t.pending },
+  approved: { icon: CheckCircle2, color: t.success },
+  buddy_approved: { icon: Shield, color: t.purple },
+  needs_revision: { icon: XCircle, color: t.error },
+  due_soon: { icon: Clock, color: t.warning },
+  overdue: { icon: AlertTriangle, color: t.error },
 };
 
 const PHASE_MAP: PhaseMap = {

@@ -1,3 +1,4 @@
+import { t } from '../config/theme';
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { onToast } from '../utils/errorHandling';
@@ -43,9 +44,9 @@ export function useToast(): ToastContextValue {
 // ─── Styles ─────────────────────────────────────────────
 
 const TOAST_STYLES: Record<ToastType, ToastStyleConfig> = {
-  success: { icon: CheckCircle2, bg: '#F9F8F6', border: '#1B5E20', text: '#1B5E20' },
+  success: { icon: CheckCircle2, bg: '#F9F8F6', border: t.success, text: t.success },
   error: { icon: AlertCircle, bg: '#F9F8F6', border: '#C62828', text: '#C62828' },
-  warning: { icon: AlertTriangle, bg: '#F9F8F6', border: '#E65100', text: '#E65100' },
+  warning: { icon: AlertTriangle, bg: '#F9F8F6', border: t.warning, text: t.warning },
   info: { icon: Info, bg: '#F9F8F6', border: '#1A1A1A', text: '#1A1A1A' },
 };
 

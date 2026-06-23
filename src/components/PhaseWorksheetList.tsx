@@ -24,10 +24,10 @@ interface PhaseWorksheetListProps {
 }
 
 function getBadge(status: string | null, reviewStatus: string | null): { label: string; color: string } {
-  if (reviewStatus === 'approved') return { label: 'Reviewed', color: '#1B5E20' };
-  if (reviewStatus === 'buddy_approved') return { label: 'Buddy Approved', color: '#381E72' };
-  if (reviewStatus === 'needs_revision') return { label: 'Revise', color: '#C62828' };
-  if (status === 'submitted' || reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted') return { label: 'Pending', color: '#7D5260' };
+  if (reviewStatus === 'approved') return { label: 'Reviewed', color: t.success };
+  if (reviewStatus === 'buddy_approved') return { label: 'Buddy Approved', color: t.purple };
+  if (reviewStatus === 'needs_revision') return { label: 'Revise', color: t.error };
+  if (status === 'submitted' || reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted') return { label: 'Pending', color: t.pending };
   if (status === 'In Progress') return { label: 'In Progress', color: t.ch };
   return { label: 'Not Started', color: t.wg };
 }
@@ -71,7 +71,7 @@ export default function PhaseWorksheetList({ worksheets, statuses }: PhaseWorksh
               const due = getDueDateInfo(ws.id);
               if (!due.dueDate) return null;
               return (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: due.isOverdue ? '#C62828' : due.isDueSoon ? '#E65100' : t.wg, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: due.isOverdue ? '#C62828' : due.isDueSoon ? t.warning : t.wg, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {due.isOverdue && <AlertTriangle size={10} strokeWidth={1.5} />}
                   {due.statusLabel}
                 </span>

@@ -102,7 +102,7 @@ export default function AssignmentsTab({ instructors, buddyProfiles, onRefresh }
         </button>
       </div>
 
-      {message && <div style={{ fontFamily: t.body, fontSize: '0.75rem', color: message.includes('Error') ? '#C62828' : '#1B5E20', marginBottom: '1rem' }}>{message}</div>}
+      {message && <div style={{ fontFamily: t.body, fontSize: '0.75rem', color: message.includes('Error') ? '#C62828' : t.success, marginBottom: '1rem' }}>{message}</div>}
 
       <div style={{ borderTop: '1px solid rgba(26, 26, 26, 0.1)', paddingTop: '1.5rem' }}>
         <p style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '0.75rem' }}>
@@ -117,7 +117,7 @@ export default function AssignmentsTab({ instructors, buddyProfiles, onRefresh }
             return (
               <div key={instr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0', borderBottom: '1px solid rgba(26,26,26,0.06)' }}>
                 <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 600, color: t.ch, minWidth: '120px' }}>{instr.full_name}</span>
-                <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: '#381E72' }}>
+                <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: t.purple }}>
                   Manager: {manager?.full_name || '—'}
                 </span>
                 <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #0369A1', color: '#0369A1' }}>

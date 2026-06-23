@@ -41,7 +41,9 @@ export function useAutoSave(
   user: User | null,
   worksheetData: Record<string, unknown>,
   worksheetId: string,
-  phase: string = 'phase-1'
+  phase: string = 'phase-1',
+  /** Skip auto-save until data is fully loaded from Supabase */
+  loaded: boolean = true
 ): { saveStatus: SaveStatus; flushSave: (data: Record<string, unknown>) => Promise<void> } {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -151,6 +153,8 @@ export function useAutoSave(
 
   useEffect(() => {
     if (!user?.id) return;
+    // Skip auto-save until data is fully loaded from Supabase
+    if (!loaded) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     const hasRealData = Object.keys(worksheetData).length > 2 ||
       (worksheetData.employeeName as string)?.trim() ||
@@ -159,7 +163,7 @@ export function useAutoSave(
     initialSaveDoneRef.current = true;
     timerRef.current = setTimeout(() => save(worksheetData), 1500);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [worksheetData, save, user?.id]);
+  }, [worksheetData, save, user?.id, loaded]);
 
   const flushSave = useCallback(async (data: Record<string, unknown>) => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -187,11 +191,22 @@ export async function loadWorksheetData(
 }
 
 export async function getOAuthName(): Promise<string> {
+  // Check localStorage cache first for instant return
+  try {
+    const cached = localStorage.getItem('onboarding_employee_name');
+    if (cached) return cached;
+  } catch { /* localStorage unavailable */ }
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    return (user?.user_metadata?.full_name as string) ||
+    const name = (user?.user_metadata?.full_name as string) ||
       (user?.user_metadata?.name as string) ||
       (user?.email?.split('@')[0]) || '';
+    // Cache the result for subsequent loads
+    if (name) {
+      try { localStorage.setItem('onboarding_employee_name', name); } catch { /* ignore */ }
+    }
+    return name;
   } catch {
     return '';
   }
