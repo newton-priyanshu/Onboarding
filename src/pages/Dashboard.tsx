@@ -47,8 +47,9 @@ export default function Dashboard() {
     try {
       const { data } = await supabase
         .from('worksheet_submissions')
-        .select('*')
-        .eq('user_id', user!.id);
+        .select('worksheet_id, review_status, status, updated_at')
+        .eq('user_id', user!.id)
+        .limit(50);
       if (data) setSubmissions(data as unknown as WorksheetSubmission[]);
     } catch (err) {
       console.error('Failed to load submissions:', err);

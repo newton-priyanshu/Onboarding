@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, created_at, updated_at')
         .eq('id', userId)
         .single();
 
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         const { data: retryProfile } = await supabase
           .from('user_profiles')
-          .select('*')
+          .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, created_at, updated_at')
           .eq('id', userId)
           .single();
         if (retryProfile) setProfile(retryProfile as UserProfile);

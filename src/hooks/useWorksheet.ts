@@ -126,6 +126,7 @@ export function useWorksheet({
             _savedReviewerName: saved.reviewer_name || '',
             _savedReviewHistory: saved.review_history || [],
             _savedReviewedAt: saved.reviewed_at || '',
+            _savedUpdatedAt: saved.updated_at || '',
           }));
         } else {
           // In buddy mode, prefill with target user's profile name

@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Shield, AlertCircle, Send, ArrowLeft } from 'lucide-react';
-import { Section, Slider, BuddyApprovedView, LoadingView } from '../../config/worksheetComponents';
+import { Section, Slider, BuddyApprovedView, LoadingView, ReviewFeedback } from '../../config/worksheetComponents';
 import { t } from '../../config/theme';
-import { useWorksheet } from '../../hooks/useWorksheet';
+import { useGateControl } from '../../hooks/useGateControl';
 
 const milestones: [string, string][] = [
   ['Confidently resolves student doubts independently', 'Observed by mentor during doubt session'],
@@ -28,49 +28,20 @@ const defaultData = {
 export default function GateControl2({ targetUserId }: GateControlProps) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const isBuddyMode = !!targetUserId;
 
-  const ws = useWorksheet({
+  const {
+    data, loaded, submitting, submitError,
+    updateField, isBuddyApproved, isApproved, isSubmitted,
+    toggleMilestone, handleSubmit,
+  } = useGateControl({
     user,
+    profile,
     worksheetId: 'gc2',
     phase: 'phase2',
     defaultData,
     requiredFields: [{ key: 'employeeName', label: 'Instructor Name' }],
-    overrideUserId: targetUserId,
+    targetUserId,
   });
-
-  const { data, loaded, submitting, submitError, setSubmitError, setSubmitting, updateField, flushSave, isBuddyApproved, isApproved, isSubmitted } = ws;
-
-  const toggleMs = (i: number) => {
-    ws.setData(p => {
-      const arr = [...(p.milestones as string[])];
-      const vals: string[] = ['Not Met', 'Partial', 'Met'];
-      arr[i] = vals[(vals.indexOf(arr[i]!) + 1) % vals.length]!;
-      return { ...p, milestones: arr };
-    });
-  };
-
-  const handleSubmit = async () => {
-    setSubmitError('');
-    if (!(data.employeeName as string)?.trim()) { setSubmitError('Please fill in the instructor name.'); return; }
-    setSubmitting(true);
-    try {
-      const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
-      const d = {
-        ...data,
-        status: 'Submitted',
-        submittedAt: new Date().toISOString(),
-        _savedReviewStatus: review_status,
-        _savedReviewedBy: isBuddyMode ? user?.id : null,
-        _savedReviewedAt: isBuddyMode ? new Date().toISOString() : null,
-        _savedReviewerName: isBuddyMode ? ((profile?.full_name as string) || 'Buddy') : null,
-      };
-      ws.setData(d);
-      await flushSave(d);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // Early returns
   if (isBuddyApproved) {
@@ -129,17 +100,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
           </div>
         </div>
 
-        {(data._savedReviewStatus === 'needs_revision' || data._savedReviewStatus === 'revision_submitted') && !!data._savedReviewComment && (
-          <div style={{ marginBottom: '1.5rem', border: '1px solid ' + t.error, background: '#FFF5F5', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-              <div style={{ width: '6px', height: '6px', background: '#C62828', flexShrink: 0 }} />
-              <span style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: t.error }}>Revision Feedback</span>
-            </div>
-            <div style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.ch, lineHeight: 1.6, marginBottom: '0.75rem', whiteSpace: 'pre-wrap' }}>{data._savedReviewComment as string}</div>
-            {!!data._savedReviewerName && <div style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg }}>— {data._savedReviewerName as string}</div>}
-            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(198, 40, 40, 0.06)', fontFamily: t.body, fontSize: '0.75rem', color: t.error }}>Please review the feedback above, make changes, and resubmit.</div>
-          </div>
-        )}
+        <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Section title="Self Assessment (1–5)">
             {[
@@ -158,7 +119,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
               const status = (data.milestones as string[])[i];
               const statusColor = status === 'Met' ? t.success : status === 'Partial' ? t.warning : t.wg;
               return (
-                <div key={i} onClick={() => toggleMs(i)}
+                <div key={i} onClick={() => toggleMilestone(i)}
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', cursor: 'pointer', borderLeft: '1px solid ' + statusColor }}>
                   <div style={{ width: '8px', height: '8px', background: statusColor, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
@@ -187,7 +148,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '1rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
             <button type="button" onClick={() => navigate('/phase-2')} className="lux-btn lux-btn-secondary">Cancel</button>
-            <button type="button" onClick={handleSubmit} disabled={submitting} className="lux-btn lux-btn-primary" style={{ minWidth: '180px' }}>
+            <button type="button" onClick={() => handleSubmit()} disabled={submitting} className="lux-btn lux-btn-primary" style={{ minWidth: '180px' }}>
               <span className="gold-overlay" /><span className="btn-content">{submitting ? '...' : <><Send size={16} strokeWidth={1.5} /> Submit Gate Review</>}</span>
             </button>
           </div>

@@ -368,12 +368,16 @@ function MilestonesRenderer({ worksheetId, values, label }: MilestoneRendererPro
 
 // ─── Section Layout Configuration ───────────────────────────────────────
 
-interface SectionLayout {
+export interface SectionLayout {
   sections: string[];
   sectionMap: Record<string, string[]>;
 }
 
-const FIELD_SECTIONS: Record<string, SectionLayout> = {
+/**
+ * FIELD_SECTIONS — Maps worksheet IDs to review display sections.
+ * Exported for validation tests.
+ */
+export const FIELD_SECTIONS: Record<string, SectionLayout> = {
   p1_w1: {
     sections: ['About You', 'Stakeholders', 'Conversations', 'Buddy Assignment', 'Reflection'],
     sectionMap: {

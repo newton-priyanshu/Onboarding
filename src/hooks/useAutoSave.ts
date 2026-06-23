@@ -50,6 +50,8 @@ export function useAutoSave(
   const mountedRef = useRef(true);
   const initialSaveDoneRef = useRef(false);
   const dueDateSetRef = useRef(false);
+  const errorShownRef = useRef(false);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -62,6 +64,24 @@ export function useAutoSave(
     setSaveStatus('saving');
     const reviewerType = getReviewerType(worksheetId);
     try {
+      // ── Conflict detection ────────────────────────────────
+      const savedAt = data._savedUpdatedAt as string | undefined;
+      if (savedAt) {
+        const { data: current } = await supabase
+          .from('worksheet_submissions')
+          .select('updated_at')
+          .eq('user_id', user.id)
+          .eq('worksheet_id', worksheetId)
+          .maybeSingle();
+        if (current && current.updated_at !== savedAt) {
+          console.warn(
+            `[AutoSave] Conflict detected for ${worksheetId}: ` +
+            `local updated_at=${savedAt}, server updated_at=${current.updated_at}. ` +
+            `Saving anyway (last-write-wins).`
+          );
+        }
+      }
+
       // If the worksheet is already approved, do NOT overwrite review_status
       // If it's buddy_approved, preserve it (awaiting manager)
       const newReviewStatus = data.status === 'submitted'
@@ -141,12 +161,17 @@ export function useAutoSave(
       notifyError('Auto-save failed:', err);
       if (mountedRef.current) {
         setSaveStatus('error');
-        // Retry once after 5 seconds on failure
-        setTimeout(() => {
-          if (mountedRef.current && !initialSaveDoneRef.current) {
-            save(data);
-          }
-        }, 5000);
+        errorShownRef.current = true;
+        retryCountRef.current += 1;
+        // Retry up to 2 times on failure (with backoff)
+        if (retryCountRef.current <= 2) {
+          const backoff = retryCountRef.current * 3000;
+          setTimeout(() => {
+            if (mountedRef.current) {
+              save(data);
+            }
+          }, backoff);
+        }
       }
     }
   }, [user?.id, worksheetId, phase]);

@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck } from 'lucide-react';
 import { WORKSHEET_NAMES, type WorksheetSubmission } from '../config/worksheetConfig';
 import { t } from '../config/theme';
+import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 
 interface SimpleInstructor {
   id: string;
@@ -59,8 +60,11 @@ export default function BuddyDashboard() {
       setMyInstructors(unique as SimpleInstructor[]);
       const ids = unique.map(a => a.id);
       if (ids.length > 0) {
-        const { data: worksheets } = await supabase.from('worksheet_submissions').select('*').in('user_id', ids).order('updated_at', { ascending: false });
-        if (worksheets) setAllWorksheets(worksheets as unknown as WorksheetSubmission[]);
+        const wsData = await fetchWithCache(`buddy-worksheets-${ids.sort().join(',')}`, () =>
+          supabase.from('worksheet_submissions').select('id, user_id, worksheet_id, review_status, status, updated_at, reviewer_name, review_history').in('user_id', ids).order('updated_at', { ascending: false }).limit(200)
+            .then(r => r.data as unknown as WorksheetSubmission[])
+        , { ttl: 15_000 });
+        if (wsData) setAllWorksheets(wsData);
       }
     } catch (err) {
       console.error('Failed to load buddy data:', err);
@@ -128,7 +132,7 @@ export default function BuddyDashboard() {
                 Review ALL worksheets from {myInstructors.length} assigned instructor(s) — {stats.pending} pending review
               </p>
             </div>
-            <button onClick={loadData} disabled={loading} style={{
+            <button onClick={() => { invalidateCacheByPrefix('buddy-'); loadData(); }} disabled={loading} style={{
               fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
               background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '8px 20px', cursor: 'pointer',
               transition: 'all 500ms ' + t.ease,

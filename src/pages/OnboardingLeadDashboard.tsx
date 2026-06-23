@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, Eye, LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { t } from '../config/theme';
+import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 
 interface PhaseInfo {
   phase: number;
@@ -41,12 +42,18 @@ export default function OnboardingLeadDashboard() {
   async function loadData() {
     setLoading(true);
     try {
-      const [instrRes, wsRes] = await Promise.all([
-        supabase.from('user_profiles').select('*').in('role', ['new_joinee', 'lab_instructor']),
-        supabase.from('worksheet_submissions').select('*'),
+      const [instrData, wsData] = await Promise.all([
+        fetchWithCache('lead-instructors', () =>
+          supabase.from('user_profiles').select('id, full_name, email, role, assigned_lead_id, assigned_buddy_id').in('role', ['new_joinee', 'lab_instructor'])
+            .then(r => r.data as unknown as UserProfile[])
+        ),
+        fetchWithCache('lead-worksheets', () =>
+          supabase.from('worksheet_submissions').select('user_id, worksheet_id, review_status, status, updated_at').limit(500)
+            .then(r => r.data as unknown as WorksheetSubmission[])
+        ),
       ]);
-      if (instrRes.data) setInstructors(instrRes.data as unknown as UserProfile[]);
-      if (wsRes.data) setAllWorksheets(wsRes.data as unknown as WorksheetSubmission[]);
+      if (instrData) setInstructors(instrData);
+      if (wsData) setAllWorksheets(wsData);
     } catch (err) {
       console.error('Failed to load monitoring data:', err);
     }
@@ -134,7 +141,7 @@ export default function OnboardingLeadDashboard() {
                 Read-only monitoring · {instructors.length} joinee(s) · {totalSheets} submissions
               </p>
             </div>
-            <button onClick={loadData} disabled={loading} style={{
+            <button onClick={() => { invalidateCacheByPrefix('lead-'); loadData(); }} disabled={loading} style={{
               fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
               background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '8px 20px', cursor: 'pointer',
             }}>

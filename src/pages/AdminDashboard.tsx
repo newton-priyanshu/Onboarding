@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, type LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { t } from '../config/theme';
+import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import PhasesReadyTab from '../components/admin/PhasesReadyTab';
 import AssignmentsTab from '../components/admin/AssignmentsTab';
 
@@ -66,20 +67,26 @@ export default function AdminDashboard() {
   async function loadData() {
     setLoading(true);
     try {
-      const queries = [
-        supabase.from('user_profiles').select('*').in('role', ['new_joinee', 'lab_instructor']).order('created_at', { ascending: false }),
-        supabase.from('worksheet_submissions').select('*'),
-        supabase.from('user_profiles').select('id, full_name, email, role').not('role', 'in', '("new_joinee","lab_instructor")'),
-      ];
-      const results = await Promise.all(queries);
-      const instrRes = results[0];
-      const wsRes = results[1];
-      const buddyRes = results[2];
-      if (instrRes?.data) setInstructors(instrRes.data as unknown as UserProfile[]);
-      if (wsRes?.data) setAllWorksheets(wsRes.data as unknown as WorksheetSubmission[]);
-      if (buddyRes?.data) {
-        setLeadInstructors(buddyRes.data.filter((p: BuddyProfile) => p.role === 'academic_head'));
-        setAllBuddyProfiles(buddyRes.data);
+      const [instrData, wsData, buddyData] = await Promise.all([
+        fetchWithCache('admin-instructors', () =>
+          supabase.from('user_profiles').select('id, full_name, email, role, assigned_lead_id, assigned_buddy_id, created_at').in('role', ['new_joinee', 'lab_instructor']).order('created_at', { ascending: false })
+            .then(r => r.data as unknown as UserProfile[])
+        ),
+        fetchWithCache('admin-worksheets', () =>
+          supabase.from('worksheet_submissions').select('user_id, worksheet_id, review_status, status, updated_at, review_history').limit(500)
+            .then(r => r.data as unknown as WorksheetSubmission[])
+        ),
+        fetchWithCache('admin-buddies', () =>
+          supabase.from('user_profiles').select('id, full_name, email, role').not('role', 'in', '("new_joinee","lab_instructor")')
+            .then(r => r.data as BuddyProfile[])
+        ),
+      ]);
+
+      if (instrData) setInstructors(instrData);
+      if (wsData) setAllWorksheets(wsData);
+      if (buddyData) {
+        setLeadInstructors(buddyData.filter((p: BuddyProfile) => p.role === 'academic_head'));
+        setAllBuddyProfiles(buddyData);
       }
     } catch (err) {
       console.error('Failed to load admin data:', err);
@@ -193,7 +200,7 @@ export default function AdminDashboard() {
                 {isManager ? 'Academic Head' : 'Onboarding Lead'} · {isManager ? 'Approve phases · ' : 'Monitor · '} {instructors.length} joinee(s)
               </p>
             </div>
-            <button onClick={loadData} disabled={loading} style={{
+            <button onClick={() => { invalidateCacheByPrefix('admin-'); loadData(); }} disabled={loading} style={{
               fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
               background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '8px 20px', cursor: 'pointer',
               transition: 'all 500ms ' + t.ease,

@@ -60,7 +60,7 @@ export function useNotifications(
     try {
       const { data } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, user_id, from_user_id, worksheet_id, type, message, read, created_at')
         .eq('user_id', u.id)
         .order('created_at', { ascending: false })
         .limit(50);
