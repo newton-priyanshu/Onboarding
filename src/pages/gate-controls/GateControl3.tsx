@@ -1,33 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../api/supabase';
 import { Shield, AlertCircle, Send, ArrowLeft } from 'lucide-react';
-import { Section, Slider, BuddyApprovedView } from '../../config/worksheetComponents';
+import { Section, Slider, BuddyApprovedView, LoadingView } from '../../config/worksheetComponents';
 import { t } from '../../config/theme';
-
-interface GateData {
-  employeeName: string;
-  selfProud: string;
-  selfUncomfortable: string;
-  selfSkills: string;
-  selfPhilosophy: string;
-  teachingRating: number;
-  commRating: number;
-  contentRating: number;
-  studentRating: number;
-  assessmentRating: number;
-  ownershipRating: number;
-  professionalismRating: number;
-  milestones: string[];
-  decision: string;
-  finalComments: string;
-  facultyLeadSignature: string;
-  instructorSignature: string;
-  status: string;
-  submittedAt: string;
-  [key: string]: unknown;
-}
+import { useWorksheet } from '../../hooks/useWorksheet';
 
 const milestones: [string, string][] = [
   ['Independent lecture delivery (min. 2 full sessions)', 'Faculty Lead lecture observation'],
@@ -42,88 +18,71 @@ interface GateControlProps {
   targetUserId?: string;
 }
 
+const defaultData = {
+  employeeName: '',
+  selfProud: '', selfUncomfortable: '', selfSkills: '', selfPhilosophy: '',
+  teachingRating: 3, commRating: 3, contentRating: 3, studentRating: 3, assessmentRating: 3, ownershipRating: 3, professionalismRating: 3,
+  milestones: milestones.map(() => 'Not Met'),
+  decision: '', finalComments: '', facultyLeadSignature: '', instructorSignature: '',
+  status: 'In Progress', submittedAt: '',
+};
+
 export default function GateControl3({ targetUserId }: GateControlProps) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const activeUserId = (targetUserId || user?.id || '') as string;
   const isBuddyMode = !!targetUserId;
-  const [data, setData] = useState<GateData>({
-    employeeName: '',
-    selfProud: '', selfUncomfortable: '', selfSkills: '', selfPhilosophy: '',
-    teachingRating: 3, commRating: 3, contentRating: 3, studentRating: 3, assessmentRating: 3, ownershipRating: 3, professionalismRating: 3,
-    milestones: milestones.map(() => 'Not Met'),
-    decision: '', finalComments: '', facultyLeadSignature: '', instructorSignature: '',
-    status: 'In Progress', submittedAt: '',
-  });
-  const [loaded, setLoaded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!activeUserId) return;
-    (async () => {
-      const { data: saved } = await supabase.from('worksheet_submissions').select('*').eq('user_id', activeUserId).eq('worksheet_id', 'gc3').maybeSingle();
-      if (saved?.worksheet_data) setData(p => ({ ...p, ...saved.worksheet_data as Record<string, unknown>, _savedReviewStatus: saved.review_status || '', _savedReviewComment: saved.review_comment || '', _savedReviewerName: saved.reviewer_name || '', _savedReviewHistory: saved.review_history || [], _savedReviewedAt: saved.reviewed_at || '' }));
-      else {
-        if (isBuddyMode && targetUserId) {
-          const { data: joinee } = await supabase.from('user_profiles').select('full_name').eq('id', targetUserId).single();
-          if (joinee) setData(p => ({ ...p, employeeName: joinee.full_name }));
-        } else {
-          setData(p => ({ ...p, employeeName: profile?.full_name || user?.email?.split('@')[0] || '' }));
-        }
-      }
-      setLoaded(true);
-    })();
-  }, [activeUserId, user?.id, profile, isBuddyMode, targetUserId]);
-
-  useEffect(() => {
-    if (!activeUserId || data.status === 'submitted' || !loaded) return;
-    const t = setTimeout(async () => {
-      await supabase.from('worksheet_submissions').upsert({
-        user_id: activeUserId, worksheet_id: 'gc3', worksheet_data: data, phase: 'phase3', status: data.status,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,worksheet_id' });
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [data, activeUserId, loaded]);
-
-  const u = (f: string, v: unknown) => setData(p => ({ ...p, [f]: v }));
-  const toggleMs = (i: number) => setData(p => {
-    const arr = [...p.milestones];
-    const vals: string[] = ['Not Met', 'Partial', 'Met'];
-    arr[i] = vals[(vals.indexOf(arr[i]!) + 1) % vals.length]!;
-    return { ...p, milestones: arr };
+  const ws = useWorksheet({
+    user,
+    worksheetId: 'gc3',
+    phase: 'phase3',
+    defaultData,
+    requiredFields: [
+      { key: 'employeeName', label: 'Instructor Name' },
+      { key: 'decision', label: 'Final readiness rating' },
+    ],
+    overrideUserId: targetUserId,
   });
 
-  const handleSubmit = async () => {
-    setError('');
-    if (!data.employeeName.trim()) { setError('Please fill in the instructor name.'); return; }
-    if (!data.decision) { setError('Please select a final readiness rating.'); return; }
-    setSubmitting(true);
-    const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
-    const d = { ...data, status: 'submitted', submittedAt: new Date().toISOString(), _savedReviewStatus: review_status };
-    setData(d);
+  const { data, loaded, submitting, submitError, setSubmitError, setSubmitting, updateField, flushSave, isBuddyApproved, isApproved, isSubmitted } = ws;
 
-    const payload: Record<string, unknown> = {
-      user_id: activeUserId,
-      worksheet_id: 'gc3',
-      worksheet_data: d,
-      phase: 'phase3',
-      status: 'submitted',
-      review_status,
-      updated_at: new Date().toISOString(),
-      reviewed_by: isBuddyMode ? user?.id : null,
-      reviewed_at: isBuddyMode ? new Date().toISOString() : null,
-      reviewer_name: isBuddyMode ? ((profile?.full_name as string) || 'Buddy') : null,
-    };
-    await supabase.from('worksheet_submissions').upsert(payload, { onConflict: 'user_id,worksheet_id' });
-    setSubmitting(false);
+  const toggleMs = (i: number) => {
+    ws.setData(p => {
+      const arr = [...(p.milestones as string[])];
+      const vals: string[] = ['Not Met', 'Partial', 'Met'];
+      arr[i] = vals[(vals.indexOf(arr[i]!) + 1) % vals.length]!;
+      return { ...p, milestones: arr };
+    });
   };
 
-  if (loaded && data._savedReviewStatus === 'buddy_approved') {
+  const handleSubmit = async () => {
+    setSubmitError('');
+    if (!(data.employeeName as string)?.trim()) { setSubmitError('Please fill in the instructor name.'); return; }
+    if (!data.decision) { setSubmitError('Please select a final readiness rating.'); return; }
+    setSubmitting(true);
+    try {
+      const review_status = isBuddyMode ? 'buddy_approved' : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
+      const d = {
+        ...data,
+        status: 'submitted',
+        submittedAt: new Date().toISOString(),
+        _savedReviewStatus: review_status,
+        _savedReviewedBy: isBuddyMode ? user?.id : null,
+        _savedReviewedAt: isBuddyMode ? new Date().toISOString() : null,
+        _savedReviewerName: isBuddyMode ? ((profile?.full_name as string) || 'Buddy') : null,
+      };
+      ws.setData(d);
+      await flushSave(d);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Early returns
+  if (isBuddyApproved) {
     return <BuddyApprovedView msg="Your Gate Control 3 has been approved by your buddy." path="/phase-3" />;
   }
-  if (loaded && data._savedReviewStatus === 'approved') {
+  if (isApproved) {
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
         <div className="lux-container" style={{ textAlign: 'center' }}>
@@ -139,7 +98,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
       </div>
     );
   }
-  if (data.status === 'submitted' && loaded && data._savedReviewStatus !== 'needs_revision' && data._savedReviewStatus !== 'buddy_approved' && data._savedReviewStatus !== 'revision_submitted') {
+  if (isSubmitted) {
     return (
       <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
         <div className="lux-container" style={{ textAlign: 'center' }}>
@@ -156,7 +115,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
     );
   }
 
-  if (!loaded) return <div className="lux-section" style={{ textAlign: 'center' }}><div className="lux-container"><p style={{ fontFamily: t.body, color: t.wg }}>Loading...</p></div></div>;
+  if (!loaded) return <LoadingView />;
 
   return (
     <div className="lux-section">
@@ -201,7 +160,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
             ].map(item => (
               <div key={item.k} className="lux-form-group">
                 <label className="lux-label" htmlFor={`gc3-${item.k}`}>{item.l}</label>
-                <textarea id={`gc3-${item.k}`} className="lux-textarea" rows={2} value={data[item.k] as string} onChange={e => u(item.k, e.target.value)} />
+                <textarea id={`gc3-${item.k}`} className="lux-textarea" rows={2} value={data[item.k] as string} onChange={e => updateField(item.k, e.target.value)} />
               </div>
             ))}
           </Section>
@@ -216,13 +175,13 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
               { k: 'ownershipRating', l: 'Ownership' },
               { k: 'professionalismRating', l: 'Professionalism' },
             ].map(item => (
-              <Slider key={item.k} label={item.l} value={data[item.k] as number} onChange={v => u(item.k, v)} />
+              <Slider key={item.k} label={item.l} value={data[item.k] as number} onChange={v => updateField(item.k, v)} />
             ))}
           </Section>
 
           <Section title="Required Milestone Outcomes" subtitle="Click to toggle: Met → Partial → Not Met">
             {milestones.map(([outcome, verify], i) => {
-              const status = data.milestones[i];
+              const status = (data.milestones as string[])[i];
               const statusColor = status === 'Met' ? '#1B5E20' : status === 'Partial' ? '#E65100' : t.wg;
               return (
                 <div key={i} onClick={() => toggleMs(i)}
@@ -247,7 +206,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
               ].map(opt => {
                 const isSelected = data.decision === opt.k;
                 return (
-                  <div key={opt.k} onClick={() => u('decision', opt.k)}
+                  <div key={opt.k} onClick={() => updateField('decision', opt.k)}
                     style={{
                       padding: '16px', cursor: 'pointer',
                       borderTop: isSelected ? '3px solid var(--color-gold)' : '1px solid rgba(26,26,26,0.15)',
@@ -264,18 +223,18 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
           <Section title="Final Decision">
             <div className="lux-form-group">
               <label className="lux-label" htmlFor="gc3-comments">Final Comments</label>
-              <textarea id="gc3-comments" className="lux-textarea" rows={3} value={data.finalComments} onChange={e => u('finalComments', e.target.value)} />
+              <textarea id="gc3-comments" className="lux-textarea" rows={3} value={data.finalComments as string} onChange={e => updateField('finalComments', e.target.value)} />
             </div>
           </Section>
 
           <Section title="Approval Sign-Off">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="lux-form-group"><label className="lux-label" htmlFor="gc3-fl-sig">Faculty Lead Signature</label><input id="gc3-fl-sig" className="lux-input" value={data.facultyLeadSignature} onChange={e => u('facultyLeadSignature', e.target.value)} /></div>
-              <div className="lux-form-group"><label className="lux-label" htmlFor="gc3-instr-sig">Instructor Signature</label><input id="gc3-instr-sig" className="lux-input" value={data.instructorSignature} onChange={e => u('instructorSignature', e.target.value)} /></div>
+              <div className="lux-form-group"><label className="lux-label" htmlFor="gc3-fl-sig">Faculty Lead Signature</label><input id="gc3-fl-sig" className="lux-input" value={data.facultyLeadSignature as string} onChange={e => updateField('facultyLeadSignature', e.target.value)} /></div>
+              <div className="lux-form-group"><label className="lux-label" htmlFor="gc3-instr-sig">Instructor Signature</label><input id="gc3-instr-sig" className="lux-input" value={data.instructorSignature as string} onChange={e => updateField('instructorSignature', e.target.value)} /></div>
             </div>
           </Section>
 
-          {error && <div className="lux-alert lux-alert-error"><AlertCircle size={16} strokeWidth={1.5} /><span>{error}</span></div>}
+          {submitError && <div className="lux-alert lux-alert-error"><AlertCircle size={16} strokeWidth={1.5} /><span>{submitError}</span></div>}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '1rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
             <button type="button" onClick={() => navigate('/phase-3')} className="lux-btn lux-btn-secondary">Cancel</button>

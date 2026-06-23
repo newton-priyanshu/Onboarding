@@ -121,18 +121,8 @@ export function WorksheetHeader({ icon: Icon, title, subtitle, badge }: Workshee
 }
 
 /* ─── Worksheet Section (Card) ────────────────────────── */
-export function WorksheetSection({ title, subtitle, children }: SectionProps) {
-  return (
-    <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.5rem 0' }}>
-      {title && (
-        <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: t.ch, marginBottom: subtitle ? '4px' : '1rem' }}>
-          {title}
-        </h3>
-      )}
-      {subtitle && <p style={{ fontFamily: t.body, fontSize: '0.78rem', color: t.wg, marginBottom: '1rem', lineHeight: 1.5 }}>{subtitle}</p>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>{children}</div>
-    </div>
-  );
+export function WorksheetSection(props: SectionProps) {
+  return <Section {...props} />;
 }
 
 /* ─── Field Group ─────────────────────────────────────── */

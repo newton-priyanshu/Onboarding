@@ -20,6 +20,9 @@ interface UpsertPayload {
   review_status: string;
   updated_at: string;
   due_date?: string;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  reviewer_name?: string | null;
 }
 
 interface SavedWorksheetData {
@@ -60,7 +63,9 @@ export function useAutoSave(
       // If the worksheet is already approved, do NOT overwrite review_status
       // If it's buddy_approved, preserve it (awaiting manager)
       const newReviewStatus = data.status === 'submitted'
-        ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'pending_review')
+        ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted'
+          : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
+          : 'pending_review')
         : (data._savedReviewStatus === 'approved' ? 'approved'
           : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
           : '');
@@ -71,6 +76,11 @@ export function useAutoSave(
         dueDateSetRef.current = true;
       }
 
+      // Pass through buddy review fields if present in worksheet_data
+      const reviewedBy = data._savedReviewedBy as string | null | undefined;
+      const reviewedAt = data._savedReviewedAt as string | null | undefined;
+      const reviewerName = data._savedReviewerName as string | null | undefined;
+
       const upsertPayload: UpsertPayload = {
         user_id: user.id,
         worksheet_id: worksheetId,
@@ -80,6 +90,9 @@ export function useAutoSave(
         status: (data.status as string) || 'In Progress',
         review_status: newReviewStatus,
         updated_at: new Date().toISOString(),
+        reviewed_by: reviewedBy || null,
+        reviewed_at: reviewedAt || null,
+        reviewer_name: reviewerName || null,
       };
       // Only include due_date on initial save — never overwrite persisted value
       if (dueDateValue !== undefined) upsertPayload.due_date = dueDateValue;

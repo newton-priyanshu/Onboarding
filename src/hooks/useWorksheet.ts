@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAutoSave, loadWorksheetData, getOAuthName } from './useAutoSave';
+import { supabase } from '../api/supabase';
 import type { User } from '@supabase/supabase-js';
 
 // ─── Types ──────────────────────────────────────────────
@@ -20,6 +21,8 @@ interface UseWorksheetOpts {
   redirectPath?: string;
   approvedMsg?: string;
   submittedMsg?: string;
+  /** For buddy/manager mode — loads/saves data for this userId instead of user.id */
+  overrideUserId?: string;
 }
 
 interface ReviewData {
@@ -43,10 +46,12 @@ interface UseWorksheetResult {
   updateArrayItemEvent: (field: string, index: number, subField: string) => (e: unknown) => void;
   handleSubmit: () => Promise<void>;
   setSubmitError: React.Dispatch<React.SetStateAction<string>>;
+  setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   isApproved: boolean;
   isBuddyApproved: boolean;
   isSubmitted: boolean;
   reviewData: ReviewData;
+  flushSave: (data: Record<string, unknown>) => Promise<void>;
 }
 
 // ─── Helper ─────────────────────────────────────────────
@@ -80,6 +85,7 @@ export function useWorksheet({
   redirectPath: _redirectPath = '/',
   approvedMsg: _approvedMsg = 'Your worksheet has been reviewed and approved.',
   submittedMsg: _submittedMsg = 'Your worksheet has been submitted for review.',
+  overrideUserId,
 }: UseWorksheetOpts): UseWorksheetResult {
   const [data, setData] = useState<Record<string, unknown>>(() => ({
     ...defaultData,
@@ -93,15 +99,23 @@ export function useWorksheet({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const { saveStatus, flushSave } = useAutoSave(user, data, worksheetId, phase);
+  // In buddy mode (overrideUserId), use that id for autoSave instead of the current user's id
+  const autoSaveUser = overrideUserId && user
+    ? { ...user, id: overrideUserId, email: user.email } as User
+    : overrideUserId && !user
+      ? { id: overrideUserId, email: '', app_metadata: {}, user_metadata: {}, aud: '', created_at: '' } as User
+      : user;
+
+  const { saveStatus, flushSave } = useAutoSave(autoSaveUser, data, worksheetId, phase);
 
   // ── Load saved data from Supabase ───────────────────────────────
+  const effectiveUserId = overrideUserId || user?.id;
   useEffect(() => {
-    if (!user?.id) return;
+    if (!effectiveUserId) return;
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadWorksheetData(user.id, worksheetId);
+        const saved = await loadWorksheetData(effectiveUserId, worksheetId);
         if (cancelled) return;
         if (saved?.worksheet_data) {
           setData(prev => ({
@@ -114,8 +128,14 @@ export function useWorksheet({
             _savedReviewedAt: saved.reviewed_at || '',
           }));
         } else {
-          const name = await getOAuthName();
-          if (!cancelled && name) setData(prev => ({ ...prev, employeeName: name }));
+          // In buddy mode, prefill with target user's profile name
+          if (overrideUserId) {
+            const { data: joinee } = await supabase.from('user_profiles').select('full_name').eq('id', overrideUserId).single();
+            if (!cancelled && joinee?.full_name) setData(prev => ({ ...prev, employeeName: joinee.full_name }));
+          } else {
+            const name = await getOAuthName();
+            if (!cancelled && name) setData(prev => ({ ...prev, employeeName: name }));
+          }
         }
       } catch (err) {
         if (!cancelled) console.error(`Load error [${worksheetId}]:`, err);
@@ -123,7 +143,7 @@ export function useWorksheet({
       if (!cancelled) setLoaded(true);
     })();
     return () => { cancelled = true; };
-  }, [user?.id, worksheetId]);
+  }, [effectiveUserId, worksheetId, overrideUserId]);
 
   // ── Helpers ─────────────────────────────────────────────────────
   const updateField = useCallback((field: string, value: unknown) => {
@@ -217,9 +237,11 @@ export function useWorksheet({
     updateArrayItemEvent,
     handleSubmit,
     setSubmitError,
+    setSubmitting,
     isApproved,
     isBuddyApproved,
     isSubmitted,
     reviewData,
+    flushSave,
   };
 }

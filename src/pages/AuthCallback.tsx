@@ -31,7 +31,7 @@ export default function AuthCallback() {
   }, [navigate]);
 
   return (
-    <div className="page-container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="lux-container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: '56px', height: '56px', borderRadius: 'var(--md-radius-md)', background: 'var(--md-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
           <GraduationCap size={28} />
