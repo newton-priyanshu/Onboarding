@@ -8,6 +8,7 @@ import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import PhasesReadyTab from '../components/admin/PhasesReadyTab';
 import AssignmentsTab from '../components/admin/AssignmentsTab';
+import { SkeletonCard } from '../components/Skeleton';
 
 
 
@@ -256,10 +257,10 @@ export default function AdminDashboard() {
                 onChange={e => setSearchQuery(e.target.value)} className="lux-input" style={{ fontSize: '0.8rem' }} />
             </div>
             {loading ? (
-              <div style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, textAlign: 'center', padding: '3rem' }}>Loading...</div>
+              <div style={{ padding: '2rem' }}><SkeletonCard count={5} /></div>
             ) : filterInstructors().length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem' }}>
-                <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg }}>No instructors match this filter.</p>
+                <p style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.wg }}>No instructors match the current filter. Try adjusting your search or filter criteria.</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>

@@ -201,6 +201,7 @@ export default function BuddyDashboard() {
               worksheets={displayWorksheets}
               instructors={myInstructors}
               getLink={(uid, wid) => `/buddy/review/${uid}/${wid}`}
+              activeTab={activeTab}
             />
           </>
         )}
@@ -210,11 +211,12 @@ export default function BuddyDashboard() {
   );
 }
 
-function WorksheetQueueTab({ title, worksheets, instructors, getLink }: {
+function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab }: {
   title: string;
   worksheets: WorksheetSubmission[];
   instructors: SimpleInstructor[];
   getLink: (userId: string, worksheetId: string) => string;
+  activeTab: string;
 }) {
   const navigate = useNavigate();
 
@@ -223,11 +225,17 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink }: {
       <p style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1rem' }}>
         {title} ({worksheets.length})
       </p>
-      {worksheets.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2.5rem' }}>
-          <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>All Caught Up</p>
-          <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>No worksheets match the current filter.</p>
-        </div>
+      {worksheets.length === 0 ? (          <div style={{ textAlign: 'center', padding: '2.5rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
+            <div className="lux-line" style={{ margin: '0 auto 1rem' }} />
+            <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>All Caught Up</p>
+            <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>
+              {activeTab === 'pending'
+                ? 'All assigned worksheets have been reviewed. Switch to "Buddy Approved" or "My Instructors" to see the full picture.'
+                : activeTab === 'buddy_approved'
+                  ? 'No buddy-approved worksheets awaiting manager review. Worksheets will appear here once you approve them.'
+                  : 'No worksheets match the current filter.'}
+            </p>
+          </div>
       ) : (
         worksheets.map((ws, idx) => {
           const instr = instructors.find(i => i.id === ws.user_id);
@@ -295,7 +303,9 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
       </p>
       {myInstructors.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>No instructors assigned yet.</p>
+          <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>
+            No instructors assigned yet. Ask an admin to assign joinees to you as a buddy or manager.
+          </p>
         </div>
       ) : (
         myInstructors.map((instr, idx) => {

@@ -6,6 +6,7 @@ import { Users, Clock, RefreshCw, Shield, BadgeCheck, Eye, LucideIcon } from 'lu
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
+import { SkeletonCard } from '../components/Skeleton';
 
 interface PhaseInfo {
   phase: number;
@@ -183,7 +184,7 @@ export default function OnboardingLeadDashboard() {
 
         {/* Joinee list */}
         {loading ? (
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, textAlign: 'center', padding: '2rem' }}>Loading...</p>
+          <div style={{ padding: '2rem' }}><SkeletonCard count={4} /></div>
         ) : filteredInstructors.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2.5rem' }}>
             <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>No Results</p>

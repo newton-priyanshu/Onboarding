@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 import { ArrowLeft, Shield } from 'lucide-react';
+import { SkeletonCard } from '../components/Skeleton';
 import GateControl1 from './gate-controls/GateControl1';
 import GateControl2 from './gate-controls/GateControl2';
 import GateControl3 from './gate-controls/GateControl3';
@@ -69,9 +70,9 @@ export default function BuddyGatePass() {
   if (loading) {
     return (
       <div className="lux-section">
-        <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div className="lux-container" style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, textAlign: 'center', padding: '2rem' }}>Loading...</p>
+          <div style={{ padding: '2rem' }}><SkeletonCard count={3} /></div>
         </div>
       </div>
     );

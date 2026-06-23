@@ -116,6 +116,9 @@ export default function GateControl1({ targetUserId }: GateControlProps) {
               const statusColor = status === 'Met' ? t.success : status === 'Partial' ? t.warning : t.wg;
               return (
                 <div key={i} onClick={() => toggleMilestone(i)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMilestone(i); } }}
+                  role="button" tabIndex={0}
+                  aria-label={`Toggle milestone: ${outcome}. Currently ${status}`}
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', cursor: 'pointer', borderLeft: '1px solid ' + statusColor }}>
                   <div style={{ width: '8px', height: '8px', background: statusColor, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>

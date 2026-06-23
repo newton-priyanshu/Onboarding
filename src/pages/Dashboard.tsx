@@ -200,8 +200,10 @@ export default function Dashboard() {
                 }}>
                   {/* Phase Header */}
                   <div onClick={() => { if (!isLocked) navigate(phase.path); }}
+                    onKeyDown={!isLocked ? (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(phase.path); } } : undefined}
                     role={isLocked ? 'presentation' : 'button'}
                     tabIndex={isLocked ? -1 : 0}
+                    aria-label={isLocked ? `Phase ${phase.num} is locked. ${phaseLockReason(phase.num)}` : `Go to Phase ${phase.num}`}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: '1.25rem',
                       textDecoration: 'none', cursor: isLocked ? 'default' : 'pointer',

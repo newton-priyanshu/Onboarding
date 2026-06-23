@@ -49,7 +49,7 @@ export default function Phase2Worksheet3() {
                     <input className="lux-input" placeholder="Name" value={e.reviewer} onChange={ev => uE(i, 'reviewer', ev.target.value)} />
                     <input type="checkbox" checked={e.approved} onChange={ev => uE(i, 'approved', ev.target.checked)} style={{ accentColor: 'var(--color-charcoal)', justifySelf: 'center' }} />
                   </div>
-                  {data.entries.length > 1 && <button type="button" onClick={() => removeEntry(i)} style={{ background: 'none', border: 'none', color: t.error, cursor: 'pointer', padding: '4px' }}><Trash2 size={14} strokeWidth={1.5} /></button>}
+                  {data.entries.length > 1 && <button type="button" onClick={() => removeEntry(i)} aria-label="Remove entry" style={{ background: 'none', border: 'none', color: t.error, cursor: 'pointer', padding: '4px' }}><Trash2 size={14} strokeWidth={1.5} /></button>}
                 </div>
               ))}
             </WorksheetSection>

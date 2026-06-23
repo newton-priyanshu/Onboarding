@@ -145,6 +145,9 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
               const statusColor = status === 'Met' ? t.success : status === 'Partial' ? t.warning : t.wg;
               return (
                 <div key={i} onClick={() => toggleMilestone(i)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMilestone(i); } }}
+                  role="button" tabIndex={0}
+                  aria-label={`Toggle milestone: ${outcome}. Currently ${status}`}
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', cursor: 'pointer', borderLeft: '1px solid ' + statusColor }}>
                   <div style={{ width: '8px', height: '8px', background: statusColor, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
@@ -167,6 +170,9 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
                 const isSelected = data.decision === opt.k;
                 return (
                   <div key={opt.k} onClick={() => updateField('decision', opt.k)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); updateField('decision', opt.k); } }}
+                    role="button" tabIndex={0}
+                    aria-label={`Select readiness: ${opt.l}`}
                     style={{
                       padding: '16px', cursor: 'pointer',
                       borderTop: isSelected ? '3px solid var(--color-gold)' : '1px solid rgba(26,26,26,0.15)',

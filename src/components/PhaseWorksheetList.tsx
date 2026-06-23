@@ -41,8 +41,10 @@ export default function PhaseWorksheetList({ worksheets, statuses }: PhaseWorksh
         const Icon = ws.icon;
         const wsStatus = statuses[ws.id];
         const badge = getBadge(wsStatus?.status ?? null, wsStatus?.review_status ?? null);
-        return (
-          <div key={ws.id} onClick={() => navigate(ws.path)}
+        return (            <div key={ws.id} onClick={() => navigate(ws.path)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(ws.path); } }}
+              role="button" tabIndex={0}
+              aria-label={`Open worksheet: ${ws.title}`}
             style={{
               display: 'flex', alignItems: 'center', gap: '1rem',
               padding: '1.25rem 0',
