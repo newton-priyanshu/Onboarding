@@ -80,7 +80,7 @@ export default function GateControl2({ targetUserId }: GateControlProps) {
 
   return (
     <div className="lux-section">
-      <div className="lux-container" style={{ maxWidth: '720px', margin: '0 auto' }}>
+      <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
         <button onClick={() => navigate('/phase-2')} className="lux-btn lux-btn-ghost" style={{ marginBottom: '1rem' }}>
           <ArrowLeft size={14} strokeWidth={1.5} /> Back to Phase 2
         </button>

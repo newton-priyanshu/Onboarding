@@ -180,7 +180,24 @@ export default function PhaseReview() {
       <div className="lux-section">
         <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
           <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, textAlign: 'center', padding: '2rem' }}>Loading phase review...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ width: '60%', height: '1.5rem', background: 'var(--color-taupe)' }} />
+            <div style={{ width: '40%', height: '0.8rem', background: 'var(--color-taupe)' }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1px', marginTop: '1rem' }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} style={{ background: 'var(--color-alabaster)', padding: '1rem', textAlign: 'center' }}>
+                  <div style={{ width: '40%', height: '1.25rem', background: 'var(--color-taupe)', margin: '0 auto 0.5rem' }} />
+                  <div style={{ width: '60%', height: '0.55rem', background: 'var(--color-taupe)', margin: '0 auto' }} />
+                </div>
+              ))}
+            </div>
+            {[1, 2, 3].map(i => (
+              <div key={i} style={{ borderBottom: '1px solid rgba(26, 26, 26, 0.06)', padding: '1rem 0' }}>
+                <div style={{ width: '50%', height: '0.85rem', background: 'var(--color-taupe)', marginBottom: '0.5rem' }} />
+                <div style={{ width: '30%', height: '0.55rem', background: 'var(--color-taupe)' }} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

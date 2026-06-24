@@ -50,7 +50,7 @@ export default function PhaseWorksheetList({ worksheets, statuses }: PhaseWorksh
               padding: '1.25rem 0',
               borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
               cursor: 'pointer',
-              transition: 'opacity 500ms var(--ease-lux)',
+              transition: 'opacity 200ms var(--ease-lux)',
               opacity: 0,
               animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
             }}

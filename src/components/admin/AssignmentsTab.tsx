@@ -33,7 +33,7 @@ export default function AssignmentsTab({ instructors, buddyProfiles, onRefresh }
 
   const styleLabel: React.CSSProperties = { fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, display: 'block', marginBottom: '8px' };
   const styleSelect: React.CSSProperties = { fontFamily: t.body, fontSize: '0.8rem', color: t.ch, width: '100%', padding: '8px 0', border: 'none', borderBottom: '1px solid ' + t.ch, background: 'transparent', outline: 'none', marginBottom: '1.5rem' };
-  const btnPrimary: React.CSSProperties = { fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid ' + t.ch, background: t.ch, color: '#F9F8F6', cursor: 'pointer', transition: 'all 500ms ' + t.ease };
+  const btnPrimary: React.CSSProperties = { fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid ' + t.ch, background: t.ch, color: '#F9F8F6', cursor: 'pointer', transition: 'all 200ms ' + t.ease };
 
   return (
     <div>

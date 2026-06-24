@@ -89,7 +89,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
 
   return (
     <div className="lux-section">
-      <div className="lux-container" style={{ maxWidth: '720px', margin: '0 auto' }}>
+      <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
         <button onClick={() => navigate('/phase-3')} className="lux-btn lux-btn-ghost" style={{ marginBottom: '1rem' }}>
           <ArrowLeft size={14} strokeWidth={1.5} /> Back to Phase 3
         </button>
@@ -176,7 +176,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
                     style={{
                       padding: '16px', cursor: 'pointer',
                       borderTop: isSelected ? '3px solid var(--color-gold)' : '1px solid rgba(26,26,26,0.15)',
-                      textAlign: 'center', transition: 'border-color 500ms var(--ease-lux)',
+                      textAlign: 'center', transition: 'border-color 200ms var(--ease-lux)',
                     }}>
                     <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch, display: 'block', marginBottom: '4px' }}>{opt.l}</span>
                     <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg, lineHeight: 1.5 }}>{opt.d}</p>

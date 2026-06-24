@@ -135,7 +135,7 @@ export default function BuddyDashboard() {
             <button onClick={() => { invalidateCacheByPrefix('buddy-'); loadData(); }} disabled={loading} style={{
               fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
               background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '8px 20px', cursor: 'pointer',
-              transition: 'all 500ms ' + t.ease,
+              transition: 'all 200ms ' + t.ease,
             }}>
               <RefreshCw size={12} strokeWidth={1.5} style={{ marginRight: '6px' }} /> Refresh
             </button>
@@ -174,7 +174,7 @@ export default function BuddyDashboard() {
               background: 'transparent', border: 'none', padding: '12px 24px', cursor: 'pointer',
               color: activeTab === tab.id ? t.ch : t.wg,
               borderBottom: activeTab === tab.id ? '1px solid ' + t.ch : '1px solid transparent',
-              transition: 'color 500ms ' + t.ease + ', border-color 500ms ' + t.ease,
+              transition: 'color 200ms ' + t.ease + ', border-color 200ms ' + t.ease,
             }}>{tab.label}</button>
           ))}
         </div>
@@ -190,7 +190,7 @@ export default function BuddyDashboard() {
                   border: '1px solid ' + (viewMode === m ? t.ch : 'rgba(26,26,26,0.2)'),
                   color: viewMode === m ? '#F9F8F6' : t.wg,
                   padding: '6px 16px', cursor: 'pointer',
-                  transition: 'all 500ms ' + t.ease,
+                  transition: 'all 200ms ' + t.ease,
                 }}>
                   {m === 'all' ? 'All' : m.charAt(0).toUpperCase() + m.slice(1)}
                 </button>

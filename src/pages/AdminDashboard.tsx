@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
@@ -58,6 +58,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  // Preserve scroll position on refresh
+  const savedScrollY = useRef(0);
 
   const isManager = profile?.role === 'academic_head';
   const isOnboardingLead = profile?.role === 'onboarding_lead';
@@ -66,6 +68,7 @@ export default function AdminDashboard() {
   useEffect(() => { if (canAssign) loadData(); }, [canAssign]);
 
   async function loadData() {
+    savedScrollY.current = window.scrollY;
     setLoading(true);
     try {
       const [instrData, wsData, buddyData] = await Promise.all([
@@ -93,6 +96,7 @@ export default function AdminDashboard() {
       console.error('Failed to load admin data:', err);
     } finally {
       setLoading(false);
+      requestAnimationFrame(() => window.scrollTo(0, savedScrollY.current));
     }
   }
 
@@ -204,7 +208,7 @@ export default function AdminDashboard() {
             <button onClick={() => { invalidateCacheByPrefix('admin-'); loadData(); }} disabled={loading} style={{
               fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
               background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '8px 20px', cursor: 'pointer',
-              transition: 'all 500ms ' + t.ease,
+              transition: 'all 200ms ' + t.ease,
             }}>
               <RefreshCw size={12} strokeWidth={1.5} style={{ marginRight: '6px' }} /> Refresh
             </button>
@@ -230,7 +234,7 @@ export default function AdminDashboard() {
               background: 'transparent', border: 'none', padding: '12px 24px', cursor: 'pointer',
               color: activeTab === tab.id ? t.ch : t.wg,
               borderBottom: activeTab === tab.id ? '1px solid ' + t.ch : '1px solid transparent',
-              transition: 'color 500ms ' + t.ease + ', border-color 500ms ' + t.ease,
+              transition: 'color 200ms ' + t.ease + ', border-color 200ms ' + t.ease,
             }}>{tab.label}</button>
           ))}
         </div>
@@ -246,7 +250,7 @@ export default function AdminDashboard() {
                   border: '1px solid ' + (statusFilter === f ? t.ch : 'rgba(26,26,26,0.2)'),
                   color: statusFilter === f ? '#F9F8F6' : t.wg,
                   padding: '6px 16px', cursor: 'pointer',
-                  transition: 'all 500ms ' + t.ease,
+                  transition: 'all 200ms ' + t.ease,
                 }}>
                   {f === 'all' ? 'All' : f === 'buddy_approved' ? 'Buddy Approved' : f === 'not_started' ? 'Not Started' : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>

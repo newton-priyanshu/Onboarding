@@ -108,7 +108,7 @@ export default function NotificationBell() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'border-color 500ms var(--ease-lux)',
+          transition: 'border-color 200ms var(--ease-lux)',
         }}
         onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.gd; }}
         onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(26, 26, 26, 0.15)'; }}

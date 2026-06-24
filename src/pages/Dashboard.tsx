@@ -207,7 +207,7 @@ export default function Dashboard() {
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: '1.25rem',
                       textDecoration: 'none', cursor: isLocked ? 'default' : 'pointer',
-                      transition: 'opacity 500ms var(--ease-lux)',
+                      transition: 'opacity 200ms var(--ease-lux)',
                       opacity: isLocked ? 0.5 : 1,
                     }}
                   >
@@ -276,7 +276,7 @@ export default function Dashboard() {
                               borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
                               textDecoration: 'none',
                               fontFamily: t.body, fontSize: '0.8rem', color: t.ch,
-                              transition: 'color 500ms var(--ease-lux)',
+                              transition: 'color 200ms var(--ease-lux)',
                               opacity: 0,
                               animation: `luxFadeIn 0.5s ${(idx * phase.worksheets.length + i) * 0.04 + 0.3}s forwards`,
                             }}
@@ -319,12 +319,13 @@ export default function Dashboard() {
               { to: '/phase-3', label: 'Phase 3 Worksheets', desc: 'Independent teaching' },
               { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
               { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
+              { to: 'https://newton.school/academy', label: 'Help & Guide', desc: 'Faculty onboarding resources' },
             ] as { to: string; label: string; desc: string }[]).map((link, i) => (
               <Link key={i} to={link.to} style={{
                 textDecoration: 'none', padding: '1rem 0',
                 borderTop: '1px solid var(--color-charcoal)',
                 minWidth: '160px',
-                transition: 'opacity 500ms var(--ease-lux)',
+                transition: 'opacity 200ms var(--ease-lux)',
               }}
                 onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
                 onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}

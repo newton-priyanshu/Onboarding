@@ -78,7 +78,7 @@ export default function Phase1() {
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '1.25rem' }}>
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
-              <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${(completed / (worksheets.length + 1)) * 100}%` }} />
+              <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${(completed / worksheets.length) * 100}%` }} />
             </div>
             <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
               <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: t.gd, verticalAlign: 'middle' }} />

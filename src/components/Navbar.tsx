@@ -147,7 +147,7 @@ export default function Navbar({ progress }: NavbarProps) {
                     textDecoration: 'none',
                     color: active ? 'var(--color-charcoal)' : 'var(--color-warm-grey)',
                     borderBottom: active ? '1px solid var(--color-charcoal)' : '1px solid transparent',
-                    transition: 'color 500ms var(--ease-lux), border-color 500ms var(--ease-lux)',
+                    transition: 'color 200ms var(--ease-lux), border-color 200ms var(--ease-lux)',
                   }}
                     onMouseOver={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--color-gold)'; }}
                     onMouseOut={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = 'var(--color-warm-grey)'; }}
@@ -171,7 +171,7 @@ export default function Navbar({ progress }: NavbarProps) {
                     fontFamily: 'var(--font-body)',
                     fontSize: '0.75rem', fontWeight: 500,
                     color: 'var(--color-charcoal)',
-                    transition: 'border-color 500ms var(--ease-lux)',
+                    transition: 'border-color 200ms var(--ease-lux)',
                   }}>
                   <div style={{
                     width: '28px', height: '28px',

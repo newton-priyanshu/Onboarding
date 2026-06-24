@@ -144,9 +144,9 @@ export default function Assessment() {
                 return (
                   <label key={level.id} style={{ display: 'flex', gap: '1rem', padding: '1.25rem 1.5rem',
                     borderTop: isSelected ? `3px solid ${level.color}` : '1px solid rgba(26, 26, 26, 0.15)',
-                    cursor: 'pointer', transition: 'border-color 500ms var(--ease-lux)', background: isSelected ? 'rgba(249, 248, 246, 0.5)' : 'transparent' }}>
+                    cursor: 'pointer', transition: 'border-color 200ms var(--ease-lux)', background: isSelected ? 'rgba(249, 248, 246, 0.5)' : 'transparent' }}>
                     <div style={{ width: '20px', height: '20px', flexShrink: 0, marginTop: '2px',
-                      border: isSelected ? `6px solid ${level.color}` : '1px solid var(--color-warm-grey)', transition: 'border 500ms var(--ease-lux)' }} />
+                      border: isSelected ? `6px solid ${level.color}` : '1px solid var(--color-warm-grey)', transition: 'border 200ms var(--ease-lux)' }} />
                     <input type="radio" name="readiness" value={level.id} checked={isSelected}
                       onChange={() => setSelectedLevel(level.id)} style={{ display: 'none' }} />
                     <div>
