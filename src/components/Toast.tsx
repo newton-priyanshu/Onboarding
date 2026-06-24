@@ -45,7 +45,7 @@ export function useToast(): ToastContextValue {
 
 const TOAST_STYLES: Record<ToastType, ToastStyleConfig> = {
   success: { icon: CheckCircle2, bg: '#F9F8F6', border: t.success, text: t.success },
-  error: { icon: AlertCircle, bg: '#F9F8F6', border: '#C62828', text: '#C62828' },
+  error: { icon: AlertCircle, bg: '#F9F8F6', border: t.error, text: t.error },
   warning: { icon: AlertTriangle, bg: '#F9F8F6', border: t.warning, text: t.warning },
   info: { icon: Info, bg: '#F9F8F6', border: '#1A1A1A', text: '#1A1A1A' },
 };

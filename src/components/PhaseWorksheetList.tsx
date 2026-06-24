@@ -73,7 +73,7 @@ export default function PhaseWorksheetList({ worksheets, statuses }: PhaseWorksh
               const due = getDueDateInfo(ws.id);
               if (!due.dueDate) return null;
               return (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: due.isOverdue ? '#C62828' : due.isDueSoon ? t.warning : t.wg, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: due.isOverdue ? t.error : due.isDueSoon ? t.warning : t.wg, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {due.isOverdue && <AlertTriangle size={10} strokeWidth={1.5} />}
                   {due.statusLabel}
                 </span>

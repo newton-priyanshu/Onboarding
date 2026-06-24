@@ -66,8 +66,9 @@ export default function PhaseReview() {
       if (wsRes.data) setSubmissions(wsRes.data as unknown as WorksheetSubmission[]);
     } catch (err) {
       console.error('Failed to load phase review data:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleApprovePhase() {
@@ -230,17 +231,17 @@ export default function PhaseReview() {
 
         {/* Phase Summary */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1px', background: 'rgba(26, 26, 26, 0.1)', marginBottom: '2rem' }}>
-          <SummaryCard label="Buddy Approved" value={buddyApproved.length} color="#381E72" icon={Shield} />
-          <SummaryCard label="Already Approved" value={alreadyApproved.length} color="#1B5E20" icon={CheckCircle2} />
+          <SummaryCard label="Buddy Approved" value={buddyApproved.length} color={t.purple} icon={Shield} />
+          <SummaryCard label="Already Approved" value={alreadyApproved.length} color={t.success} icon={CheckCircle2} />
           <SummaryCard label="Pending Review" value={pending.length} color="#D4AF37" icon={Clock} />
-          {needsRevision.length > 0 && <SummaryCard label="Needs Revision" value={needsRevision.length} color="#C62828" />}
+          {needsRevision.length > 0 && <SummaryCard label="Needs Revision" value={needsRevision.length} color={t.error} />}
           {notSubmitted.length > 0 && <SummaryCard label="Not Started" value={notSubmitted.length} color={t.wg} />}
         </div>
 
         {/* Approve Phase Button */}
         {canApprove && (
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{ padding: '1.5rem', border: '2px solid #381E72', background: 'rgba(56, 30, 114, 0.03)' }}>
+            <div style={{ padding: '1.5rem', border: '2px solid ' + t.purple, background: 'rgba(56, 30, 114, 0.03)' }}>
               <Shield size={32} strokeWidth={1.5} style={{ color: t.purple, marginBottom: '0.75rem' }} />
               <h3 style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>
                 Phase {phaseNumber} Ready for Manager Approval
@@ -255,7 +256,7 @@ export default function PhaseReview() {
                 </span>
               </button>
               {actionMessage && (
-                <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: actionMessage.includes('✅') ? t.success : '#C62828', marginTop: '0.75rem' }}>
+                <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: actionMessage.includes('✅') ? t.success : t.error, marginTop: '0.75rem' }}>
                   {actionMessage}
                 </p>
               )}
@@ -278,9 +279,9 @@ export default function PhaseReview() {
             const statusColors: Record<string, string> = {
               approved: t.success,
               buddy_approved: t.purple,
-              pending_review: '#D4AF37',
+              pending_review: t.gd,
               revision_submitted: t.pending,
-              needs_revision: '#C62828',
+              needs_revision: t.error,
             };
             const statusLabels: Record<string, string> = {
               approved: 'Approved (Manager)',

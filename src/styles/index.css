@@ -454,13 +454,13 @@ button:focus-visible,
 }
 
 .lux-alert-error {
-  border-left-color: #C62828;
-  color: #C62828;
+  border-left-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .lux-alert-success {
-  border-left-color: #1B5E20;
-  color: #1B5E20;
+  border-left-color: var(--color-success);
+  color: var(--color-success);
 }
 
 .lux-alert-info {

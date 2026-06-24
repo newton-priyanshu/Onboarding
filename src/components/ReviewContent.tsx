@@ -272,7 +272,7 @@ function ScoreGridRenderer({ scores, labels }: ScoreGridRendererProps) {
               <div key={si} style={{
                 textAlign: 'center', padding: '2px 4px', borderRadius: '4px',
                 background: score >= 4 ? '#E8F5E9' : score >= 3 ? '#FFF8E1' : '#FFEBEE',
-                color: score >= 4 ? t.success : score >= 3 ? '#F57F17' : '#C62828',
+                color: score >= 4 ? t.success : score >= 3 ? t.warning : t.error,
                 fontWeight: 600, fontSize: '0.75rem',
               }}>
                 {score || '-'}

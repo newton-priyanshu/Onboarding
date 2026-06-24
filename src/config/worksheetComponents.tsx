@@ -232,7 +232,7 @@ export function BuddyApprovedView({ msg, path, title = '✓ Buddy Approved' }: S
         <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '1rem', lineHeight: 1.6 }}>
           {msg}
         </p>
-        <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.purple, marginBottom: '1.5rem', padding: '8px 12px', border: '1px solid #381E72', background: 'rgba(56, 30, 114, 0.04)' }}>
+        <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.purple, marginBottom: '1.5rem', padding: '8px 12px', border: '1px solid ' + t.purple, background: 'rgba(56, 30, 114, 0.04)' }}>
           Your buddy has approved this worksheet. It now awaits manager-level phase approval.
           Once all worksheets in this phase are buddy-approved, the manager will review and
           finalize them in one go.

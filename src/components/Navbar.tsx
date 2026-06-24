@@ -241,7 +241,7 @@ export default function Navbar({ progress }: NavbarProps) {
                           </button>
                           <button onClick={handleSignOut} disabled={signingOut}
                             style={{
-                              flex: 1, padding: '8px 0', border: '1px solid ' + t.error, background: '#C62828',
+                              flex: 1, padding: '8px 0', border: '1px solid ' + t.error, background: t.error,
                               cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',
                               fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
                               letterSpacing: '0.15em', textTransform: 'uppercase',
@@ -361,7 +361,7 @@ export default function Navbar({ progress }: NavbarProps) {
                   </button>
                   <button onClick={() => { void handleSignOut(); setMobileOpen(false); }} disabled={signingOut}
                     style={{
-                      flex: 1, padding: '10px 0', border: '1px solid ' + t.error, background: '#C62828',
+                      flex: 1, padding: '10px 0', border: '1px solid ' + t.error, background: t.error,
                       cursor: signingOut ? 'default' : 'pointer', color: '#FFFFFF',
                       fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500,
                       letterSpacing: '0.15em', textTransform: 'uppercase',
@@ -423,7 +423,7 @@ export default function Navbar({ progress }: NavbarProps) {
           border-top: 1px solid rgba(26, 26, 26, 0.12);
           color: var(--color-warm-grey);
         }
-        .menu-item-signout:hover { color: #C62828; background: rgba(198, 40, 40, 0.06); }
+        .menu-item-signout:hover { color: var(--color-error); background: rgba(198, 40, 40, 0.06); }
       `}</style>
     </header>
   );

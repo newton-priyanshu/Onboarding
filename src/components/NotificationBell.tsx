@@ -122,7 +122,7 @@ export default function NotificationBell() {
             right: '2px',
             width: '18px',
             height: '18px',
-            background: '#C62828',
+            background: t.error,
             color: '#FFFFFF',
             fontSize: '0.55rem',
             fontWeight: 600,

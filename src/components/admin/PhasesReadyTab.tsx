@@ -56,7 +56,7 @@ export default function PhasesReadyTab({ allWorksheets, instructors, isManager }
           </div>
           {isManager ? (
             <button onClick={() => navigate(`/admin/review-phase/${entry.userId}/${entry.phaseNum}`)}
-              style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid #381E72', background: t.purple, color: '#FFF', cursor: 'pointer' }}>
+              style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid ' + t.purple, background: t.purple, color: '#FFF', cursor: 'pointer' }}>
               Approve Phase
             </button>
           ) : (

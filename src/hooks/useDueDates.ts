@@ -90,7 +90,7 @@ export function getDueDateInfo(worksheetId: string, startDate: Date | null = nul
   if (isOverdue) {
     const overdueDays = Math.abs(daysRemaining);
     statusLabel = `Overdue by ${overdueDays}d`;
-    statusColor = '#C62828';
+    statusColor = 'var(--color-error)';
   } else if (isDueSoon) {
     statusLabel = daysRemaining === 0 ? 'Due today' : `Due in ${daysRemaining}d`;
     statusColor = t.warning;

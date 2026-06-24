@@ -150,8 +150,8 @@ export default function BuddyDashboard() {
             <p style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg }}>Instructors</p>
           </div>
           <div style={{ background: 'var(--color-alabaster)', padding: '1.25rem', textAlign: 'center' }}>
-            <Clock size={20} strokeWidth={1.5} style={{ color: '#D4AF37', marginBottom: '8px' }} />
-            <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: '#D4AF37' }}>{stats.pending}</p>
+            <Clock size={20} strokeWidth={1.5} style={{ color: t.gd, marginBottom: '8px' }} />
+            <p style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.gd }}>{stats.pending}</p>
             <p style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg }}>Pending Review</p>
           </div>
           <div style={{ background: 'var(--color-alabaster)', padding: '1.25rem', textAlign: 'center' }}>
@@ -258,11 +258,11 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab 
                 <p style={{ fontFamily: t.body, fontSize: '0.6rem', color: t.wg }}>{ws.updated_at ? new Date(ws.updated_at).toLocaleDateString() : 'N/A'}</p>
               </div>
               {isBuddyApproved ? (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: t.purple }}>Buddy Approved</span>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.purple, color: t.purple }}>Buddy Approved</span>
               ) : ws.review_status === 'revision_submitted' ? (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #7D5260', color: t.pending }}>Revised</span>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.pending, color: t.pending }}>Revised</span>
               ) : (
-                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>Pending</span>
+                <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.gd, color: t.gd }}>Pending</span>
               )}
               <ArrowRight size={14} strokeWidth={1.5} style={{ color: t.wg, flexShrink: 0 }} />
             </div>
@@ -336,12 +336,12 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
                   </span>
                 )}
                 {buddyApproved.length > 0 && (
-                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #381E72', color: t.purple }}>
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.purple, color: t.purple }}>
                     {buddyApproved.length} buddy approved
                   </span>
                 )}
                 {totalApproved > 0 && (
-                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #1B5E20', color: t.success }}>
+                  <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.success, color: t.success }}>
                     {totalApproved} approved
                   </span>
                 )}
@@ -358,7 +358,7 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
                         style={{
                           fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
                           letterSpacing: '0.1em', textTransform: 'uppercase',
-                          padding: '6px 14px', border: '1px solid #381E72',
+                          padding: '6px 14px', border: '1px solid ' + t.purple,
                           background: 'rgba(56, 30, 114, 0.06)', color: t.purple,
                           cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px',
                           transition: 'all 300ms var(--ease-lux)',
