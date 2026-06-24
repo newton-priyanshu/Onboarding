@@ -85,6 +85,7 @@ describe('checkAndPromote', () => {
       select: vi.fn().mockReturnThis(),
       eq: mockSubEq,
       update: vi.fn().mockReturnValue({ eq: mockUpdateEq }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
     };
     mockFrom.mockReturnValue(chain);
     mockAuthUpdateUser.mockResolvedValue({ error: null });
@@ -122,6 +123,7 @@ describe('checkAndPromote', () => {
       select: vi.fn().mockReturnThis(),
       eq: mockSubEq,
       update: vi.fn().mockReturnValue({ eq: mockUpdateEq }),
+      insert: vi.fn().mockResolvedValue({ error: null }),
     };
     mockFrom.mockReturnValue(chain);
     mockAuthUpdateUser.mockResolvedValue({ error: new Error('Auth update failed') });

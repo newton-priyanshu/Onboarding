@@ -63,7 +63,7 @@ describe('getDueDateInfo', () => {
     const info = getDueDateInfo('p1_w1', pastDate);
     expect(info.isOverdue).toBe(true);
     expect(info.statusLabel).toContain('Overdue');
-    expect(info.statusColor).toBe('#C62828');
+    expect(info.statusColor).toBe('var(--color-error)');
   });
 
   it('marks worksheet as due soon within 2 days', () => {
