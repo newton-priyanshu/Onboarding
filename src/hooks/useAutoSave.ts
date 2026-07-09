@@ -138,7 +138,11 @@ export function useAutoSave(
         if (reviewerUserIds.length === 0) {
           reviewerUserIds = await getReviewerUserIds(reviewerType);
         }
-        const phaseNames: Record<string, string> = { 'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3' };
+        const phaseNames: Record<string, string> = {
+        'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3',
+        'week-1': 'Week 1 — Anchor', 'week-2': 'Week 2 — Co-create',
+        'week-3': 'Week 3 — Co-deliver', 'week-4': 'Week 4 — Independence Review',
+      };
         const phaseName = phaseNames[phase] || phase;
         for (const reviewerId of reviewerUserIds) {
           await triggerNotification({

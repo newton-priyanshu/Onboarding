@@ -148,7 +148,9 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMilestone(i); } }}
                   role="button" tabIndex={0}
                   aria-label={`Toggle milestone: ${outcome}. Currently ${status}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', cursor: 'pointer', borderLeft: '1px solid ' + statusColor }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', cursor: 'pointer', borderLeft: '1px solid ' + statusColor, transition: 'background 200ms var(--ease-lux)' }}
+                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(26, 26, 26, 0.03)'; }}
+                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
                   <div style={{ width: '8px', height: '8px', background: statusColor, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch }}>{outcome}</span>

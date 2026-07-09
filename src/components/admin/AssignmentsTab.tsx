@@ -41,7 +41,7 @@ export default function AssignmentsTab({ instructors, buddyProfiles, onRefresh }
         Assign Manager & Buddy
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div>
           <label style={styleLabel} htmlFor="assign-joinee">Joinee</label>
           <select id="assign-joinee" style={styleSelect} value={selectedInstructor} onChange={e => { setSelectedInstructor(e.target.value); setMessage(''); }}>

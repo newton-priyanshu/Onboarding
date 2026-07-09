@@ -59,6 +59,32 @@ const WORKSHEET_DEFAULTS = {
   gc1: { employeeName: 'Arjun Mehta', overallReflection: 'Good start to onboarding', keyLearnings: 'School processes, teaching philosophy', completionStatus: 'All Phase 1 worksheets done', readyForNext: true },
   gc2: { employeeName: 'Arjun Mehta', phase2Summary: 'Completed lab facilitation', keyAchievements: 'Independently ran 3 labs', challenges: 'Time management', readyForNext: true },
   gc3: { employeeName: 'Arjun Mehta', phase3Summary: 'Completed all milestones', teachingAbility: 'Independent', overallReadiness: 'Ready for full faculty role', recommendations: 'Continue mentorship' },
+
+// ── FTP Worksheet Defaults ──────────────────────────────────────────────────
+  // Week 1 — Anchor
+  w1_o1: { employeeName: 'Arjun Mehta', accessVerified: true, buddyContacted: true, commsJoined: true, laptopSetup: true, portalAccess: true, slackChannels: ['#general', '#faculty', '#onboarding-july'], notes: 'All good.' },
+  w1_e1: { employeeName: 'Arjun Mehta', dateRead: '2026-06-02', keyTakeaways: 'V3 Bloom distribution rules and peer L1 pass requirement.', questionsForFacilitator: 'How to handle Bloom vs topic coverage conflicts?' },
+  w1_o2: { employeeName: 'Arjun Mehta', answers: [{ q: 'Sacrosanct standard?', a: 'No student left behind.', section: '§1' }, { q: 'Culture engine components?', a: 'Mirror, commitment, rehearsal.', section: '§2' }, { q: 'Silent vs loud error?', a: 'Silent = unnoticed by student, loud = visible.', section: '§3' }, { q: 'Handle basic moment?', a: 'Validate then go deeper.', section: '§4' }, { q: '20% rule?', a: 'If edits >20%, fix checklist.', section: '§5' }], reflectionNote: 'Very practical.' },
+  w1_g1: { employeeName: 'Arjun Mehta', artifacts: [{ label: 'Operational checklist', checked: true, fromSession: 'W1-O1' }, { label: 'Observation logs', checked: true, fromSession: 'W1-D1' }, { label: 'Scavenger sheet', checked: true, fromSession: 'W1-O2' }, { label: 'Reflection #0', checked: true, fromSession: 'W1-A1' }], employeeSignature: 'Arjun Mehta' },
+  // Week 2 — Co-create
+  w2_e1: { employeeName: 'Arjun Mehta', taggings: [{ question: 'What is Big O?', bloomLevel: 'remember', justification: 'Recall.' }, { question: 'Explain hash table collisions.', bloomLevel: 'understand', justification: 'Explanation.' }, { question: 'Reverse a linked list.', bloomLevel: 'apply', justification: 'Apply algorithm.' }, { question: 'Compare BFS vs DFS.', bloomLevel: 'analyze', justification: 'Comparison.' }], reflection: 'Need more Analyze level questions.' },
+  w2_c3: { employeeName: 'Arjun Mehta', mcqs: [{ question: 'Which is not a Python type?', options: ['List', 'Tuple', 'Dict', 'Array'], answer: 'Array', bloomLevel: 'remember' }, { question: 'Output of 2 ** 3?', options: ['5', '6', '8', '9'], answer: '8', bloomLevel: 'understand' }, { question: 'Two-sum best complexity?', options: ['O(n)', 'O(n²)', 'O(n log n)', 'O(1)'], answer: 'O(n)', bloomLevel: 'apply' }], codingQuestions: [{ title: 'Palindrome Check', description: 'Check if string is palindrome ignoring non-alphanumeric.', testCases: 'racecar => true' }, { title: 'FizzBuzz', description: 'Print 1-n with Fizz/Buzz replacements.', testCases: 'n=15' }], peerReviewDone: true, peerReviewedName: 'Sneha Patel', peerReviewFeedback: 'Good questions, add edge cases.' },
+  w2_d2: { employeeName: 'Arjun Mehta', topic: 'Python Variables', feedbackNotes: 'Good pacing, use more analogies.', selfReflection: 'Nervous but settled after 2 min.' },
+  w2_b1: { employeeName: 'Arjun Mehta', topRules: ['No phones', 'Raise hand before speaking', 'Submit on time'], consequenceForBreaking: 'Private chat first offense, documented second.', consistencyStrategy: 'Visible tracking sheet, no exceptions.', mirrorReflection: 'Tend to be lenient, need to practice firmness.' },
+  w2_o1: { employeeName: 'Arjun Mehta', policyRead: true, scenarios: [{ situation: 'Student with notes', response: 'Confiscate, file report.' }, { situation: 'Malpractice complaint', response: 'Take written statement, refer to committee.' }, { situation: '30 min late', response: 'Allow entry per policy.' }, { situation: 'Server down', response: 'Pause, add time, file report.' }], questions: '' },
+  w2_g1: { employeeName: 'Arjun Mehta', artifacts: [{ label: 'Question set', checked: true, fromSession: 'W2-C3' }, { label: 'Peer review', checked: true, fromSession: 'W2-C3' }, { label: 'Bloom tagging', checked: true, fromSession: 'W2-E1' }, { label: 'Discipline sheet', checked: true, fromSession: 'W2-B1' }], employeeSignature: 'Arjun Mehta' },
+  // Week 3 — Co-deliver
+  w3_d1: { employeeName: 'Arjun Mehta', techConfirmed: ['Projector', 'Pentab', 'Portal joining', 'Recording', 'Polling tools', 'Sound system'], notes: 'All working.' },
+  w3_d2: { employeeName: 'Arjun Mehta', minuteByMinute: 'Min 1-2: Hook\nMin 3-5: Concept\nMin 6-7: Example\nMin 8-9: Practice\nMin 10: Recap', transitionStrategy: 'Bridging question between segments.', biggestChallenge: 'Sticking to timebox.' },
+  w3_e1: { employeeName: 'Arjun Mehta', contestTitle: 'DS Mini-Contest', bloomDistribution: 'R:2, U:3, A:4, An:2, E:1, C:0', peerReviewed: false },
+  w3_b1: { employeeName: 'Arjun Mehta', atRiskScript: 'Check in privately, listen without interrupting.', ruleChallengeScript: 'Acknowledge concern, explain reasoning, follow up 1:1.', basicMomentScript: 'Validate and connect to real application.', forcedPosition: 'Avoid confrontation - need to practice directness.' },
+  w3_g1: { employeeName: 'Arjun Mehta', artifacts: [{ label: 'Demo dry-run', checked: true, fromSession: 'W3-D4' }, { label: 'Feedback response', checked: true, fromSession: 'W3-D4' }, { label: 'Lecture package v1', checked: true, fromSession: 'W3-C1' }, { label: 'Mini-contest', checked: false, fromSession: 'W3-E1' }], employeeSignature: 'Arjun Mehta' },
+  // Week 4 — Independence
+  w4_d2: { employeeName: 'Arjun Mehta', sessionType: 'mock_classroom', date: '2026-07-20', scenarios: 'Late arrival, phone ringing, power outage.', observerFeedback: 'Good composure, be firmer on phone scenario.', selfReflection: 'Stayed calm, need more presence.' },
+  w4_e1: { employeeName: 'Arjun Mehta', predictedRates: 'Q1:85%, Q2:70%, Q3:55%, Q4:40%, Q5:30%', actualRates: 'Q1:92%, Q2:65%, Q3:48%, Q4:35%, Q5:25%', calibrationNote: 'Overestimated difficulty, especially at Apply level.', insights: 'Include more practice questions at each level before contests.' },
+  w4_o1: { employeeName: 'Arjun Mehta', checklist: [{ item: 'Schedule confirmed', done: true, notes: '' }, { item: 'Materials uploaded', done: true, notes: '' }, { item: 'Lecture packages ready', done: true, notes: '' }, { item: 'Assessment schedule', done: false, notes: 'Pending approval' }, { item: 'Classroom assigned', done: true, notes: '' }, { item: 'Office hours set', done: true, notes: '' }, { item: 'Welcome message', done: true, notes: '' }, { item: 'Tech backup plan', done: false, notes: '' }], courseLeadSignOff: false },
+  w4_b1: { employeeName: 'Arjun Mehta', reflectionPrompt1: 'Balancing speed with depth.', reflectionPrompt2: 'Micro-teach was confidence boost.', reflectionPrompt3: 'Discipline framework and minute-planning.', commitment: 'I commit to asking for feedback after each of my first 10 lectures.' },
+  w4_g1: { employeeName: 'Arjun Mehta', artifacts: [{ label: 'Demo final', checked: false, fromSession: 'W4-D1' }, { label: 'Lecture package v2', checked: false, fromSession: 'W4-C1' }, { label: 'Pre-semester checklist', checked: false, fromSession: 'W4-O1' }, { label: 'Reflection #1', checked: false, fromSession: 'W4-B1' }], employeeSignature: '' },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -67,6 +93,13 @@ const PHASES = {
   p1: { ids: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8','gc1'], phase: 'phase-1' },
   p2: { ids: ['p2_w1','p2_w2','p2_w3','p2_w4','gc2'], phase: 'phase-2' },
   p3: { ids: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5','gc3'], phase: 'phase-3' },
+};
+
+const FTP_WEEKS = {
+  w1: { ids: ['w1_o1','w1_e1','w1_o2','w1_g1'], phase: 'week-1' },
+  w2: { ids: ['w2_e1','w2_c3','w2_d2','w2_b1','w2_o1','w2_g1'], phase: 'week-2' },
+  w3: { ids: ['w3_d1','w3_d2','w3_e1','w3_b1','w3_g1'], phase: 'week-3' },
+  w4: { ids: ['w4_d2','w4_e1','w4_o1','w4_b1','w4_g1'], phase: 'week-4' },
 };
 
 let createdUsers = {};
@@ -153,6 +186,11 @@ async function createSubmission(userId, worksheetId, status, reviewStatus, extra
   const data = WORKSHEET_DEFAULTS[worksheetId] || {};
   const phase = worksheetId.startsWith('p1') || worksheetId === 'gc1' ? 'phase-1'
     : worksheetId.startsWith('p2') || worksheetId === 'gc2' ? 'phase-2'
+    : worksheetId.startsWith('p3') || worksheetId === 'gc3' ? 'phase-3'
+    : worksheetId.startsWith('w1') ? 'week-1'
+    : worksheetId.startsWith('w2') ? 'week-2'
+    : worksheetId.startsWith('w3') ? 'week-3'
+    : worksheetId.startsWith('w4') ? 'week-4'
     : 'phase-3';
 
   const { error } = await supabase
@@ -209,14 +247,14 @@ async function main() {
   console.log('\n📋 Step 3: Creating worksheet submissions...\n');
 
   if (arjun) {
-    // Arjun: mix of approved, pending, and needs_revision
-    console.log('  → Arjun Mehta - Phase 1 worksheets');
+    // Arjun: Phase 1 buddy_approved (ready for manager promotion), Phase 2+ fully approved
+    console.log('  → Arjun Mehta - Phase 1 worksheets (buddy_approved — ready for manager promotion)');
     for (const id of PHASES.p1.ids) {
-      await createSubmission(arjun.id, id, 'submitted', 'approved', {
+      await createSubmission(arjun.id, id, 'submitted', 'buddy_approved', {
         reviewed_at: new Date().toISOString(),
         reviewer_name: 'Neha Kapoor',
         review_comment: 'Great work!',
-        review_history: [{ action: 'approved', reviewer_name: 'Neha Kapoor', comment: 'Great work!', timestamp: new Date().toISOString() }],
+        review_history: [{ action: 'buddy_approved', reviewer_name: 'Neha Kapoor', comment: 'Great work!', timestamp: new Date().toISOString() }],
       });
     }
     console.log('  → Arjun Mehta - Phase 2 worksheets');
@@ -292,6 +330,84 @@ async function main() {
     await sleep(500);
   }
 
+  // ── FTP Worksheet Submissions ──────────────────────────────────────────
+  console.log('  → FTP Week Worksheets...\n');
+
+  if (arjun) {
+    // Arjun: Week 1-2 buddy_approved, Week 3-4 mixed
+    console.log('    Arjun - Week 1 (Anchor): buddy_approved');
+    for (const id of FTP_WEEKS.w1.ids) {
+      await createSubmission(arjun.id, id, 'submitted', 'buddy_approved', {
+        reviewed_at: new Date(Date.now() - 22 * 86400000).toISOString(),
+        reviewer_name: 'Neha Kapoor',
+        review_comment: 'Week 1 anchor artifacts approved.',
+        review_history: [{ action: 'buddy_approved', reviewer_name: 'Neha Kapoor', comment: 'Approved.', timestamp: new Date(Date.now() - 22 * 86400000).toISOString() }],
+      });
+    }
+    console.log('    Arjun - Week 2 (Co-create): buddy_approved (except w2_c3 pending)');
+    for (const id of FTP_WEEKS.w2.ids) {
+      if (id === 'w2_c3') {
+        await createSubmission(arjun.id, id, 'submitted', 'pending_review');
+      } else {
+        await createSubmission(arjun.id, id, 'submitted', 'buddy_approved', {
+          reviewed_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+          reviewer_name: 'Neha Kapoor',
+          review_comment: 'Week 2 co-create approved.',
+          review_history: [{ action: 'buddy_approved', reviewer_name: 'Neha Kapoor', comment: 'Approved.', timestamp: new Date(Date.now() - 15 * 86400000).toISOString() }],
+        });
+      }
+    }
+    console.log('    Arjun - Week 3 (Co-deliver): mixed states');
+    for (const id of FTP_WEEKS.w3.ids) {
+      if (id === 'w3_e1') {
+        await createSubmission(arjun.id, id, 'submitted', 'needs_revision', {
+          reviewed_at: new Date(Date.now() - 8 * 86400000).toISOString(),
+          reviewer_name: 'Neha Kapoor',
+          review_comment: 'Missing Create-level question and peer L1 review.',
+          review_history: [{ action: 'needs_revision', reviewer_name: 'Neha Kapoor', comment: 'Missing Create-level question.', timestamp: new Date(Date.now() - 8 * 86400000).toISOString() }],
+        });
+      } else if (id === 'w3_b1') {
+        await createSubmission(arjun.id, id, 'submitted', 'buddy_approved', {
+          reviewed_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+          reviewer_name: 'Neha Kapoor',
+          review_comment: 'Excellent dialoguing scripts.',
+          review_history: [{ action: 'buddy_approved', reviewer_name: 'Neha Kapoor', comment: 'Excellent.', timestamp: new Date(Date.now() - 7 * 86400000).toISOString() }],
+        });
+      } else {
+        await createSubmission(arjun.id, id, 'submitted', 'pending_review');
+      }
+    }
+    console.log('    Arjun - Week 4 (Independence): pending_review (Gate 4 not started)');
+    for (const id of ['w4_d2', 'w4_e1', 'w4_o1', 'w4_b1']) {
+      await createSubmission(arjun.id, id, 'submitted', 'pending_review');
+    }
+    await sleep(500);
+  }
+
+  if (sneha) {
+    // Sneha: Week 1 partial (w1_e1 needs_revision), Week 2 partial, no Week 3-4
+    console.log('    Sneha - Week 1: partial');
+    await createSubmission(sneha.id, 'w1_o1', 'draft', '');
+    await createSubmission(sneha.id, 'w1_e1', 'submitted', 'needs_revision', {
+      reviewed_at: new Date(Date.now() - 22 * 86400000).toISOString(),
+      reviewer_name: 'Neha Kapoor',
+      review_comment: 'Please expand your takeaways — list at least 3 specific V3 rules.',
+      review_history: [{ action: 'needs_revision', reviewer_name: 'Neha Kapoor', comment: 'Expand takeaways.', timestamp: new Date(Date.now() - 22 * 86400000).toISOString() }],
+    });
+    console.log('    Sneha - Week 2: w2_e1 and w2_o1 pending_review');
+    await createSubmission(sneha.id, 'w2_e1', 'submitted', 'pending_review');
+    await createSubmission(sneha.id, 'w2_o1', 'submitted', 'pending_review');
+    await sleep(500);
+  }
+
+  if (vikram) {
+    // Vikram: Week 1 partial only
+    console.log('    Vikram - Week 1: partial (w1_o1 pending, w1_e1 draft)');
+    await createSubmission(vikram.id, 'w1_o1', 'submitted', 'pending_review');
+    await createSubmission(vikram.id, 'w1_e1', 'draft', '');
+    await sleep(500);
+  }
+
   // Step 4: Create onboarding_lead worksheets for ravi (p1_w4, p1_w5, p2_w4)
   if (arjun) {
     console.log('  → Arjun Mehta - Onboarding lead worksheets');
@@ -316,11 +432,16 @@ async function main() {
   console.log('  └──────────────────────────┴──────────────────────────┴──────────────────┘\n');
   console.log('  📋 Test Data Summary:');
   console.log('  • Arjun: Phase 1+2 approved, Phase 3 pending_review');
+  console.log('    FTP: Week 1-2 buddy_approved, Week 3 mixed, Week 4 pending');
   console.log('  • Sneha: Phase 1 approved, Phase 2 mixed, Phase 3 revision_submitted');
+  console.log('    FTP: Week 1 partial (needs_revision), Week 2 partial');
   console.log('  • Vikram: Phase 1 partial, Phase 2+3 not started');
+  console.log('    FTP: Week 1 partial (1 pending, 1 draft)');
   console.log('  • Neha (Buddy): Can review buddy worksheets for all 3 joinees');
   console.log('  • Priya (Manager): Can review everything');
   console.log('  • Ravi (Onboarding Lead): Can review p1_w4, p1_w5, p2_w4\n');
+  console.log('  💡 FTP worksheets seeded via __seed_test_data.cjs');
+  console.log('  💡 Or run db/seed_ftp_worksheets.sql in Supabase SQL Editor\n');
   console.log('  🌐 Login at: http://localhost:5173\n');
 }
 

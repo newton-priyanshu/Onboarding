@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
   CheckCircle2, Clock, AlertCircle, FileText, LucideIcon,
+  Anchor, Layers, Users, Flag,
 } from 'lucide-react';
 import { t } from '../config/theme';
 import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission } from '../config/worksheetConfig';
@@ -23,6 +24,23 @@ const phases: PhaseInfo[] = [
   { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes.', icon: BookOpen, path: '/phase-1', worksheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'] },
   { num: 2, title: 'Contribution & Guided Teaching', days: 'Days 31–60', description: 'Teach, create content, and develop your craft.', icon: Target, path: '/phase-2', worksheets: ['p2_w1','p2_w2','p2_w3','p2_w4'] },
   { num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90', description: 'Teach independently and propose improvements.', icon: Sparkles, path: '/phase-3', worksheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'] },
+];
+
+interface WeekInfo {
+  num: number;
+  title: string;
+  subtitle: string;
+  theme: string;
+  icon: LucideIcon;
+  path: string;
+  worksheets: string[];
+}
+
+const weeks: WeekInfo[] = [
+  { num: 1, title: 'Anchor', subtitle: 'Observe begins', theme: 'Context before content — functional means operational', icon: Anchor, path: '/week-1', worksheets: ['p1_w5','p1_w6','p1_w3','w1_o1','w1_e1','w1_o2'] },
+  { num: 2, title: 'Co-create', subtitle: 'Observe deepens', theme: 'Content creation to the zero-error standard', icon: Layers, path: '/week-2', worksheets: ['p2_w3','p1_w7','p1_w6','w2_e1','w2_c3','w2_d2','w2_b1','w2_o1'] },
+  { num: 3, title: 'Co-deliver', subtitle: 'Deliver under observation', theme: 'The rubric enters the room', icon: Users, path: '/week-3', worksheets: ['p2_w1','p2_w2','p2_w4','p3_w5','w3_d1','w3_d2','w3_e1','w3_b1'] },
+  { num: 4, title: 'Independence Review', subtitle: 'Co-deliver closes', theme: 'Feedback incorporated, real conditions rehearsed, release decided', icon: Flag, path: '/week-4', worksheets: ['p3_w1','p3_w5','w4_d2','w4_e1','w4_o1','w4_b1'] },
 ];
 
 interface StatusInfo {
@@ -79,6 +97,13 @@ export default function Dashboard() {
   }
 
   const totalApproved = submissions.filter(s => s.review_status === 'approved').length;
+
+  // Count total unique worksheets
+  const allWorksheetIds = new Set([
+    ...phases.flatMap(p => p.worksheets),
+    ...weeks.flatMap(w => w.worksheets),
+  ]);
+  const totalWorksheets = allWorksheetIds.size;
 
   // Phase gating
   const phase1Approved = isPhaseApproved(user?.id || '', 1, submissions);
@@ -166,11 +191,11 @@ export default function Dashboard() {
               </span>
               <div className="lux-progress" style={{ flex: 1, minWidth: '150px', maxWidth: '350px' }}>
                 <div className="lux-progress-fill lux-progress-fill-gold" style={{
-                  width: `${Math.round((totalApproved / 20) * 100)}%`,
+                  width: `${Math.round(totalWorksheets > 0 ? (totalApproved / totalWorksheets) * 100 : 0)}%`,
                 }} />
               </div>
               <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
-                {totalApproved}<span style={{ color: t.wg, fontWeight: 400 }}> / 20</span>
+                {totalApproved}<span style={{ color: t.wg, fontWeight: 400 }}> / {totalWorksheets}</span>
               </span>
             </div>
           </div>
@@ -304,6 +329,77 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* FTP Week Roadmap */}
+        <section style={{ marginTop: '4rem', borderTop: '1px solid var(--color-charcoal)', paddingTop: '2rem' }}>
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '0.5rem' }}>
+              FTP Curriculum <em style={{ fontStyle: 'italic', color: t.gd }}>Weeks</em>
+            </h2>
+            <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
+              Four-week faculty training program — Anchor → Independence
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            {weeks.map((week, idx) => {
+              const Icon = week.icon;
+              const progress = getPhaseProgress(week.worksheets);
+              return (
+                <div key={week.num}
+                  onClick={() => navigate(week.path)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(week.path); } }}
+                  role="button" tabIndex={0}
+                  style={{
+                    padding: '1.5rem',
+                    border: '1px solid var(--color-charcoal)',
+                    cursor: 'pointer',
+                    transition: 'all 200ms var(--ease-lux)',
+                    opacity: 0,
+                    animation: `luxFadeIn 0.5s ${idx * 0.1}s forwards`,
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(26, 26, 26, 0.03)'; e.currentTarget.style.borderColor = t.gd; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-charcoal)'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                    <div style={{
+                      width: '40px', height: '40px',
+                      border: '1px solid var(--color-charcoal)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
+                      <Icon size={20} strokeWidth={1.5} style={{ color: t.ch }} />
+                    </div>
+                    <div>
+                      <span style={{
+                        fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+                        letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
+                      }}>
+                        Week {week.num}
+                      </span>
+                      <h3 style={{
+                        fontFamily: t.heading, fontSize: '1.2rem', fontWeight: 400,
+                        color: t.ch, margin: 0,
+                      }}>
+                        {week.title} — {week.subtitle}
+                      </h3>
+                    </div>
+                  </div>
+                  <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, lineHeight: 1.5, marginBottom: '8px' }}>
+                    {week.theme}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="lux-progress" style={{ flex: 1 }}>
+                      <div className="lux-progress-fill" style={{ width: `${progress.pct}%` }} />
+                    </div>
+                    <span style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, color: t.ch }}>
+                      {progress.done}/{progress.total}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Quick Links */}
         <section style={{ marginTop: '4rem', borderTop: '1px solid rgba(26, 26, 26, 0.12)', paddingTop: '2rem' }}>
           <h4 style={{
@@ -317,6 +413,11 @@ export default function Dashboard() {
               { to: '/phase-1', label: 'Start Phase 1', desc: 'Begin your orientation' },
               { to: '/phase-2', label: 'Phase 2 Worksheets', desc: 'Teaching & content creation' },
               { to: '/phase-3', label: 'Phase 3 Worksheets', desc: 'Independent teaching' },
+              // FTP Week Quick Links
+              { to: '/week-1', label: 'Week 1 — Anchor', desc: 'Context before content' },
+              { to: '/week-2', label: 'Week 2 — Co-create', desc: 'Zero-error content standard' },
+              { to: '/week-3', label: 'Week 3 — Co-deliver', desc: 'Deliver under observation' },
+              { to: '/week-4', label: 'Week 4 — Independence', desc: 'Release readiness review' },
               { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
               { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
               { to: 'https://newton.school/academy', label: 'Help & Guide', desc: 'Faculty onboarding resources' },

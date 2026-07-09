@@ -20,13 +20,34 @@ export interface UserProfile {
   updated_at: string;
 }
 
-// ─── Worksheet IDs (union of all known worksheets) ────────
+// ─── FTP Engine Tags (K = Knowledge gap, B = Behaviour gap) ─
+export type EngineTag = 'K' | 'B';
+
+// ─── FTP Week Numbers ────────────────────────────────────
+export type FtpWeek = 1 | 2 | 3 | 4;
+
+// ─── FTP Track Names ─────────────────────────────────────
+export type FtpTrack = 'Culture' | 'Product' | 'Content' | 'Delivery' | 'Evaluation' | 'Operations';
+
+// ─── Worksheet IDs (all known worksheets, legacy + FTP) ───
 export type WorksheetId =
+  // Legacy Phase 1 — Orientation
   | 'p1_w1' | 'p1_w2' | 'p1_w3' | 'p1_w4' | 'p1_w5'
   | 'p1_w6' | 'p1_w7' | 'p1_w8'
+  // Legacy Phase 2 — Contribution
   | 'p2_w1' | 'p2_w2' | 'p2_w3' | 'p2_w4'
+  // Legacy Phase 3 — Ownership
   | 'p3_w1' | 'p3_w2' | 'p3_w3' | 'p3_w4' | 'p3_w5'
-  | 'gc1' | 'gc2' | 'gc3';
+  // Legacy Gate Controls
+  | 'gc1' | 'gc2' | 'gc3'
+  // FTP Week 1 — Anchor (Observe begins)
+  | 'w1_a1' | 'w1_o1' | 'w1_o2' | 'w1_e1' | 'w1_g1'
+  // FTP Week 2 — Co-create (Observe deepens)
+  | 'w2_e1' | 'w2_c3' | 'w2_d2' | 'w2_b1' | 'w2_o1' | 'w2_g1'
+  // FTP Week 3 — Co-deliver begins
+  | 'w3_d1' | 'w3_d2' | 'w3_e1' | 'w3_b1' | 'w3_g1'
+  // FTP Week 4 — Co-deliver closes, Independence review
+  | 'w4_d2' | 'w4_e1' | 'w4_o1' | 'w4_b1' | 'w4_g1';
 
 // ─── Reviewer Types ──────────────────────────────────────
 export type ReviewerType = 'buddy' | 'manager' | 'onboarding_lead';
@@ -43,12 +64,45 @@ export type ReviewStatus =
 // ─── Submission Status ───────────────────────────────────
 export type SubmissionStatus = 'Not Started' | 'In Progress' | 'Submitted' | 'Reviewed';
 
+// ─── Engine Tag Info for a session ───────────────────────
+export interface EngineTagInfo {
+  tag: EngineTag;
+  label: string;
+  description: string;
+}
+
+// ─── FTP Session Entry ────────────────────────────────────
+export interface FtpSession {
+  sessionId: string;         // e.g. 'W1-A1'
+  week: FtpWeek;
+  track: FtpTrack;
+  engineTag: EngineTag;
+  title: string;
+  subtitle: string;
+  worksheetId?: WorksheetId; // Maps to existing or new worksheet
+  isNew?: boolean;           // True if this is a new worksheet that needs a component
+  isGate?: boolean;
+  artifacts?: string[];      // For gates: list of required artifacts
+  suggestedFacilitator?: string;
+}
+
 // ─── Review History Entry ────────────────────────────────
 export interface ReviewHistoryEntry {
-  action: 'approved' | 'needs_revision';
+  action: 'approved' | 'needs_revision' | 'buddy_approved' | 'phase_approved';
   reviewer_name: string;
   reviewer_id: string;
   comment: string | null;
+  timestamp: string;
+}
+
+// ─── Peer Review Entry ───────────────────────────────────
+export interface PeerReviewEntry {
+  peer_name: string;
+  peer_id: string;
+  rating: number;           // 1-5 scale
+  comment: string;
+  criteria_met: string[];
+  criteria_unmet: string[];
   timestamp: string;
 }
 

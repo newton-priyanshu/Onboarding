@@ -29,6 +29,18 @@ const DEFAULT_DUE_OFFSETS: Record<string, number> = {
   gc2: 60,
   p3_w1: 75,   p3_w2: 75,   p3_w3: 80,   p3_w4: 80,   p3_w5: 85,
   gc3: 90,
+  // FTP Week 1 (due within Week 1 = days 1-7)
+  w1_o1: 3,    w1_e1: 5,    w1_o2: 6,
+  w1_g1: 7,
+  // FTP Week 2 (due within Week 2 = days 8-14)
+  w2_e1: 10,   w2_c3: 12,   w2_d2: 13,   w2_b1: 13,   w2_o1: 14,
+  w2_g1: 14,
+  // FTP Week 3 (due within Week 3 = days 15-21)
+  w3_d1: 16,   w3_d2: 17,   w3_e1: 19,   w3_b1: 20,
+  w3_g1: 21,
+  // FTP Week 4 (due within Week 4 = days 22-28)
+  w4_d2: 24,   w4_e1: 25,   w4_o1: 27,   w4_b1: 28,
+  w4_g1: 28,
 };
 
 // ─── Helpers ────────────────────────────────────────────

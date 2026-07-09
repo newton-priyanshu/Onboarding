@@ -12,6 +12,7 @@ interface ToastItem {
   message: string;
   type: ToastType;
   entering: boolean;
+  exiting: boolean;
 }
 
 interface ToastContextValue {
@@ -64,14 +65,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     delete timersRef.current[id];
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 5000): number => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 3500): number => {
     const id = ++toastIdCounter;
-    setToasts(prev => [...prev, { id, message, type, entering: true }]);
+    setToasts(prev => [...prev, { id, message, type, entering: true, exiting: false }]);
     requestAnimationFrame(() => {
       setToasts(prev => prev.map(t => t.id === id ? { ...t, entering: false } : t));
     });
     if (duration > 0) {
-      timersRef.current[id] = setTimeout(() => removeToast(id), duration);
+      const exitMs = 300;
+      timersRef.current[id] = setTimeout(() => {
+        // Start exit animation
+        setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+        // Remove from DOM after animation completes
+        timersRef.current[id] = setTimeout(() => removeToast(id), exitMs);
+      }, duration);
     }
     return id;
   }, [removeToast]);
@@ -110,9 +117,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               padding: '14px 16px',
               background: config.bg,
               borderLeft: `2px solid ${config.border}`,
-              opacity: toast.entering ? 0 : 1,
-              transform: toast.entering ? 'translateY(8px)' : 'translateY(0)',
-              transition: 'opacity 500ms var(--ease-lux), transform 500ms var(--ease-lux)',
+              opacity: toast.exiting ? 0 : toast.entering ? 0 : 1,
+              transform: toast.exiting ? 'translateY(-4px)' : toast.entering ? 'translateY(8px)' : 'translateY(0)',
+              transition: 'opacity 300ms var(--ease-lux), transform 300ms var(--ease-lux)',
             }}>
               <Icon size={16} strokeWidth={1.5} style={{ color: config.text, flexShrink: 0, marginTop: '1px' }} />
               <span style={{ flex: 1, fontSize: '0.8rem', color: config.text, lineHeight: 1.5 }}>

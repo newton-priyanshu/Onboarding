@@ -241,7 +241,7 @@ button:focus-visible,
   outline: none;
   outline-offset: 0;
   box-shadow: none;
-  height: 48px;
+  height: 56px;
 }
 
 .lux-input::placeholder, .lux-textarea::placeholder {
@@ -567,6 +567,21 @@ button:focus-visible,
 
 @media (max-width: 768px) {
   .lux-section { padding: 4rem 0; }
+}
+
+/* ================================================
+   RESPONSIVE — Worksheet List on Small Screens
+   ================================================ */
+
+@media (max-width: 640px) {
+  .phase-ws-row {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    padding: 1rem 0 !important;
+  }
+  .phase-ws-title {
+    font-size: 0.78rem !important;
+  }
 }
 
 /* Reduced motion */

@@ -45,6 +45,7 @@ export default function PhaseWorksheetList({ worksheets, statuses }: PhaseWorksh
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(ws.path); } }}
               role="button" tabIndex={0}
               aria-label={`Open worksheet: ${ws.title}`}
+            className="phase-ws-row"
             style={{
               display: 'flex', alignItems: 'center', gap: '1rem',
               padding: '1.25rem 0',
@@ -62,7 +63,7 @@ export default function PhaseWorksheetList({ worksheets, statuses }: PhaseWorksh
             </div>
             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                <span className="phase-ws-title" style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                   W{ws.num}: {ws.title}
                 </span>
                 <ReviewerBadge worksheetId={ws.id} />

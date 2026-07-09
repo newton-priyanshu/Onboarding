@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAutoSave, loadWorksheetData, getOAuthName } from './useAutoSave';
+import { useToast } from '../components/Toast';
 import { supabase } from '../api/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -183,20 +184,36 @@ export function useWorksheet({
     return true;
   }, [data, requiredFields]);
 
+  const showToast = useToast().showToast;
+
   // ── Submit ──────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     setSubmitError('');
     if (!validate()) return;
     setSubmitting(true);
-    const submitData = {
-      ...data,
-      status: 'submitted',
-      dateSubmitted: new Date().toLocaleDateString('en-IN'),
-    };
-    setData(submitData);
-    await flushSave(submitData);
-    setSubmitting(false);
-  }, [data, validate, flushSave]);
+    try {
+      const wasRevision = data._savedReviewStatus === 'needs_revision';
+      const submitData = {
+        ...data,
+        status: 'submitted',
+        dateSubmitted: new Date().toLocaleDateString('en-IN'),
+      };
+      setData(submitData);
+      await flushSave(submitData);
+      showToast(
+        wasRevision
+          ? 'Your revised worksheet has been submitted for re-review.'
+          : 'Your worksheet has been submitted for review.',
+        'success'
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Submission failed';
+      setSubmitError(message);
+      showToast('Submission failed. Please try again.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [data, validate, flushSave, showToast]);
 
   // ── Derived view states ─────────────────────────────────────────
   const isApproved = loaded && data._savedReviewStatus === 'approved';

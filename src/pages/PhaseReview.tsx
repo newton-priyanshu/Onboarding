@@ -7,6 +7,7 @@ import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO, PHASE_LABELS, type WorksheetSubmi
 import ReviewContent from '../components/ReviewContent';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { checkAndPromote } from '../hooks/useAutoPromote';
+import { useToast } from '../components/Toast';
 import { t } from '../config/theme';
 
 interface ReviewParams {
@@ -38,6 +39,7 @@ export default function PhaseReview() {
   const phaseNum = params.phaseNum;
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [instructor, setInstructor] = useState<UserProfile | null>(null);
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +127,7 @@ export default function PhaseReview() {
     }
 
     if (allSucceeded) {
+      showToast(`Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved.`, 'success');
       setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved.`);
 
       // Notify the ASSIGNED buddy that the phase has been manager-approved
@@ -146,6 +149,7 @@ export default function PhaseReview() {
       // Check if all phases are now complete → auto-promote
       const result = await checkAndPromote(userId || '');
       if (result.promoted) {
+        showToast(`Phase ${phaseNumber} approved! 🎉 ${result.message}`, 'success');
         setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved. 🎉 ${result.message}`);
       }
 

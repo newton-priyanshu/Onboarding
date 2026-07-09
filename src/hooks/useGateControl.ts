@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useWorksheet } from './useWorksheet';
+import { useToast } from '../components/Toast';
 import { supabase } from '../api/supabase';
 import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
 import type { User } from '@supabase/supabase-js';
@@ -95,6 +96,8 @@ export function useGateControl({
     isBuddyApproved, isApproved, isSubmitted,
   } = ws;
 
+  const showToast = useToast().showToast;
+
   // ── Toggle milestone (shared across all gate controls) ──
   const toggleMilestone = useCallback((index: number) => {
     setData(prev => {
@@ -151,9 +154,10 @@ export function useGateControl({
 
     setSubmitting(true);
     try {
+      const isRevision = data._savedReviewStatus === 'needs_revision';
       const review_status = isBuddyMode
         ? 'buddy_approved'
-        : (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : '');
+        : (isRevision ? 'revision_submitted' : '');
       const d = {
         ...data,
         status: 'Submitted',
@@ -165,11 +169,24 @@ export function useGateControl({
       };
       setData(d);
       await flushSave(d);
+
+      showToast(
+        isBuddyMode
+          ? 'Worksheet approved! The joinee will be notified.'
+          : isRevision
+            ? 'Your revisions have been submitted for re-review.'
+            : 'Gate submitted for review.',
+        'success'
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Submission failed';
+      setSubmitError(message);
+      showToast('Submission failed. Please try again.', 'error');
     } finally {
       submitGuardRef.current = false;
       setSubmitting(false);
     }
-  }, [data, requiredFields, isBuddyMode, user?.id, profile?.full_name, targetUserId, phase, setData, setSubmitError, setSubmitting, flushSave]);
+  }, [data, requiredFields, isBuddyMode, user?.id, profile?.full_name, targetUserId, phase, showToast, setData, setSubmitError, setSubmitting, flushSave]);
 
   return {
     data,

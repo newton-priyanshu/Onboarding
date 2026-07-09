@@ -102,16 +102,16 @@ export default function NotificationBell() {
           position: 'relative',
           padding: '8px',
           background: 'none',
-          border: '1px solid rgba(26, 26, 26, 0.15)',
+          border: '1px solid ' + (open ? t.gd : 'rgba(26, 26, 26, 0.15)'),
           cursor: 'pointer',
-          color: t.ch,
+          color: open ? t.gd : t.ch,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'border-color 200ms var(--ease-lux)',
+          transition: 'border-color 200ms var(--ease-lux), color 200ms var(--ease-lux)',
         }}
-        onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = t.gd; }}
-        onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(26, 26, 26, 0.15)'; }}
+        onMouseOver={e => { if (!open) (e.currentTarget as HTMLButtonElement).style.borderColor = t.gd; }}
+        onMouseOut={e => { if (!open) (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(26, 26, 26, 0.15)'; }}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell size={18} strokeWidth={1.5} />

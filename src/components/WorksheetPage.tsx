@@ -48,6 +48,10 @@ function phaseLabel(phase: string): string {
   if (phase === 'phase-1') return 'Phase 1';
   if (phase === 'phase-2') return 'Phase 2';
   if (phase === 'phase-3') return 'Phase 3';
+  if (phase === 'week-1') return 'Week 1 — Anchor';
+  if (phase === 'week-2') return 'Week 2 — Co-create';
+  if (phase === 'week-3') return 'Week 3 — Co-deliver';
+  if (phase === 'week-4') return 'Week 4 — Independence Review';
   return phase;
 }
 

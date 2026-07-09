@@ -73,9 +73,13 @@ export default function Navbar({ progress }: NavbarProps) {
   const joineeLinks: NavLink[] = (role === 'new_joinee' || role === 'lab_instructor') ? [
     { path: '/phase-1', label: 'Phase 1' },
     // Phase 2 and 3 are gated — the phase pages themselves handle the lock check.
-    // Navbar always shows them as navigable; the phase page will redirect if locked.
     { path: '/phase-2', label: 'Phase 2' },
     { path: '/phase-3', label: 'Phase 3' },
+    // FTP Week links — always visible for joinees
+    { path: '/week-1', label: 'Wk 1' },
+    { path: '/week-2', label: 'Wk 2' },
+    { path: '/week-3', label: 'Wk 3' },
+    { path: '/week-4', label: 'Wk 4' },
   ] : [];
 
   const allLinks: NavLink[] = [...roleLinks, ...baseLinks, ...joineeLinks];

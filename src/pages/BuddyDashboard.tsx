@@ -23,6 +23,11 @@ const GATE_INFO: Record<number, GATE_INFO_ENTRY> = {
   1: { gateId: 'gc1', regularSheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'], label: 'Gate Pass 1 — Phase 1' },
   2: { gateId: 'gc2', regularSheets: ['p2_w1','p2_w2','p2_w3','p2_w4'], label: 'Gate Pass 2 — Phase 2' },
   3: { gateId: 'gc3', regularSheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'], label: 'Gate Pass 3 — Phase 3' },
+  // FTP Artifact Gates
+  4: { gateId: 'w1_g1', regularSheets: ['p1_w5','p1_w3','w1_o1','w1_e1','w1_o2'], label: 'Gate 1 — Anchor Artifacts' },
+  5: { gateId: 'w2_g1', regularSheets: ['w2_e1','w2_c3','w2_d2','w2_b1','w2_o1','p1_w7'], label: 'Gate 2 — Co-create Artifacts' },
+  6: { gateId: 'w3_g1', regularSheets: ['w3_d1','w3_d2','w3_e1','w3_b1','p2_w2'], label: 'Gate 3 — Co-deliver Artifacts' },
+  7: { gateId: 'w4_g1', regularSheets: ['w4_d2','w4_e1','w4_o1','w4_b1','p3_w1'], label: 'Gate 4 — Independence Artifacts' },
 };
 
 interface TabItem {
@@ -314,8 +319,8 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
           const buddyApproved = instrWorksheets.filter(w => w.review_status === 'buddy_approved');
           const totalApproved = instrWorksheets.filter(w => w.review_status === 'approved').length;
 
-          // Check which phases need a gate pass filled
-          const gatePassNeeded = [1, 2, 3].filter(phaseNum =>
+          // Check which phases/weeks need a gate pass filled
+          const gatePassNeeded = Object.keys(GATE_INFO).map(Number).filter(phaseNum =>
             isPhaseReadyForGate(instr.id, phaseNum) &&
             !isGateFilled(instr.id, GATE_INFO[phaseNum]!.gateId)
           );

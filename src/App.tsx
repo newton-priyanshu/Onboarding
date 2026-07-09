@@ -4,11 +4,16 @@ import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import PhaseAccessGuard from './components/PhaseAccessGuard';
 import { ToastProvider } from './components/Toast';
 import Dashboard from './pages/Dashboard';
 import Phase1 from './pages/Phase1';
 import Phase2 from './pages/Phase2';
 import Phase3 from './pages/Phase3';
+import Week1 from './pages/Week1';
+import Week2 from './pages/Week2';
+import Week3 from './pages/Week3';
+import Week4 from './pages/Week4';
 import Assessment from './pages/Assessment';
 import Stakeholders from './pages/Stakeholders';
 import Login from './pages/Login';
@@ -23,6 +28,7 @@ import BuddyGatePass from './pages/BuddyGatePass';
 import NotFound from './pages/NotFound';
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
+import WeekWorksheetPage from './pages/WeekWorksheetPage';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -82,8 +88,13 @@ export default function App() {
         if (!Component) return null;
         const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
         const routePath = `/${phasePath}/worksheet-${wsNum}`;
+        const phaseNum = data.num;
+        // Only guard Phase 2+ worksheet routes against phase-level access
+        const wrapped = phaseNum > 1
+          ? <PhaseAccessGuard phaseNum={phaseNum}><Component /></PhaseAccessGuard>
+          : <Component />;
         return (
-          <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Component /></ProtectedRoute>} />
+          <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>{wrapped}</ProtectedRoute>} />
         );
       })
   });
@@ -124,6 +135,17 @@ export default function App() {
                 <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
                 <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
 
+                {/* FTP Week Routes */}
+                <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week1 /></ProtectedRoute>} />
+                <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week2 /></ProtectedRoute>} />
+                <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week3 /></ProtectedRoute>} />
+                <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week4 /></ProtectedRoute>} />
+                {/* FTP Week Worksheet Routes */}
+                <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+                <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+                <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+                <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+
                 {/* Dynamic Worksheet Routes */}
                 {worksheetRoutes}
 
@@ -138,15 +160,15 @@ export default function App() {
 
             <footer style={{
               textAlign: 'center',
-              padding: '2rem 1rem',
+              padding: '1.5rem 1rem',
               borderTop: '1px solid rgba(26, 26, 26, 0.15)',
               fontFamily: 'var(--font-body)',
-              fontSize: '0.75rem',
-              letterSpacing: '0.1em',
+              fontSize: '0.7rem',
+              letterSpacing: '0.08em',
               color: 'var(--color-warm-grey)',
             }}>
-              <span className="lux-line" style={{ margin: '0 auto 1rem' }} />
-              <p>Newton School of Technology · Bengaluru Campus · Faculty Onboarding Portal</p>
+              <span className="lux-line" style={{ margin: '0 auto 0.75rem' }} />
+              <p>Newton School of Technology · Bengaluru · Faculty Onboarding Portal</p>
             </footer>
           </ErrorBoundaryRouteResetter>
         </ToastProvider>

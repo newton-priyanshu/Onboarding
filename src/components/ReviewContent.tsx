@@ -536,7 +536,194 @@ export const FIELD_SECTIONS: Record<string, SectionLayout> = {
     }
   },
 
-  // Gate Controls
+  // ─── FTP Week 1 — Anchor ────────────────────────────
+  w1_o1: {
+    sections: ['About You', 'Access Verification', 'Buddy & Comms', 'Logistics Checklist'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Access Verification': ['accessLog'],
+      'Buddy & Comms': ['buddyConfirmed', 'commsChannelsJoined'],
+      'Logistics Checklist': ['logisticsComplete'],
+    }
+  },
+  w1_e1: {
+    sections: ['About You', 'Pre-read Completion', 'Reflection'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Pre-read Completion': ['v3Verified'],
+      'Reflection': ['contestReflection'],
+    }
+  },
+  w1_o2: {
+    sections: ['About You', 'Scavenger Sheet', 'Verification'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Scavenger Sheet': ['scavengerAnswers', 'playbookFluency'],
+      'Verification': ['employeeSignature'],
+    }
+  },
+
+  // ─── FTP Week 2 — Co-create ─────────────────────────
+  w2_e1: {
+    sections: ['About You', 'Session Verification', 'Blooms Tagging', 'Reflection'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Session Verification': ['sessionAttended'],
+      'Blooms Tagging': ['taggingSheet', 'taggingInsights'],
+      'Reflection': ['bloomsReflection'],
+    }
+  },
+  w2_c3: {
+    sections: ['About You', 'Question Set', 'Peer Review', 'Course Lead Feedback'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Question Set': ['mcqCreated', 'codingCreated', 'questionQuality'],
+      'Peer Review': ['peerReviewed', 'peerReviewer', 'peerFeedbackGiven'],
+      'Course Lead Feedback': ['courseLeadFeedback', 'revisionApplied'],
+    }
+  },
+  w2_d2: {
+    sections: ['About You', 'Micro-Teach Session', 'Peer Feedback', 'Self Reflection'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Micro-Teach Session': ['microTeachDate', 'segmentTopic', 'peerAudience'],
+      'Peer Feedback': ['rubricLiteScores', 'peerFeedbackSummary'],
+      'Self Reflection': ['microTeachReflection', 'improvementFocus'],
+    }
+  },
+  w2_b1: {
+    sections: ['About You', 'Discipline Session', 'Customisation Sheet', 'Verification'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Discipline Session': ['disciplineKeyTakeaways', 'mirrorMoment'],
+      'Customisation Sheet': ['customisationDraft', 'customisationRules'],
+      'Verification': ['employeeSignature'],
+    }
+  },
+  w2_o1: {
+    sections: ['About You', 'Invigilation Training', 'Scenario Exercise', 'Verification'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Invigilation Training': ['invigilationPolicyReviewed'],
+      'Scenario Exercise': ['scenarioSheet', 'scenarioReflection'],
+      'Verification': ['employeeSignature'],
+    }
+  },
+
+  // ─── FTP Week 3 — Co-deliver ────────────────────────
+  w3_d1: {
+    sections: ['About You', 'Tech Proficiency', 'Hands-On Check', 'Verification'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Tech Proficiency': ['projectorTested', 'pentabTested', 'portalJoined', 'recordingTested'],
+      'Hands-On Check': ['techConfidence', 'techGaps'],
+      'Verification': ['employeeSignature'],
+    }
+  },
+  w3_d2: {
+    sections: ['About You', 'Planning Exercise', 'Time Management'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Planning Exercise': ['tenMinPlan', 'pacingStrategy'],
+      'Time Management': ['transitionPlan', 'timeboxApproach'],
+    }
+  },
+  w3_e1: {
+    sections: ['About You', 'Mini-Contest Design', 'Bloom Distribution', 'Peer Review'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Mini-Contest Design': ['contestTitle', 'questions'],
+      'Bloom Distribution': ['bloomBalance', 'difficultyMix'],
+      'Peer Review': ['peerReviewer', 'peerFeedback', 'revisionsApplied'],
+    }
+  },
+  w3_b1: {
+    sections: ['About You', 'Dialoguing Exercise', 'Reflection'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Dialoguing Exercise': ['atRiskRoleplay', 'challengedRuleRoleplay', 'basicQuestionRoleplay'],
+      'Reflection': ['dialoguingReflection', 'witnessedCommitment'],
+    }
+  },
+
+  // ─── FTP Week 1 Gate — Anchor Artifact Review ──────
+  w1_g1: {
+    sections: ['About You', 'Required Artifacts', 'Notes'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Required Artifacts': ['artifacts'],
+      'Notes': ['buddyNotes'],
+    }
+  },
+
+  // ─── FTP Week 2 Gate — Co-create Artifact Review ────
+  w2_g1: {
+    sections: ['About You', 'Required Artifacts', 'Notes'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Required Artifacts': ['artifacts'],
+      'Notes': ['buddyNotes'],
+    }
+  },
+
+  // ─── FTP Week 3 Gate — Co-deliver Artifact Review ────
+  w3_g1: {
+    sections: ['About You', 'Required Artifacts', 'Notes'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Required Artifacts': ['artifacts'],
+      'Notes': ['buddyNotes'],
+    }
+  },
+
+  // ─── FTP Week 4 Gate — Independence Artifact Review ──
+  w4_g1: {
+    sections: ['About You', 'Required Artifacts', 'Notes'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Required Artifacts': ['artifacts'],
+      'Notes': ['buddyNotes'],
+    }
+  },
+
+  // ─── FTP Week 4 — Independence ──────────────────────
+  w4_d2: {
+    sections: ['About You', 'Mock/Live Session', 'Edge Case Scenarios', 'Observer Notes'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Mock/Live Session': ['sessionType', 'sessionDate', 'coTeachPartner'],
+      'Edge Case Scenarios': ['lateArrival', 'phoneIncident', 'basicQuestion'],
+      'Observer Notes': ['observerFeedback', 'improvementAreas'],
+    }
+  },
+  w4_e1: {
+    sections: ['About You', 'Analysis Dataset', 'Predictions vs Actuals', 'Calibration Note'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Analysis Dataset': ['contestDatasetIdentified', 'solveRatesPredicted'],
+      'Predictions vs Actuals': ['actualSolveRates', 'calibrationAnalysis'],
+      'Calibration Note': ['calibrationNote'],
+    }
+  },
+  w4_o1: {
+    sections: ['About You', 'Pre-Semester Checklist', 'Course Lead Sign-off'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Pre-Semester Checklist': ['checklistItems'],
+      'Course Lead Sign-off': ['courseLeadSignOff', 'checklistNotes'],
+    }
+  },
+  w4_b1: {
+    sections: ['About You', 'Reflection Cycle', 'Commitment Ceremony', 'Sign-off'],
+    sectionMap: {
+      'About You': ['employeeName'],
+      'Reflection Cycle': ['reflectionOne', 'reflectionGrowth'],
+      'Commitment Ceremony': ['firstSemesterCommitment'],
+      'Sign-off': ['employeeSignature', 'facilitatorSignature'],
+    }
+  },
+
+  // ─── Gate Controls ──────────────────────────────────
   gc1: {
     sections: ['About You', 'Self Assessment', 'Milestone Outcomes', 'Manager Assessment', 'Sign-Off'],
     sectionMap: {
