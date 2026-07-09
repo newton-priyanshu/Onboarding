@@ -44,11 +44,31 @@ export default function WorksheetReview() {
   const isOnboardingLead = profile?.role === 'onboarding_lead';
   const isReviewer = isBuddy || isManager || isOnboardingLead;
 
-  // Buddy can approve ANY worksheet → buddy_approved
+  // ── Ownership check: buddy can only approve their assigned joinees ──
+  const [isAssignedBuddy, setIsAssignedBuddy] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!isBuddy || !userId) { setIsAssignedBuddy(true); return; }
+    supabase
+      .from('user_profiles')
+      .select('assigned_buddy_id')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => {
+        const assigned = (data as { assigned_buddy_id: string | null } | null)?.assigned_buddy_id;
+        // When no buddy is assigned, allow any buddy to act (fallback)
+        if (assigned === null) { setIsAssignedBuddy(true); return; }
+        // When another buddy is assigned, deny
+        if (assigned && assigned !== profile?.id) { setIsAssignedBuddy(false); return; }
+        // Same buddy or no assignment — allow
+        setIsAssignedBuddy(true);
+      }, () => setIsAssignedBuddy(true)); // On error, allow (fail open for safety)
+  }, [isBuddy, userId, profile?.id]);
+
+  // Buddy can approve their assigned joinees' worksheets → buddy_approved
   // Manager can only approve at phase-level (via PhaseReview page) but can VIEW individual worksheets
   // Onboarding Lead can only VIEW (read-only)
-  const canApprove = isBuddy;
-  const isReadOnly = isOnboardingLead || (isManager && submission?.review_status !== 'buddy_approved');
+  const canApprove = isBuddy && isAssignedBuddy !== false;
+  const isReadOnly = isOnboardingLead || (isManager && submission?.review_status !== 'buddy_approved') || (isBuddy && isAssignedBuddy === false);
 
   useEffect(() => {
     if (isReviewer && userId && worksheetId) loadData();
@@ -256,7 +276,7 @@ export default function WorksheetReview() {
   const isPending = reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted';
   const isNeedsRevision = reviewStatus === 'needs_revision';
 
-  const canBuddyAct = canApprove && isPending;
+  const canBuddyAct = canApprove && isPending && isAssignedBuddy !== null;
 
   function StatusBadge({ status }: { status: string }) {
     if (status === 'approved') return <span className="lux-badge" style={{ borderColor: t.success, color: t.success, fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;

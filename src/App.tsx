@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import PhaseAccessGuard from './components/PhaseAccessGuard';
+import WeekAccessGuard from './components/WeekAccessGuard';
 import { ToastProvider } from './components/Toast';
 import Dashboard from './pages/Dashboard';
 import Phase1 from './pages/Phase1';
@@ -108,16 +109,16 @@ function AppRoutes() {
         <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
         <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
 
-        {/* FTP Week Routes */}
+        {/* FTP Week Routes — Week 1 always open, weeks 2+ gated behind prior week completion */}
         <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week1 /></ProtectedRoute>} />
-        <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week2 /></ProtectedRoute>} />
-        <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week3 /></ProtectedRoute>} />
-        <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week4 /></ProtectedRoute>} />
-        {/* FTP Week Worksheet Routes */}
+        <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><Week2 /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><Week3 /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><Week4 /></WeekAccessGuard></ProtectedRoute>} />
+        {/* FTP Week Worksheet Routes — also gated by week access */}
         <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-        <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-        <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-        <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+        <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekWorksheetPage /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekWorksheetPage /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekWorksheetPage /></WeekAccessGuard></ProtectedRoute>} />
 
         {/* Dynamic Worksheet Routes */}
         {worksheetRoutes}

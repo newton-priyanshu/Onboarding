@@ -133,24 +133,29 @@ describe('Data integrity: PHASE_WORKSHEETS_MAP', () => {
     });
   });
 
-  it('Phase 1 has worksheets from FTP weeks and legacy Phase 1', () => {
+  it('Phase 1 has FTP Week 1 worksheets and legacy Phase 1', () => {
     const ids = PHASE_WORKSHEETS_MAP[1] || [];
-    // FTP week worksheets
+    // FTP Week 1 worksheets (Anchor phase — always accessible)
+    expect(ids).toContain('p1_w5');
+    expect(ids).toContain('p1_w6');
+    expect(ids).toContain('p1_w3');
     expect(ids).toContain('w1_o1');
-    expect(ids).toContain('w2_e1');
-    expect(ids).toContain('w3_d1');
-    expect(ids).toContain('w4_d2');
+    expect(ids).toContain('w1_e1');
+    expect(ids).toContain('w1_o2');
+    expect(ids).toContain('w1_g1');
     // Legacy Phase 1 worksheets
     expect(ids).toContain('p1_w1');
     expect(ids).toContain('p1_w2');
     expect(ids).toContain('p1_w4');
     expect(ids).toContain('p1_w8');
     expect(ids).toContain('gc1');
-    // Gate controls
-    expect(ids).toContain('w1_g1');
-    expect(ids).toContain('w2_g1');
-    expect(ids).toContain('w3_g1');
-    expect(ids).toContain('w4_g1');
+    // FTP weeks 2-4 worksheets are gated by WeekAccessGuard, not PHASE_WORKSHEETS_MAP
+    expect(ids).not.toContain('w2_e1');
+    expect(ids).not.toContain('w3_d1');
+    expect(ids).not.toContain('w4_d2');
+    expect(ids).not.toContain('w2_g1');
+    expect(ids).not.toContain('w3_g1');
+    expect(ids).not.toContain('w4_g1');
   });
 
   it('every PHASE_WORKSHEETS_MAP ID has a WORKSHEET_NAMES entry', () => {

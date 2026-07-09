@@ -54,7 +54,7 @@ function sub(
 
 describe('Phase-Level Review Flow', () => {
   const userId = 'joinee-1';
-  const p1Ids = PHASE_WORKSHEETS_MAP[1] || []; // 34 worksheets (FTP weeks + legacy Phase 1)
+  const p1Ids = PHASE_WORKSHEETS_MAP[1] || []; // 12 worksheets (FTP Week 1 + legacy Phase 1)
 
   // ── getPhaseReviewStatus ──────────────────────────────────────
 
@@ -148,10 +148,10 @@ describe('Phase-Level Review Flow', () => {
       expect(p1Result.ready).toBe(true);
 
       const p2Result = getPhaseReviewStatus(2, allSubs, userId);
-      // Some Phase 2 worksheet IDs (p2_w1-p2_w4) are duplicated in Phase 1's FTP weeks,
-      // so buddy_approved submissions from Phase 1 count toward Phase 2 as well.
-      expect(p2Result.ready).toBe(false); // gc2 is still pending_review
-      expect(p2Result.buddyApproved).toBe((PHASE_WORKSHEETS_MAP[2] || []).length - 1);
+      // Phase 2 worksheets are NOT duplicated in Phase 1 anymore (taxonomy reconciled),
+      // so buddy_approved submissions from Phase 1 do NOT count toward Phase 2.
+      expect(p2Result.ready).toBe(false);
+      expect(p2Result.buddyApproved).toBe(0);
     });
   });
 
@@ -216,13 +216,14 @@ describe('Phase-Level Review Flow', () => {
       expect(Object.keys(PHASE_WORKSHEETS_MAP).length).toBe(3);
     });
 
-    it('phase 1 has FTP weeks + legacy worksheets including gate controls', () => {
+    it('phase 1 has FTP Week 1 + legacy worksheets including gate controls', () => {
       const ids = PHASE_WORKSHEETS_MAP[1] || [];
-      // Should include FTP gate worksheets
+      // Should include FTP Week 1 gate (only week 1 gate is in Phase 1)
       expect(ids).toContain('w1_g1');
-      expect(ids).toContain('w2_g1');
-      expect(ids).toContain('w3_g1');
-      expect(ids).toContain('w4_g1');
+      // FTP weeks 2-4 gates are gated by WeekAccessGuard, not PHASE_WORKSHEETS_MAP
+      expect(ids).not.toContain('w2_g1');
+      expect(ids).not.toContain('w3_g1');
+      expect(ids).not.toContain('w4_g1');
       // Should include legacy Phase 1 gate control
       expect(ids).toContain('gc1');
     });
@@ -237,21 +238,21 @@ describe('Phase-Level Review Flow', () => {
       expect(PHASE_WORKSHEETS_MAP[3] || []).toContain('gc3');
     });
 
-    it('total across all phases reflects merged Phase 1 + Phases 2-3', () => {
+    it('total across all phases reflects Phase 1 + Phases 2-3 (no duplicates)', () => {
       const total = [1, 2, 3].reduce((sum, p) => sum + (PHASE_WORKSHEETS_MAP[p] || []).length, 0);
-      // Phase 1: 35 (FTP weeks + legacy), Phase 2: 5, Phase 3: 6 = 46
+      // Phase 1: 12 (FTP Week 1 + legacy), Phase 2: 5, Phase 3: 6 = 23
       const p1Length = (PHASE_WORKSHEETS_MAP[1] || []).length;
       const p2Length = (PHASE_WORKSHEETS_MAP[2] || []).length;
       const p3Length = (PHASE_WORKSHEETS_MAP[3] || []).length;
       expect(total).toBe(p1Length + p2Length + p3Length);
     });
 
-    it('some worksheet IDs may be shared across phases (FTP cross-refs)', () => {
-      // Worksheets like p2_w1, p3_w1, p3_w5, etc. appear in both Phase 1 (FTP weeks) and their original phase
+it('no worksheet IDs are shared across phases (taxonomy reconciled)', () => {
+      // After taxonomy reconciliation, FTP weeks 2-4 worksheets removed from Phase 1
+      // so no IDs should appear in multiple phases
       const allIds = [1, 2, 3].flatMap(p => PHASE_WORKSHEETS_MAP[p] || []);
       const uniqueIds = new Set(allIds);
-      // Some IDs are intentionally duplicated across phases (FTP curriculum cross-references)
-      expect(uniqueIds.size).toBeLessThan(allIds.length);
+      expect(uniqueIds.size).toBe(allIds.length);
     });
   });
 });

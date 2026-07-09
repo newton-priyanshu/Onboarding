@@ -179,6 +179,8 @@ export function useAutoSave(
         } else {
           // Exhausted retries — reset retry count so future saves can retry again
           retryCountRef.current = 0;
+          // Rethrow so callers (flushSave, handleSubmit) can catch and show proper errors
+          throw err;
         }
       }
     }
