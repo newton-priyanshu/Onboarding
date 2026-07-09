@@ -5,10 +5,13 @@ import { supabase } from '../api/supabase';
 import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
   CheckCircle2, Clock, AlertCircle, FileText, LucideIcon,
-  Anchor, Layers, Users, Flag,
 } from 'lucide-react';
 import { t } from '../config/theme';
-import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission } from '../config/worksheetConfig';
+import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
+
+/** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
+const PHASE1_WS_IDS = [...new Set(PHASE_WORKSHEETS_MAP[1])];
 
 interface PhaseInfo {
   num: number;
@@ -21,27 +24,12 @@ interface PhaseInfo {
 }
 
 const phases: PhaseInfo[] = [
-  { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes.', icon: BookOpen, path: '/phase-1', worksheets: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8'] },
+  { num: 1, title: 'Orientation & Understanding', days: 'Days 1–30', description: 'People, culture, systems, and processes across four weekly focus areas.', icon: BookOpen, path: '/phase-1', worksheets: PHASE1_WS_IDS },
   { num: 2, title: 'Contribution & Guided Teaching', days: 'Days 31–60', description: 'Teach, create content, and develop your craft.', icon: Target, path: '/phase-2', worksheets: ['p2_w1','p2_w2','p2_w3','p2_w4'] },
   { num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90', description: 'Teach independently and propose improvements.', icon: Sparkles, path: '/phase-3', worksheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'] },
 ];
 
-interface WeekInfo {
-  num: number;
-  title: string;
-  subtitle: string;
-  theme: string;
-  icon: LucideIcon;
-  path: string;
-  worksheets: string[];
-}
 
-const weeks: WeekInfo[] = [
-  { num: 1, title: 'Anchor', subtitle: 'Observe begins', theme: 'Context before content — functional means operational', icon: Anchor, path: '/week-1', worksheets: ['p1_w5','p1_w6','p1_w3','w1_o1','w1_e1','w1_o2'] },
-  { num: 2, title: 'Co-create', subtitle: 'Observe deepens', theme: 'Content creation to the zero-error standard', icon: Layers, path: '/week-2', worksheets: ['p2_w3','p1_w7','p1_w6','w2_e1','w2_c3','w2_d2','w2_b1','w2_o1'] },
-  { num: 3, title: 'Co-deliver', subtitle: 'Deliver under observation', theme: 'The rubric enters the room', icon: Users, path: '/week-3', worksheets: ['p2_w1','p2_w2','p2_w4','p3_w5','w3_d1','w3_d2','w3_e1','w3_b1'] },
-  { num: 4, title: 'Independence Review', subtitle: 'Co-deliver closes', theme: 'Feedback incorporated, real conditions rehearsed, release decided', icon: Flag, path: '/week-4', worksheets: ['p3_w1','p3_w5','w4_d2','w4_e1','w4_o1','w4_b1'] },
-];
 
 interface StatusInfo {
   status: string;
@@ -98,12 +86,9 @@ export default function Dashboard() {
 
   const totalApproved = submissions.filter(s => s.review_status === 'approved').length;
 
-  // Count total unique worksheets
-  const allWorksheetIds = new Set([
-    ...phases.flatMap(p => p.worksheets),
-    ...weeks.flatMap(w => w.worksheets),
-  ]);
-  const totalWorksheets = allWorksheetIds.size;
+  // Count all unique worksheets across phases
+  const allPhaseWorksheetIds = new Set(phases.flatMap(p => p.worksheets));
+  const totalWorksheets = allPhaseWorksheetIds.size;
 
   // Phase gating
   const phase1Approved = isPhaseApproved(user?.id || '', 1, submissions);
@@ -120,6 +105,61 @@ export default function Dashboard() {
     if (phaseNum === 3 && !phase2Approved) return 'Complete Phase 2 to unlock';
     return '';
   };
+
+  if (loading) {
+    return (
+      <div className="lux-section">
+        <div className="lux-container" aria-label="Loading dashboard">
+          {/* Hero skeleton */}
+          <div style={{ marginBottom: '4rem', maxWidth: '800px' }}>
+            <div className="lux-line lux-line-gold" style={{ marginBottom: '1.25rem' }} />
+            <Skeleton width="280px" height="0.6rem" style={{ marginBottom: '1rem' }} />
+            <Skeleton width="70%" height="2.8rem" style={{ marginBottom: '0.5rem' }} />
+            <Skeleton width="45%" height="2.8rem" style={{ marginBottom: '1.25rem' }} />
+            <div style={{ marginBottom: '2rem' }}><SkeletonBlock lines={2} width="500px" /></div>
+            {/* Status legend badges */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <Skeleton key={i} width="90px" height="24px" />
+              ))}
+            </div>
+          </div>
+          {/* Overall progress skeleton */}
+          <div style={{
+            marginBottom: '3.5rem', padding: '1.5rem 0',
+            borderTop: '1px solid rgba(26, 26, 26, 0.12)',
+            borderBottom: '1px solid rgba(26, 26, 26, 0.12)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              <Skeleton width="120px" height="0.65rem" />
+              <Skeleton width="350px" height="2px" />
+              <Skeleton width="50px" height="0.8rem" />
+            </div>
+          </div>
+          {/* Phase card skeletons */}
+          <section>
+            <Skeleton width="250px" height="1.5rem" style={{ marginBottom: '0.5rem' }} />
+            <Skeleton width="350px" height="0.8rem" style={{ marginBottom: '2rem' }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <SkeletonCard count={3} />
+            </div>
+          </section>
+          {/* Quick links skeleton */}
+          <section style={{ marginTop: '4rem', borderTop: '1px solid rgba(26, 26, 26, 0.12)', paddingTop: '2rem' }}>
+            <Skeleton width="100px" height="0.65rem" style={{ marginBottom: '1.25rem' }} />
+            <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ minWidth: '160px', borderTop: '1px solid var(--color-charcoal)', padding: '1rem 0' }}>
+                  <Skeleton width="80%" height="0.85rem" style={{ marginBottom: '0.35rem' }} />
+                  <Skeleton width="60%" height="0.7rem" />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="lux-section">
@@ -157,26 +197,24 @@ export default function Dashboard() {
           </p>
 
           {/* Status Legend */}
-          {!loading && (
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              {([
-                { label: 'Not Started', color: t.wg },
-                { label: 'In Progress', color: t.ch },
-                { label: 'Buddy Approved', color: t.purple },
-                { label: 'Under Review', color: t.pending },
-                { label: 'Reviewed', color: t.success },
-                { label: 'Needs Revision', color: t.error },
-              ] as { label: string; color: string }[]).map(b => (
-                <span key={b.label} className="lux-badge lux-badge-light" style={{
-                  borderColor: b.color, color: b.color, fontSize: '0.55rem',
-                }}>{b.label}</span>
-              ))}
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            {([
+              { label: 'Not Started', color: t.wg },
+              { label: 'In Progress', color: t.ch },
+              { label: 'Buddy Approved', color: t.purple },
+              { label: 'Under Review', color: t.pending },
+              { label: 'Reviewed', color: t.success },
+              { label: 'Needs Revision', color: t.error },
+            ] as { label: string; color: string }[]).map(b => (
+              <span key={b.label} className="lux-badge lux-badge-light" style={{
+                borderColor: b.color, color: b.color, fontSize: '0.55rem',
+              }}>{b.label}</span>
+            ))}
+          </div>
         </div>
 
         {/* Overall Progress */}
-        {!loading && submissions.length > 0 && (
+        {submissions.length > 0 && (
           <div style={{
             marginBottom: '3.5rem', padding: '1.5rem 0',
             borderTop: '1px solid rgba(26, 26, 26, 0.12)',
@@ -255,7 +293,7 @@ export default function Dashboard() {
                           {phase.worksheets.length} worksheets
                         </span>
                         {isLocked && (
-                          <span className="lux-badge" style={{ fontSize: '0.55rem', borderColor: '#9E9E9E', color: '#9E9E9E' }}>
+                          <span className="lux-badge" style={{ fontSize: '0.55rem', borderColor: t.wg, color: t.wg }}>
                             <Lock size={10} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: '4px' }} />Locked
                           </span>
                         )}
@@ -287,8 +325,26 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Worksheet List */}
-                  {!loading && !isLocked && (
+                  {/* Worksheet List — Phase 1 is too large to expand; show link instead */}
+                  {!loading && !isLocked && phase.num === 1 && (
+                    <div style={{ marginTop: '1rem', paddingLeft: 'calc(52px + 1.25rem)' }}>
+                      <Link to="/phase-1" style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '10px 0 10px 12px',
+                        textDecoration: 'none',
+                        fontFamily: t.body, fontSize: '0.8rem', color: t.gd,
+                        transition: 'opacity 200ms var(--ease-lux)',
+                      }}
+                        onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
+                        onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
+                      >
+                        <ArrowRight size={13} strokeWidth={1.5} />
+                        <span>View all {phase.worksheets.length} worksheets in Phase 1</span>
+                      </Link>
+                    </div>
+                  )}
+                  {/* Phase 2 & 3 — expanded worksheet list */}
+                  {!loading && !isLocked && phase.num > 1 && (
                     <div style={{ marginTop: '1rem', paddingLeft: 'calc(52px + 1.25rem)' }}>
                       {phase.worksheets.map((wsId, i) => {
                         const ws = getWorksheetStatus(wsId);
@@ -328,78 +384,6 @@ export default function Dashboard() {
             })}
           </div>
         </section>
-
-        {/* FTP Week Roadmap */}
-        <section style={{ marginTop: '4rem', borderTop: '1px solid var(--color-charcoal)', paddingTop: '2rem' }}>
-          <div style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '0.5rem' }}>
-              FTP Curriculum <em style={{ fontStyle: 'italic', color: t.gd }}>Weeks</em>
-            </h2>
-            <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
-              Four-week faculty training program — Anchor → Independence
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-            {weeks.map((week, idx) => {
-              const Icon = week.icon;
-              const progress = getPhaseProgress(week.worksheets);
-              return (
-                <div key={week.num}
-                  onClick={() => navigate(week.path)}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(week.path); } }}
-                  role="button" tabIndex={0}
-                  style={{
-                    padding: '1.5rem',
-                    border: '1px solid var(--color-charcoal)',
-                    cursor: 'pointer',
-                    transition: 'all 200ms var(--ease-lux)',
-                    opacity: 0,
-                    animation: `luxFadeIn 0.5s ${idx * 0.1}s forwards`,
-                  }}
-                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(26, 26, 26, 0.03)'; e.currentTarget.style.borderColor = t.gd; }}
-                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-charcoal)'; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                    <div style={{
-                      width: '40px', height: '40px',
-                      border: '1px solid var(--color-charcoal)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <Icon size={20} strokeWidth={1.5} style={{ color: t.ch }} />
-                    </div>
-                    <div>
-                      <span style={{
-                        fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
-                        letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
-                      }}>
-                        Week {week.num}
-                      </span>
-                      <h3 style={{
-                        fontFamily: t.heading, fontSize: '1.2rem', fontWeight: 400,
-                        color: t.ch, margin: 0,
-                      }}>
-                        {week.title} — {week.subtitle}
-                      </h3>
-                    </div>
-                  </div>
-                  <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, lineHeight: 1.5, marginBottom: '8px' }}>
-                    {week.theme}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className="lux-progress" style={{ flex: 1 }}>
-                      <div className="lux-progress-fill" style={{ width: `${progress.pct}%` }} />
-                    </div>
-                    <span style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, color: t.ch }}>
-                      {progress.done}/{progress.total}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
         {/* Quick Links */}
         <section style={{ marginTop: '4rem', borderTop: '1px solid rgba(26, 26, 26, 0.12)', paddingTop: '2rem' }}>
           <h4 style={{
@@ -413,11 +397,7 @@ export default function Dashboard() {
               { to: '/phase-1', label: 'Start Phase 1', desc: 'Begin your orientation' },
               { to: '/phase-2', label: 'Phase 2 Worksheets', desc: 'Teaching & content creation' },
               { to: '/phase-3', label: 'Phase 3 Worksheets', desc: 'Independent teaching' },
-              // FTP Week Quick Links
-              { to: '/week-1', label: 'Week 1 — Anchor', desc: 'Context before content' },
-              { to: '/week-2', label: 'Week 2 — Co-create', desc: 'Zero-error content standard' },
-              { to: '/week-3', label: 'Week 3 — Co-deliver', desc: 'Deliver under observation' },
-              { to: '/week-4', label: 'Week 4 — Independence', desc: 'Release readiness review' },
+
               { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
               { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
               { to: 'https://newton.school/academy', label: 'Help & Guide', desc: 'Faculty onboarding resources' },

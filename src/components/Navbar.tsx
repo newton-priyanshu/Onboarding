@@ -75,11 +75,6 @@ export default function Navbar({ progress }: NavbarProps) {
     // Phase 2 and 3 are gated — the phase pages themselves handle the lock check.
     { path: '/phase-2', label: 'Phase 2' },
     { path: '/phase-3', label: 'Phase 3' },
-    // FTP Week links — always visible for joinees
-    { path: '/week-1', label: 'Wk 1' },
-    { path: '/week-2', label: 'Wk 2' },
-    { path: '/week-3', label: 'Wk 3' },
-    { path: '/week-4', label: 'Wk 4' },
   ] : [];
 
   const allLinks: NavLink[] = [...roleLinks, ...baseLinks, ...joineeLinks];

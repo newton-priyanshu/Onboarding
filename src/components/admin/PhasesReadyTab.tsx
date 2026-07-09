@@ -42,7 +42,7 @@ export default function PhasesReadyTab({ allWorksheets, instructors, isManager }
           borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
           opacity: 0, animation: `luxFadeIn 0.4s ${idx * 0.04}s forwards`,
         }}>
-          <div style={{ width: '40px', height: '40px', border: '1px solid #381E72', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: '40px', height: '40px', border: '1px solid ' + t.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Shield size={18} strokeWidth={1.5} style={{ color: t.purple }} />
           </div>
           <div style={{ flex: 1 }}>
@@ -61,7 +61,7 @@ export default function PhasesReadyTab({ allWorksheets, instructors, isManager }
             </button>
           ) : (
             <button onClick={() => navigate(`/onboarding-lead/review-phase/${entry.userId}/${entry.phaseNum}`)}
-              style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid #0369A1', background: 'transparent', color: '#0369A1', cursor: 'pointer' }}>
+              style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '8px 20px', border: '1px solid ' + t.info, background: 'transparent', color: t.info, cursor: 'pointer' }}>
               <Eye size={12} strokeWidth={1.5} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> View Phase
             </button>
           )}

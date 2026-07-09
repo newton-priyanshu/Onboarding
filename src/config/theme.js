@@ -15,4 +15,5 @@ export const t = {
   pending: 'var(--color-pending)',
   warning: 'var(--color-warning)',
   purple: 'var(--color-purple)',
+  info: 'var(--color-info)',
 };

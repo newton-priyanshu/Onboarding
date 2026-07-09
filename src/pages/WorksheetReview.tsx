@@ -302,7 +302,7 @@ export default function WorksheetReview() {
                 <div style={{
                   marginTop: '12px', padding: '8px 12px',
                   background: 'rgba(3, 105, 161, 0.06)', border: '1px solid #7DD3FC',
-                  fontFamily: t.body, fontSize: '0.7rem', color: '#0369A1',
+                  fontFamily: t.body, fontSize: '0.7rem', color: t.info,
                 }}>
                   {isOnboardingLead
                     ? '🔍 Read-only view — Onboarding Leads can monitor but not approve submissions.'
@@ -328,15 +328,15 @@ export default function WorksheetReview() {
                   <div key={idx} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
                     <div style={{
                       width: '24px', height: '24px', border: '1px solid', flexShrink: 0, zIndex: 1,
-                      borderColor: isApprove ? t.success : '#C62828',
+                      borderColor: isApprove ? t.success : t.error,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'var(--color-alabaster)',
                     }}>
-                      <div style={{ width: '8px', height: '8px', background: isApprove ? t.success : '#C62828' }} />
+                      <div style={{ width: '8px', height: '8px', background: isApprove ? t.success : t.error }} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: isApprove ? t.success : '#C62828' }}>
+                        <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: isApprove ? t.success : t.error }}>
                           {entry.action === 'buddy_approved' ? 'Buddy Approved' : isApprove ? 'Approved' : 'Revision Requested'}
                         </span>
                         {entry.reviewer_name && (

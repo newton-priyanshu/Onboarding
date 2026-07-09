@@ -242,7 +242,7 @@ export default function PhaseReview() {
               </p>
 
               {isOnboardingLead && (
-                <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(3, 105, 161, 0.06)', border: '1px solid #7DD3FC', fontFamily: t.body, fontSize: '0.7rem', color: '#0369A1' }}>
+                <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(3, 105, 161, 0.06)', border: '1px solid #7DD3FC', fontFamily: t.body, fontSize: '0.7rem', color: t.info }}>
                   🔍 Read-only monitoring view — Onboarding Leads cannot approve phases.
                 </div>
               )}

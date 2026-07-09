@@ -160,15 +160,16 @@ export default function App() {
 
             <footer style={{
               textAlign: 'center',
-              padding: '1.5rem 1rem',
-              borderTop: '1px solid rgba(26, 26, 26, 0.15)',
+              padding: '2rem 1rem',
+              borderTop: '1px solid rgba(26, 26, 26, 0.12)',
               fontFamily: 'var(--font-body)',
-              fontSize: '0.7rem',
-              letterSpacing: '0.08em',
+              fontSize: '0.75rem',
+              lineHeight: 1.6,
               color: 'var(--color-warm-grey)',
             }}>
-              <span className="lux-line" style={{ margin: '0 auto 0.75rem' }} />
-              <p>Newton School of Technology · Bengaluru · Faculty Onboarding Portal</p>
+              <span className="lux-line" style={{ margin: '0 auto 1rem' }} />
+              <p>Newton School of Technology <span style={{ opacity: 0.3 }}>·</span> Bengaluru</p>
+              <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Portal</p>
             </footer>
           </ErrorBoundaryRouteResetter>
         </ToastProvider>

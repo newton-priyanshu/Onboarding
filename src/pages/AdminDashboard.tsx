@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                             <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + (instr.assigned_lead_id ? t.purple : t.warning), color: instr.assigned_lead_id ? t.purple : t.warning }}>
                               {instr.assigned_lead_id ? 'Manager Assigned' : 'No Manager'}
                             </span>
-                            <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + (instr.assigned_buddy_id ? '#0369A1' : t.warning), color: instr.assigned_buddy_id ? '#0369A1' : t.warning }}>
+                            <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + (instr.assigned_buddy_id ? t.info : t.warning), color: instr.assigned_buddy_id ? t.info : t.warning }}>
                               {instr.assigned_buddy_id ? 'Buddy Assigned' : 'No Buddy'}
                             </span>
                           </div>
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
                                     </button>
                                   )}
                                   {phaseReady && isOnboardingLead && (
-                                    <span style={{ fontFamily: t.body, fontSize: '0.5rem', marginTop: '4px', display: 'block', color: '#0369A1' }}>
+                                    <span style={{ fontFamily: t.body, fontSize: '0.5rem', marginTop: '4px', display: 'block', color: t.info }}>
                                       ✓ Phase ready
                                     </span>
                                   )}

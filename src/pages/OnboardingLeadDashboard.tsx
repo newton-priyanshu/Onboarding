@@ -124,7 +124,7 @@ export default function OnboardingLeadDashboard() {
 
   const statItems: StatItem[] = [
     { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
-    { label: 'Pending Review', value: totalPending, icon: Clock, color: '#D4AF37' },
+    { label: 'Pending Review', value: totalPending, icon: Clock, color: t.gd },
     { label: 'Buddy Approved', value: totalBuddyApproved, icon: Shield, color: t.purple },
     { label: 'Approved', value: totalApproved, icon: BadgeCheck, color: t.success },
   ];
@@ -223,7 +223,7 @@ export default function OnboardingLeadDashboard() {
                               <button onClick={() => navigate(`/onboarding-lead/review-phase/${instr.id}/${p.phase}`)}
                                 style={{
                                   fontFamily: t.body, fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.1em',
-                                  marginTop: '4px', padding: '2px 6px', background: '#0369A1', color: '#FFF',
+                                  marginTop: '4px', padding: '2px 6px', background: t.info, color: '#FFF',
                                   border: 'none', cursor: 'pointer', width: '100%',
                                 }}>
                                 <Eye size={10} strokeWidth={1.5} style={{ marginRight: '2px', verticalAlign: 'middle' }} /> View Phase

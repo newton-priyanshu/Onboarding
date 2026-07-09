@@ -120,7 +120,7 @@ export default function AssignmentsTab({ instructors, buddyProfiles, onRefresh }
                 <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.purple, color: t.purple }}>
                   Manager: {manager?.full_name || '—'}
                 </span>
-                <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #0369A1', color: '#0369A1' }}>
+                <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.info, color: t.info }}>
                   Buddy: {buddy?.full_name || '—'}
                 </span>
               </div>

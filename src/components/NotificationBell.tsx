@@ -20,7 +20,7 @@ interface PhaseMap {
 // ─── Constants ──────────────────────────────────────────
 
 const NOTIFICATION_ICONS: Record<string, NotificationIconConfig> = {
-  submitted: { icon: FileText, color: '#0369A1' },
+  submitted: { icon: FileText, color: t.info },
   revision_submitted: { icon: RefreshCw, color: t.pending },
   approved: { icon: CheckCircle2, color: t.success },
   buddy_approved: { icon: Shield, color: t.purple },

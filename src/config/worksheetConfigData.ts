@@ -553,7 +553,18 @@ export function getReviewerType(worksheetId: string): string {
 
 /** Map of phase number → worksheet IDs */
 export const PHASE_WORKSHEETS_MAP: Record<number, WorksheetId[]> = {
-  1: ['p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8', 'gc1'],
+  1: [
+    // FTP Week 1 — Anchor
+    'p1_w5', 'p1_w6', 'p1_w3', 'w1_o1', 'w1_e1', 'w1_o2', 'w1_g1',
+    // FTP Week 2 — Co-create
+    'p2_w3', 'p1_w7', 'w2_e1', 'w2_c3', 'w2_d2', 'w2_b1', 'w2_o1', 'w2_g1',
+    // FTP Week 3 — Co-deliver
+    'p2_w1', 'p2_w2', 'p2_w4', 'p3_w5', 'w3_d1', 'w3_d2', 'w3_e1', 'w3_b1', 'w3_g1',
+    // FTP Week 4 — Independence
+    'p3_w1', 'w4_d2', 'w4_e1', 'w4_o1', 'w4_b1', 'w4_g1',
+    // Legacy Phase 1
+    'p1_w1', 'p1_w2', 'p1_w4', 'p1_w8', 'gc1',
+  ],
   2: ['p2_w1', 'p2_w2', 'p2_w3', 'p2_w4', 'gc2'],
   3: ['p3_w1', 'p3_w2', 'p3_w3', 'p3_w4', 'p3_w5', 'gc3'],
 };
