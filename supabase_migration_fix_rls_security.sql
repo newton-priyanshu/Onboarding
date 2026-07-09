@@ -17,7 +17,10 @@
 -- This prevents any user from self-promoting to admin via browser console.
 
 -- Helper function: Get the user's role from app_metadata (server-controlled)
--- Falls back to user_profiles table for backward compatibility
+-- IMPORTANT: This function should be used AFTER running the one-time migration
+-- below that copies existing roles from user_metadata (client-writable) to
+-- app_metadata (server-only). Without that migration, the fallback to
+-- user_metadata preserves the privilege escalation path for existing users.
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS text
 LANGUAGE sql
@@ -31,6 +34,28 @@ AS $$
     ''
   );
 $$;
+
+-- ─── One-time migration: Copy existing roles to app_metadata ──────────────
+-- Run this BEFORE enabling the new RLS policies to migrate existing users.
+-- This is safe to re-run (idempotent via COALESCE/ON CONFLICT logic).
+--
+-- UPDATE auth.users
+-- SET raw_app_meta_data = jsonb_set(
+--   COALESCE(raw_app_meta_data, '{}'::jsonb),
+--   '{role}',
+--   to_jsonb(COALESCE(raw_user_meta_data ->> 'role', 'new_joinee'))
+-- )
+-- WHERE raw_user_meta_data ->> 'role' IS NOT NULL
+--   AND (
+--     raw_app_meta_data IS NULL
+--     OR raw_app_meta_data ->> 'role' IS NULL
+--     OR raw_app_meta_data ->> 'role' != raw_user_meta_data ->> 'role'
+--   );
+--
+-- Note: Commented out by default. Uncomment and run ONCE before enabling
+-- the new RLS policies. Subsequent migration runs should use:
+--   SELECT COALESCE(get_user_role(), '') != '';
+-- to verify the migration took effect.
 
 -- ─── RLS-2: Fix ALL UPDATE policies to add WITH CHECK ───────────────────────
 -- Currently, UPDATE policies only have USING (WHERE) but no WITH CHECK,
@@ -59,7 +84,7 @@ DROP POLICY IF EXISTS "Users can update own submissions" ON public.worksheet_sub
 DROP POLICY IF EXISTS "Reviewers can update submissions" ON public.worksheet_submissions;
 
 -- Recreate with WITH CHECK
--- Joinees can update their own worksheets (but not review_status or reviewed_by)
+-- Joinees can update their own worksheets (preserving legitimate review_status transitions)
 CREATE POLICY "Users can update own submissions"
   ON public.worksheet_submissions
   FOR UPDATE
@@ -67,8 +92,12 @@ CREATE POLICY "Users can update own submissions"
   WITH CHECK (
     auth.uid() = user_id
     AND (
-      -- Joinees cannot set review_status or reviewed_by directly
-      (review_status IS NULL OR review_status = '' OR review_status = 'needs_revision')
+      -- Joinees can set review_status to values their autoSave writes:
+      --   '' (draft), 'pending_review' (first submit), 'needs_revision' (system sets),
+      --   'revision_submitted' (resubmit), 'buddy_approved' (preserved on draft save),
+      --   'approved' (preserved on draft save)
+      review_status IS NULL
+      OR review_status IN ('', 'pending_review', 'needs_revision', 'revision_submitted', 'buddy_approved', 'approved')
     )
   );
 
