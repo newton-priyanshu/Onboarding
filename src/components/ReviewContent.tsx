@@ -381,7 +381,7 @@ export const FIELD_SECTIONS: Record<string, SectionLayout> = {
   p1_w1: {
     sections: ['About You', 'Stakeholders', 'Conversations', 'Buddy Assignment', 'Reflection'],
     sectionMap: {
-      'About You': ['employeeName', 'department', 'mentorName', 'mentorEmail'],
+      'About You': ['employeeName', 'department'],
       'Stakeholders': ['stakeholders'],
       'Conversations': ['conversations'],
       'Buddy Assignment': ['buddyName', 'buddyAssignmentDate', 'buddyChannel', 'buddySyncDay'],
@@ -431,7 +431,7 @@ export const FIELD_SECTIONS: Record<string, SectionLayout> = {
     sectionMap: {
       'About You': ['employeeName'],
       'Observations': ['observations'],
-      'Reflections': ['reflectionArc', 'reflectionRoom', 'reflectionDoubts', 'reflectionLabDiff', 'reflectionAdopt'],
+      'Reflections': ['reflectionArc', 'reflectionRoom', 'reflectionAdopt'],
       'Verification': ['employeeSignature'],
     }
   },

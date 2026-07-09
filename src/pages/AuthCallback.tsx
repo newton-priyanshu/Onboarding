@@ -8,26 +8,31 @@ export default function AuthCallback() {
   const [status, setStatus] = useState('Completing sign in…');
 
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let cancelled = false;
+
     const params = new URLSearchParams(window.location.search);
     const errorDesc = params.get('error_description') || params.get('error');
     if (errorDesc) {
       setStatus(`Sign in failed: ${errorDesc}`);
-      setTimeout(() => navigate('/login', { replace: true }), 4000);
-      return;
+      timers.push(setTimeout(() => { if (!cancelled) navigate('/login', { replace: true }); }, 4000));
+      return () => { cancelled = true; timers.forEach(clearTimeout); };
     }
 
     const timer = setTimeout(() => {
       supabase.auth.getSession().then(({ data: { session } }) => {
+        if (cancelled) return;
         if (session) {
           navigate('/', { replace: true });
         } else {
           setStatus('Sign in failed. Redirecting…');
-          setTimeout(() => navigate('/login', { replace: true }), 2000);
+          timers.push(setTimeout(() => { if (!cancelled) navigate('/login', { replace: true }); }, 2000));
         }
       });
     }, 1000);
+    timers.push(timer);
 
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
   }, [navigate]);
 
   return (

@@ -46,13 +46,90 @@ interface PhaseData {
 // ─── Error Boundary Route Resetter ──────────────────────
 
 function ErrorBoundaryRouteResetter({ children }: { children: ReactNode }) {
-  const location = useLocation();
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <ErrorBoundary locationKey={location.key}>
-        {children}
-      </ErrorBoundary>
+      {children}
     </div>
+  );
+}
+
+/** Wraps the routed page content in an ErrorBoundary that resets on route change */
+function AppRoutes() {
+  const location = useLocation();
+  // Generate dynamic worksheet routes
+  const worksheetRoutes = Object.entries(ALL_WORKSHEETS).flatMap(([phaseName, phaseData]) => {
+    const data = phaseData as PhaseData;
+    const phasePath = phaseName.toLowerCase().replace(' ', '-');
+    return data.sheets
+      .filter(sheet => !sheet.isGate)
+      .map(sheet => {
+        const Component = WORKSHEET_COMPONENTS[sheet.id];
+        if (!Component) return null;
+        const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
+        const routePath = `/${phasePath}/worksheet-${wsNum}`;
+        const phaseNum = data.num;
+        const wrapped = phaseNum > 1
+          ? <PhaseAccessGuard phaseNum={phaseNum}><Component /></PhaseAccessGuard>
+          : <Component />;
+        return (
+          <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>{wrapped}</ProtectedRoute>} />
+        );
+      })
+  });
+
+  return (
+    <ErrorBoundary locationKey={location.key}>
+      <Routes>
+        {/* Auth routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+
+        {/* Admin / Lead */}
+        <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyDashboard /></ProtectedRoute>} />
+        <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
+        {/* Phase Review Routes */}
+        <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><PhaseReview /></ProtectedRoute>} />
+        <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><PhaseReview /></ProtectedRoute>} />
+
+        {/* Buddy Gate Pass Routes */}
+        <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyGatePass /></ProtectedRoute>} />
+
+        {/* Individual Worksheet Review Routes */}
+        <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
+        <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
+        <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
+
+        {/* Dashboard / Phases */}
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
+        <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
+        <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
+        <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
+
+        {/* FTP Week Routes */}
+        <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week1 /></ProtectedRoute>} />
+        <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week2 /></ProtectedRoute>} />
+        <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week3 /></ProtectedRoute>} />
+        <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week4 /></ProtectedRoute>} />
+        {/* FTP Week Worksheet Routes */}
+        <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+        <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+        <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+        <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
+
+        {/* Dynamic Worksheet Routes */}
+        {worksheetRoutes}
+
+        {/* Legacy */}
+        <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+        <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
+
+        {/* 404 catch-all */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 
@@ -77,28 +154,6 @@ export default function App() {
     return () => window.removeEventListener('progressUpdate', handler as EventListener);
   }, []);
 
-  // Generate dynamic worksheet routes
-  const worksheetRoutes = Object.entries(ALL_WORKSHEETS).flatMap(([phaseName, phaseData]) => {
-    const data = phaseData as PhaseData;
-    const phasePath = phaseName.toLowerCase().replace(' ', '-');
-    return data.sheets
-      .filter(sheet => !sheet.isGate)
-      .map(sheet => {
-        const Component = WORKSHEET_COMPONENTS[sheet.id];
-        if (!Component) return null;
-        const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
-        const routePath = `/${phasePath}/worksheet-${wsNum}`;
-        const phaseNum = data.num;
-        // Only guard Phase 2+ worksheet routes against phase-level access
-        const wrapped = phaseNum > 1
-          ? <PhaseAccessGuard phaseNum={phaseNum}><Component /></PhaseAccessGuard>
-          : <Component />;
-        return (
-          <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>{wrapped}</ProtectedRoute>} />
-        );
-      })
-  });
-
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -106,56 +161,7 @@ export default function App() {
           <ErrorBoundaryRouteResetter>
             <Navbar progress={progress} />
             <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-              <Routes>
-                {/* Auth routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
-
-                {/* Admin / Lead */}
-                <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyDashboard /></ProtectedRoute>} />
-                <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
-                {/* Phase Review Routes */}
-                <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><PhaseReview /></ProtectedRoute>} />
-                <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><PhaseReview /></ProtectedRoute>} />
-
-                {/* Buddy Gate Pass Routes */}
-                <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyGatePass /></ProtectedRoute>} />
-
-                {/* Individual Worksheet Review Routes */}
-                <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
-                <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
-                <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
-
-                {/* Dashboard / Phases */}
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<Navigate to="/" replace />} />
-                <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
-                <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
-                <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
-
-                {/* FTP Week Routes */}
-                <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week1 /></ProtectedRoute>} />
-                <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week2 /></ProtectedRoute>} />
-                <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week3 /></ProtectedRoute>} />
-                <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week4 /></ProtectedRoute>} />
-                {/* FTP Week Worksheet Routes */}
-                <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-                <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-                <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-                <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-
-                {/* Dynamic Worksheet Routes */}
-                {worksheetRoutes}
-
-                {/* Legacy */}
-                <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-                <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
-
-                {/* 404 catch-all */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppRoutes />
             </main>
 
             <footer style={{

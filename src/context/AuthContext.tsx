@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { supabase } from '../api/supabase';
 import { notifyError } from '../utils/errorHandling';
 import { triggerNotification, getReviewerUserIds } from '../hooks/useNotifications';
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Auth actions ──────────────────────────────────────────────
-  async function signUp(email: string, password: string, fullName: string, role: UserRole = 'new_joinee') {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, role: UserRole = 'new_joinee') => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -206,15 +206,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return { user: data.user };
-  }
+  }, []);
 
-  async function signIn(email: string, password: string) {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return { user: data.user };
-  }
+  }, []);
 
-  async function signInWithGoogle() {
+  const signInWithGoogle = useCallback(async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -223,20 +223,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) throw error;
     return data;
-  }
+  }, []);
 
-  async function signOut() {
-    setUser(null);
-    setProfile(null);
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-  }
+    setUser(null);
+    setProfile(null);
+  }, []);
 
-  const hasRole = (...roles: UserRole[]): boolean => {
+  const hasRole = useCallback((...roles: UserRole[]): boolean => {
     return !!profile && roles.includes(profile.role);
-  };
+  }, [profile]);
 
-  const value: AuthContextValue = {
+  const refreshProfile = useCallback(() => {
+    if (user) fetchProfile(user.id);
+  }, [user]);
+
+  const value = useMemo<AuthContextValue>(() => ({
     user,
     profile,
     loading,
@@ -245,8 +249,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signOut,
     hasRole,
-    refreshProfile: () => { if (user) fetchProfile(user.id); },
-  };
+    refreshProfile,
+  }), [user, profile, loading, signUp, signIn, signInWithGoogle, signOut, hasRole, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

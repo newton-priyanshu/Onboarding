@@ -80,7 +80,7 @@ export async function checkAndPromote(userId: string | null): Promise<PromoteRes
       fromUserId: null as unknown as string,
       worksheetId: '',
       type: 'approved',
-      message: '🎉 Congratulations! All 20 worksheets across all 3 phases have been approved. You have been promoted to Buddy/Mentor (lead_instructor)! You can now review other instructors\' worksheets.',
+      message: `🎉 Congratulations! All ${allWsIds.length} worksheets across all 3 phases have been approved. You have been promoted to Buddy/Mentor (lead_instructor)! You can now review other instructors' worksheets.`,
     });
 
     // Notify all managers about the promotion
@@ -95,7 +95,7 @@ export async function checkAndPromote(userId: string | null): Promise<PromoteRes
       });
     }
 
-    return { promoted: true, message: 'All 20 worksheets approved! User promoted to Buddy/Mentor (lead_instructor).' };
+    return { promoted: true, message: `All ${allWsIds.length} worksheets approved! User promoted to Buddy/Mentor (lead_instructor).` };
   } catch (err) {
     console.error('Auto-promote check failed:', err);
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';

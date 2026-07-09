@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../api/supabase';
 import { getReviewerType } from '../config/worksheetConfig';
+import { REVIEW_STATUS, SUBMISSION_STATUS, NOTIFICATION_TYPE } from '../constants/status';
 import { notifyError } from '../utils/errorHandling';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from './useNotifications';
 import { calculateDueDate } from './useDueDates';
@@ -84,13 +85,13 @@ export function useAutoSave(
 
       // If the worksheet is already approved, do NOT overwrite review_status
       // If it's buddy_approved, preserve it (awaiting manager)
-      const newReviewStatus = data.status === 'submitted'
-        ? (data._savedReviewStatus === 'needs_revision' ? 'revision_submitted'
-          : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
-          : 'pending_review')
-        : (data._savedReviewStatus === 'approved' ? 'approved'
-          : data._savedReviewStatus === 'buddy_approved' ? 'buddy_approved'
-          : '');
+      const newReviewStatus = data.status === SUBMISSION_STATUS.SUBMITTED
+        ? (data._savedReviewStatus === REVIEW_STATUS.NEEDS_REVISION ? REVIEW_STATUS.REVISION_SUBMITTED
+          : data._savedReviewStatus === REVIEW_STATUS.BUDDY_APPROVED ? REVIEW_STATUS.BUDDY_APPROVED
+          : REVIEW_STATUS.PENDING_REVIEW)
+        : (data._savedReviewStatus === REVIEW_STATUS.APPROVED ? REVIEW_STATUS.APPROVED
+          : data._savedReviewStatus === REVIEW_STATUS.BUDDY_APPROVED ? REVIEW_STATUS.BUDDY_APPROVED
+          : REVIEW_STATUS.EMPTY);
       // Calculate due_date ONLY once (tracked via dueDateSetRef).
       let dueDateValue: string | undefined;
       if (!dueDateSetRef.current && newReviewStatus !== 'approved' && newReviewStatus !== 'buddy_approved') {
@@ -123,11 +124,11 @@ export function useAutoSave(
       if (error) throw error;
 
       // Trigger notification on first-time submission only
-      const isNewSubmission = data.status === 'submitted'
-        && data._savedReviewStatus !== 'approved'
-        && data._savedReviewStatus !== 'buddy_approved'
-        && data._savedReviewStatus !== 'pending_review'
-        && data._savedReviewStatus !== 'revision_submitted';
+      const isNewSubmission = data.status === SUBMISSION_STATUS.SUBMITTED
+        && data._savedReviewStatus !== REVIEW_STATUS.APPROVED
+        && data._savedReviewStatus !== REVIEW_STATUS.BUDDY_APPROVED
+        && data._savedReviewStatus !== REVIEW_STATUS.PENDING_REVIEW
+        && data._savedReviewStatus !== REVIEW_STATUS.REVISION_SUBMITTED;
       if (isNewSubmission) {
         // Notify the ASSIGNED reviewer, not all users with that role
         let reviewerUserIds: string[] = [];
@@ -149,7 +150,7 @@ export function useAutoSave(
             userId: reviewerId,
             fromUserId: user.id,
             worksheetId,
-            type: data._savedReviewStatus === 'needs_revision' ? 'revision_submitted' : 'submitted',
+            type: data._savedReviewStatus === REVIEW_STATUS.NEEDS_REVISION ? NOTIFICATION_TYPE.REVISION_SUBMITTED : NOTIFICATION_TYPE.SUBMITTED,
             message: `A worksheet (${worksheetId}) was submitted in ${phaseName} and is ready for review.`,
           });
         }
@@ -175,6 +176,9 @@ export function useAutoSave(
               save(data);
             }
           }, backoff);
+        } else {
+          // Exhausted retries — reset retry count so future saves can retry again
+          retryCountRef.current = 0;
         }
       }
     }
@@ -194,9 +198,11 @@ export function useAutoSave(
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [worksheetData, save, user?.id, loaded]);
 
-  const flushSave = useCallback(async (data: Record<string, unknown>) => {
+  const flushSave = useCallback(async (data: Record<string, unknown>): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
     initialSaveDoneRef.current = true;
+    // Retry counter starts at initial call, so reset for flush-based saves
+    retryCountRef.current = 0;
     await save(data);
   }, [save]);
 

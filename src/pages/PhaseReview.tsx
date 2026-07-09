@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
@@ -46,6 +46,11 @@ export default function PhaseReview() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [expandedSheet, setExpandedSheet] = useState<string | null>(null);
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => { if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current); };
+  }, []);
 
   const phaseNumber = parseInt(phaseNum || '1', 10);
   const isManager = profile?.role === 'academic_head';
@@ -154,7 +159,7 @@ export default function PhaseReview() {
       }
 
       // Reload data to show updated state
-      setTimeout(() => {
+      reloadTimerRef.current = setTimeout(() => {
         loadData();
       }, 1500);
     } else {

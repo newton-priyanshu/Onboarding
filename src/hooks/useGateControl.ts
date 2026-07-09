@@ -3,6 +3,7 @@ import { useWorksheet } from './useWorksheet';
 import { useToast } from '../components/Toast';
 import { supabase } from '../api/supabase';
 import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { SUBMISSION_STATUS } from '../constants/status';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '../config/worksheetConfig';
 
@@ -160,7 +161,7 @@ export function useGateControl({
         : (isRevision ? 'revision_submitted' : '');
       const d = {
         ...data,
-        status: 'Submitted',
+        status: SUBMISSION_STATUS.SUBMITTED,
         submittedAt: new Date().toISOString(),
         _savedReviewStatus: review_status,
         _savedReviewedBy: isBuddyMode ? user?.id : null,
