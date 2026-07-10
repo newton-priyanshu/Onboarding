@@ -30,8 +30,8 @@ export default function W1O1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Access Verification">
-            <FieldGroup label="Your Name" required>
-              <input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} placeholder="e.g. Jane Smith" />
+            <FieldGroup label="Your Name" required id="employeeName">
+              <input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} placeholder="e.g. Jane Smith" />
             </FieldGroup>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
               {[
@@ -52,16 +52,16 @@ export default function W1O1() {
           </WorksheetSection>
 
           <WorksheetSection title="Slack Channels Joined">
-            <FieldGroup label="Which channels have you joined?">
-              <textarea className="lux-textarea" rows={3} value={(data.slackChannels as string[])?.join(', ') || ''}
+            <FieldGroup label="Which channels have you joined?" id="slackChannels">
+              <textarea id="slackChannels" className="lux-textarea" rows={3} value={(data.slackChannels as string[])?.join(', ') || ''}
                 onChange={e => updateField('slackChannels', e.target.value.split(',').map(s => s.trim()))}
                 placeholder="e.g. #general, #faculty, #onboarding-july" />
             </FieldGroup>
           </WorksheetSection>
 
           <WorksheetSection title="Notes / Questions">
-            <FieldGroup label="Any questions or issues from Day 1?">
-              <textarea className="lux-textarea" rows={3} value={data.notes as string} onChange={e => updateField('notes', e.target.value)}
+            <FieldGroup label="Any questions or issues from Day 1?" id="notes">
+              <textarea id="notes" className="lux-textarea" rows={3} value={data.notes as string} onChange={e => updateField('notes', e.target.value)}
                 placeholder="Anything unclear, missing access, or follow-ups needed..." />
             </FieldGroup>
           </WorksheetSection>

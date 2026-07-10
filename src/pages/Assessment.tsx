@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../api/supabase';
+import { useAuth } from '../context/AuthContext';
 import { Award, Send, AlertCircle, BarChart3, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { t } from '../config/theme';
@@ -32,6 +33,7 @@ const levels: AssessmentLevel[] = [
 
 export default function Assessment() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [instructorName, setInstructorName] = useState('');
   const [email, setEmail] = useState('');
   const [facultyLeadName, setFacultyLeadName] = useState('');
@@ -48,23 +50,45 @@ export default function Assessment() {
       setError('Please fill in all required fields and select a readiness level.');
       return;
     }
+    if (!user?.id) {
+      setError('You must be signed in to submit an assessment.');
+      return;
+    }
     setSubmitting(true);
     try {
-      const { data: existing } = await supabase.from('onboarding_submissions').select('id').eq('email', email).maybeSingle();
+      const { data: existing, error: lookupError } = await supabase
+        .from('onboarding_submissions')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      if (lookupError) {
+        setError(`Could not check for an existing assessment: ${lookupError.message}`);
+        setSubmitting(false); return;
+      }
       const data = {
+        user_id: user.id,
         assessment_level: selectedLevel,
         assessment_data: { facultyLead: facultyLeadName, comments, assessedAt: new Date().toISOString() },
         overall_status: 'assessed',
       };
+      // .select('id') lets us verify how many rows were actually affected —
+      // supabase-js silently returns 0 rows (no error) when RLS or a missing
+      // id blocks the write, which must be surfaced as a real failure (H16).
       let result;
       if (existing) {
-        result = await supabase.from('onboarding_submissions').update(data).eq('id', (existing as { id: string }).id);
+        result = await supabase.from('onboarding_submissions').update(data).eq('id', (existing as { id: string }).id).select('id');
       } else {
-        result = await supabase.from('onboarding_submissions').insert({ new_instructor_name: instructorName, email, ...data });
+        result = await supabase.from('onboarding_submissions').insert({ new_instructor_name: instructorName, email, ...data }).select('id');
       }
       if (result.error) {
         if (result.error.code === '42P01') setError('Database table not found. Please run the SQL schema first (see supabase_schema.sql).');
         else setError(`Submission error: ${result.error.message}`);
+        setSubmitting(false); return;
+      }
+      if (!result.data || result.data.length === 0) {
+        setError(existing
+          ? 'Update failed: no matching assessment record was affected. It may have been removed, or you may not have permission to edit it.'
+          : 'The assessment was not saved. Please try again.');
         setSubmitting(false); return;
       }
       setSubmitted(true);

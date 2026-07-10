@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
+import { unwrap } from '../api/db';
 import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
-  CheckCircle2, Clock, AlertCircle, FileText, LucideIcon,
+  CheckCircle2, Clock, AlertCircle, FileText, RefreshCw, LucideIcon,
 } from 'lucide-react';
 import { t } from '../config/theme';
 import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) loadSubmissions();
@@ -53,15 +55,19 @@ export default function Dashboard() {
   }, [user?.id]);
 
   async function loadSubmissions() {
+    setLoading(true);
+    setLoadError(null);
     try {
-      const { data } = await supabase
+      const data = await supabase
         .from('worksheet_submissions')
         .select('worksheet_id, review_status, status, updated_at')
         .eq('user_id', user!.id)
-        .limit(50);
-      if (data) setSubmissions(data as unknown as WorksheetSubmission[]);
+        .limit(50)
+        .then(unwrap);
+      setSubmissions(data as unknown as WorksheetSubmission[]);
     } catch (err) {
       console.error('Failed to load submissions:', err);
+      setLoadError('We could not load your progress. Your worksheets are safe — please try again.');
     } finally {
       setLoading(false);
     }
@@ -161,6 +167,26 @@ export default function Dashboard() {
               ))}
             </div>
           </section>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container" style={{ maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+            Couldn&apos;t Load Your Dashboard
+          </h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            {loadError}
+          </p>
+          <button onClick={() => loadSubmissions()} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
         </div>
       </div>
     );

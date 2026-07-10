@@ -15,12 +15,12 @@ export default function W3E1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Your Info">
-            <FieldGroup label="Your Name" required><input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Contest Title"><input className="lux-input" value={data.contestTitle as string} onChange={e => updateField('contestTitle', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Your Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Contest Title" id="contestTitle"><input id="contestTitle" className="lux-input" value={data.contestTitle as string} onChange={e => updateField('contestTitle', e.target.value)} /></FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Bloom's Distribution">
-            <FieldGroup label="How are your 12 questions distributed across Bloom's levels?">
-              <textarea className="lux-textarea" rows={3} value={data.bloomDistribution as string} onChange={e => updateField('bloomDistribution', e.target.value)}
+            <FieldGroup label="How are your 12 questions distributed across Bloom's levels?" id="bloomDistribution">
+              <textarea id="bloomDistribution" className="lux-textarea" rows={3} value={data.bloomDistribution as string} onChange={e => updateField('bloomDistribution', e.target.value)}
                 placeholder="Remember: 2, Understand: 3, Apply: 3, Analyze: 2, Evaluate: 1, Create: 1" />
             </FieldGroup>
           </WorksheetSection>

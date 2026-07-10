@@ -15,7 +15,7 @@ export default function W4O1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Your Info">
-            <FieldGroup label="Your Name" required><input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Your Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="T-2 Week Checklist">
             {['Lecture schedule confirmed', 'All course materials uploaded to portal', 'First 3 lecture packages ready',
@@ -25,10 +25,10 @@ export default function W4O1() {
               const items = (data.checklist as any[]) || [];
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(26,26,26,0.06)' }}>
-                  <input type="checkbox" checked={items[i]?.done || false}
+                  <input id={`checklist-${i}`} type="checkbox" checked={items[i]?.done || false}
                     onChange={e => { const arr = [...items]; arr[i] = { ...arr[i], item, done: e.target.checked }; updateField('checklist', arr); }}
                     style={{ width: '16px', height: '16px', accentColor: 'var(--color-charcoal)' }} />
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', flex: 1 }}>{item}</span>
+                  <label htmlFor={`checklist-${i}`} style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', flex: 1, cursor: 'pointer' }}>{item}</label>
                 </div>
               );
             })}

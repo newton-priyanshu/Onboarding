@@ -16,22 +16,22 @@ export default function W4E1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Your Info">
-            <FieldGroup label="Your Name" required><input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Your Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Prediction vs Actual">
-            <FieldGroup label="Predicted solve rates per question (e.g. Q1: 80%, Q2: 60%...)">
-              <textarea className="lux-textarea" rows={3} value={data.predictedRates as string} onChange={e => updateField('predictedRates', e.target.value)} />
+            <FieldGroup label="Predicted solve rates per question (e.g. Q1: 80%, Q2: 60%...)" id="predictedRates">
+              <textarea id="predictedRates" className="lux-textarea" rows={3} value={data.predictedRates as string} onChange={e => updateField('predictedRates', e.target.value)} />
             </FieldGroup>
-            <FieldGroup label="Actual solve rates observed">
-              <textarea className="lux-textarea" rows={3} value={data.actualRates as string} onChange={e => updateField('actualRates', e.target.value)} />
+            <FieldGroup label="Actual solve rates observed" id="actualRates">
+              <textarea id="actualRates" className="lux-textarea" rows={3} value={data.actualRates as string} onChange={e => updateField('actualRates', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Calibration Note">
-            <FieldGroup label="Calibration note (what does the gap tell you about your question design?)">
-              <textarea className="lux-textarea" rows={4} value={data.calibrationNote as string} onChange={e => updateField('calibrationNote', e.target.value)} />
+            <FieldGroup label="Calibration note (what does the gap tell you about your question design?)" id="calibrationNote">
+              <textarea id="calibrationNote" className="lux-textarea" rows={4} value={data.calibrationNote as string} onChange={e => updateField('calibrationNote', e.target.value)} />
             </FieldGroup>
-            <FieldGroup label="Key insights for future contest design">
-              <textarea className="lux-textarea" rows={3} value={data.insights as string} onChange={e => updateField('insights', e.target.value)} />
+            <FieldGroup label="Key insights for future contest design" id="insights">
+              <textarea id="insights" className="lux-textarea" rows={3} value={data.insights as string} onChange={e => updateField('insights', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
         </>

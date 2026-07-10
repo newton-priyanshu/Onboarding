@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockFrom = vi.hoisted(() => vi.fn());
-const mockAuthUpdateUser = vi.hoisted(() => vi.fn());
+const mockRpc = vi.hoisted(() => vi.fn());
 
 vi.mock('../../api/supabase', () => ({
   supabase: {
     from: mockFrom,
-    auth: {
-      updateUser: mockAuthUpdateUser,
-    },
+    rpc: mockRpc,
   },
+}));
+
+vi.mock('../useNotifications', () => ({
+  triggerNotification: vi.fn().mockResolvedValue(undefined),
+  getReviewerUserIds: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../../config/worksheetConfig.jsx', () => ({
@@ -79,23 +82,17 @@ describe('checkAndPromote', () => {
 
     // Submissions query mock
     const mockSubEq = vi.fn().mockResolvedValue({ data: submissions, error: null });
-    // Update query mock
-    const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: mockSubEq,
-      update: vi.fn().mockReturnValue({ eq: mockUpdateEq }),
-      insert: vi.fn().mockResolvedValue({ error: null }),
     };
     mockFrom.mockReturnValue(chain);
-    mockAuthUpdateUser.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: null, error: null });
 
     const result = await checkAndPromote(userId);
     expect(result.promoted).toBe(true);
     expect(result.message).toContain('promoted');
-    expect(mockAuthUpdateUser).toHaveBeenCalledWith({
-      data: { role: 'lead_instructor' },
-    });
+    expect(mockRpc).toHaveBeenCalledWith('promote_user_if_eligible');
   });
 
   it('handles API errors gracefully', async () => {
@@ -111,25 +108,27 @@ describe('checkAndPromote', () => {
     expect(result.message).toContain('DB error');
   });
 
-  it('still promotes even if auth.updateUser fails', async () => {
+  it('does not promote when the promote_user_if_eligible RPC fails', async () => {
+    // Even if the worksheets look complete client-side, promotion is only ever
+    // performed by the server-side SECURITY DEFINER RPC. If that RPC call
+    // errors (e.g. the server-side re-check disagrees, or a network failure),
+    // the client must NOT report the user as promoted and must NOT fall back
+    // to any client-side role write.
     const submissions = allWsIds.map(id => ({
       worksheet_id: id,
       review_status: 'approved',
     }));
 
     const mockSubEq = vi.fn().mockResolvedValue({ data: submissions, error: null });
-    const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: mockSubEq,
-      update: vi.fn().mockReturnValue({ eq: mockUpdateEq }),
-      insert: vi.fn().mockResolvedValue({ error: null }),
     };
     mockFrom.mockReturnValue(chain);
-    mockAuthUpdateUser.mockResolvedValue({ error: new Error('Auth update failed') });
+    mockRpc.mockResolvedValue({ data: null, error: new Error('RPC failed') });
 
     const result = await checkAndPromote(userId);
-    expect(result.promoted).toBe(true);
-    expect(result.message).toContain('promoted');
+    expect(result.promoted).toBe(false);
+    expect(result.message).toContain('RPC failed');
   });
 });

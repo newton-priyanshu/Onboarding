@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft, Shield, AlertCircle, RefreshCw } from 'lucide-react';
 import { SkeletonCard } from '../components/Skeleton';
 import GateControl1 from './gate-controls/GateControl1';
 import GateControl2 from './gate-controls/GateControl2';
@@ -35,19 +35,29 @@ export default function BuddyGatePass() {
   const navigate = useNavigate();
   const [joinee, setJoinee] = useState<JoineeInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadJoinee = useCallback(async () => {
     if (!userId) return;
-    (async () => {
-      const { data } = await supabase
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('id, full_name, email')
         .eq('id', userId)
         .single();
-      if (data) setJoinee(data as JoineeInfo);
+      if (error) throw error;
+      setJoinee(data as JoineeInfo);
+    } catch (err) {
+      console.error('Failed to load joinee profile:', err);
+      setLoadError('We could not load this joinee’s profile. Please check your connection and try again.');
+    } finally {
       setLoading(false);
-    })();
+    }
   }, [userId]);
+
+  useEffect(() => { loadJoinee(); }, [loadJoinee]);
 
   const GateComponent = GATE_COMPONENTS[gateId || ''];
   const wsName = WORKSHEET_NAMES[gateId || ''] || gateId || '';
@@ -73,6 +83,27 @@ export default function BuddyGatePass() {
         <div className="lux-container" style={{ maxWidth: '720px', margin: '0 auto' }}>
           <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
           <div style={{ padding: '2rem' }}><SkeletonCard count={3} /></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container" style={{ maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+            Couldn&apos;t Load Gate Pass
+          </h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button onClick={() => loadJoinee()} className="lux-btn lux-btn-primary">
+              <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+            </button>
+            <button onClick={() => navigate('/buddy')} className="lux-btn lux-btn-secondary">Back to Dashboard</button>
+          </div>
         </div>
       </div>
     );

@@ -28,20 +28,24 @@ export default function Phase1Worksheet5() {
         const uTask = (i: number, f: string) => setData(p => { const arr = [...p.instructorTasks]; arr[i] = { ...arr[i], [f]: !arr[i][f] }; return { ...p, instructorTasks: arr }; });
         return (
           <>
-            <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+            <WorksheetSection title="About You"><FieldGroup label="Full Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
             <WorksheetSection title="Section A: Student-Side Exploration Log" subtitle="Experience the portal as a student.">
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
-                {['Feature Explored', 'Date', 'Friction Points Noted'].map(h => (
-                  <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
+              <div className="ws-scroll-x">
+                <div className="ws-matrix-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
+                  {['Feature Explored', 'Date', 'Friction Points Noted'].map(h => (
+                    <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
+                  ))}
+                </div>
+                {studentFeatures.map((feat, i) => (
+                  <div key={i} className="ws-matrix-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '8px' }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', color: 'var(--color-charcoal)' }}>{feat}</span>
+                    <label htmlFor={`stu-date-${i}`} className="ws-sr-only">Date ({feat})</label>
+                    <input id={`stu-date-${i}`} className="lux-input" type="date" value={data.studentLog[i].date} onChange={e => uStudent(i, 'date', e.target.value)} />
+                    <label htmlFor={`stu-friction-${i}`} className="ws-sr-only">Friction Points Noted ({feat})</label>
+                    <input id={`stu-friction-${i}`} className="lux-input" placeholder="What did you notice?" value={data.studentLog[i].friction} onChange={e => uStudent(i, 'friction', e.target.value)} />
+                  </div>
                 ))}
               </div>
-              {studentFeatures.map((feat, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: '8px' }}>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', color: 'var(--color-charcoal)' }}>{feat}</span>
-                  <input className="lux-input" type="date" value={data.studentLog[i].date} onChange={e => uStudent(i, 'date', e.target.value)} />
-                  <input className="lux-input" placeholder="What did you notice?" value={data.studentLog[i].friction} onChange={e => uStudent(i, 'friction', e.target.value)} />
-                </div>
-              ))}
             </WorksheetSection>
             <WorksheetSection title="Section B: Instructor Portal Competency Checklist" subtitle="Check off tasks you can perform independently. Faculty Lead verifies during demo.">
               {instructorTasks.map((task, i) => (
@@ -57,14 +61,16 @@ export default function Phase1Worksheet5() {
               ))}
             </WorksheetSection>
             <WorksheetSection title="Faculty Lead Demo Sign-Off">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <FieldGroup label="Demo conducted on (date)"><input type="date" className="lux-input" value={data.demoDate} onChange={e => updateField('demoDate', e.target.value)} /></FieldGroup>
-                <FieldGroup label="Tasks demonstrated"><input className="lux-input" placeholder="List tasks shown" value={data.demoTasks} onChange={e => updateField('demoTasks', e.target.value)} /></FieldGroup>
+              <div className="ws-stack-sm">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <FieldGroup label="Demo conducted on (date)" id="demoDate"><input id="demoDate" type="date" className="lux-input" value={data.demoDate} onChange={e => updateField('demoDate', e.target.value)} /></FieldGroup>
+                  <FieldGroup label="Tasks demonstrated" id="demoTasks"><input id="demoTasks" className="lux-input" placeholder="List tasks shown" value={data.demoTasks} onChange={e => updateField('demoTasks', e.target.value)} /></FieldGroup>
+                </div>
               </div>
-              <FieldGroup label="Gap areas to revisit (if any)"><textarea className="lux-textarea" rows={2} value={data.demoGaps} onChange={e => updateField('demoGaps', e.target.value)} /></FieldGroup>
-              <FieldGroup label="Faculty Lead Signature"><input className="lux-input" value={data.demoSignature} onChange={e => updateField('demoSignature', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Gap areas to revisit (if any)" id="demoGaps"><textarea id="demoGaps" className="lux-textarea" rows={2} value={data.demoGaps} onChange={e => updateField('demoGaps', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Faculty Lead Signature" id="demoSignature"><input id="demoSignature" className="lux-input" value={data.demoSignature} onChange={e => updateField('demoSignature', e.target.value)} /></FieldGroup>
             </WorksheetSection>
-            <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
+            <WorksheetSection title="Verification"><FieldGroup label="Employee Signature" id="employeeSignature"><input id="employeeSignature" className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
           </>
         );
       }}

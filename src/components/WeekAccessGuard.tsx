@@ -1,6 +1,6 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { Lock, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { WK_WORKSHEETS_MAP } from '../config/worksheetConfigData';
@@ -52,6 +52,28 @@ function WeekLockedView({ weekNum }: { weekNum: number }) {
   );
 }
 
+function WeekAccessErrorView({ weekNum, onRetry }: { weekNum: number; onRetry: () => void }) {
+  return (
+    <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
+        <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+        <div style={{ width: '64px', height: '64px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+          <AlertCircle size={28} strokeWidth={1.5} style={{ color: t.error }} />
+        </div>
+        <h1 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+          Couldn&apos;t Verify Access
+        </h1>
+        <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>
+          We could not confirm Week {weekNum - 1} is complete. Access stays locked until we can verify it — please check your connection and try again.
+        </p>
+        <button onClick={onRetry} className="lux-btn lux-btn-primary">
+          <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * WeekAccessGuard — Gates week N behind completion of week N-1.
  * A week is "complete" when all its worksheets have a status of 'submitted'
@@ -61,17 +83,20 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
   const { user } = useAuth();
   const [checking, setChecking] = useState(true);
   const [canAccess, setCanAccess] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
+  const checkAccess = useCallback(() => {
     if (weekNum <= 1) {
       // Week 1 is always accessible
       setCanAccess(true);
       setChecking(false);
+      setLoadError(false);
       return;
     }
     if (!user?.id) {
       setChecking(false);
       setCanAccess(false);
+      setLoadError(false);
       return;
     }
 
@@ -79,17 +104,23 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
     if (!previousWeekWorksheets || previousWeekWorksheets.length === 0) {
       setCanAccess(true);
       setChecking(false);
+      setLoadError(false);
       return;
     }
 
+    setChecking(true);
+    setLoadError(false);
     supabase
       .from('worksheet_submissions')
       .select('worksheet_id, status, review_status')
       .eq('user_id', user.id)
       .in('worksheet_id', previousWeekWorksheets)
-      .then(({ data }) => {
-        if (!data) {
+      .then(({ data, error }) => {
+        if (error || !data) {
+          console.error('WeekAccessGuard: failed to load submissions:', error);
+          // Fail closed: a failed access check must never be treated as "unlocked".
           setCanAccess(false);
+          setLoadError(true);
           setChecking(false);
           return;
         }
@@ -98,7 +129,8 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
         const submissionMap = new Map<string, { status: string; review_status: string }>();
         data.forEach((row: { worksheet_id: string; status: string; review_status: string }) => {
           submissionMap.set(row.worksheet_id, row);
-        });          const allComplete = previousWeekWorksheets.every((wsId: string) => {
+        });
+        const allComplete = previousWeekWorksheets.every((wsId: string) => {
           const sub = submissionMap.get(wsId);
           if (!sub) return false;
           // Consider "submitted", "buddy_approved", or "approved" as complete
@@ -110,13 +142,14 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
         });
 
         setCanAccess(allComplete);
-        setChecking(false);
-      }, () => {
-        // On error, deny access
-        setCanAccess(false);
+        setLoadError(false);
         setChecking(false);
       });
   }, [user?.id, weekNum]);
+
+  useEffect(() => {
+    checkAccess();
+  }, [checkAccess]);
 
   if (checking) {
     return (
@@ -126,6 +159,10 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
         </div>
       </div>
     );
+  }
+
+  if (loadError) {
+    return <WeekAccessErrorView weekNum={weekNum} onRetry={checkAccess} />;
   }
 
   if (!canAccess) {

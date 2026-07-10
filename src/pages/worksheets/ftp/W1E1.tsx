@@ -26,21 +26,21 @@ export default function W1E1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Pre-read Verification">
-            <FieldGroup label="Your Name" required>
-              <input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} />
+            <FieldGroup label="Your Name" required id="employeeName">
+              <input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} />
             </FieldGroup>
-            <FieldGroup label="Date completed">
-              <input type="date" className="lux-input" value={data.dateRead as string} onChange={e => updateField('dateRead', e.target.value)} />
+            <FieldGroup label="Date completed" id="dateRead">
+              <input id="dateRead" type="date" className="lux-input" value={data.dateRead as string} onChange={e => updateField('dateRead', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
 
           <WorksheetSection title="Reflection">
-            <FieldGroup label="Key takeaways from Contest Guidelines V3">
-              <textarea className="lux-textarea" rows={4} value={data.keyTakeaways as string} onChange={e => updateField('keyTakeaways', e.target.value)}
+            <FieldGroup label="Key takeaways from Contest Guidelines V3" id="keyTakeaways">
+              <textarea id="keyTakeaways" className="lux-textarea" rows={4} value={data.keyTakeaways as string} onChange={e => updateField('keyTakeaways', e.target.value)}
                 placeholder="What are the most important rules, formats, or processes you noted?" />
             </FieldGroup>
-            <FieldGroup label="Questions you'd like to ask before the Bloom's session">
-              <textarea className="lux-textarea" rows={3} value={data.questionsForFacilitator as string} onChange={e => updateField('questionsForFacilitator', e.target.value)}
+            <FieldGroup label="Questions you'd like to ask before the Bloom's session" id="questionsForFacilitator">
+              <textarea id="questionsForFacilitator" className="lux-textarea" rows={3} value={data.questionsForFacilitator as string} onChange={e => updateField('questionsForFacilitator', e.target.value)}
                 placeholder="Anything unclear about contest design, evaluation, or Bloom's taxonomy application?" />
             </FieldGroup>
           </WorksheetSection>

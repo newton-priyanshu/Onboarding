@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { CheckCircle2, XCircle, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown, Shield } from 'lucide-react';
 import { WORKSHEET_INFO, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
+import { computeReviewTransition } from '../utils/reviewStateMachine';
 import ReviewContent from '../components/ReviewContent';
-import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { t } from '../config/theme';
 
 interface ReviewParams {
@@ -32,6 +32,7 @@ export default function WorksheetReview() {
   const [submission, setSubmission] = useState<WorksheetSubmission | null>(null);
   const [instructor, setInstructor] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [comment, setComment] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
@@ -47,121 +48,133 @@ export default function WorksheetReview() {
 
   // ── Ownership check: buddy can only approve their assigned joinees ──
   const [isAssignedBuddy, setIsAssignedBuddy] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (!isBuddy || !userId) { setIsAssignedBuddy(true); return; }
-    supabase
+  const [assignedBuddyError, setAssignedBuddyError] = useState<string | null>(null);
+
+  const checkAssignedBuddy = useCallback(async () => {
+    if (!isBuddy || !userId) { setIsAssignedBuddy(true); setAssignedBuddyError(null); return; }
+    const { data: profileRow, error } = await supabase
       .from('user_profiles')
       .select('assigned_buddy_id')
       .eq('id', userId)
-      .single()
-      .then(({ data }) => {
-        const assigned = (data as { assigned_buddy_id: string | null } | null)?.assigned_buddy_id;
-        // When no buddy is assigned, allow any buddy to act (fallback)
-        if (assigned === null) { setIsAssignedBuddy(true); return; }
-        // When another buddy is assigned, deny
-        if (assigned && assigned !== profile?.id) { setIsAssignedBuddy(false); return; }
-        // Same buddy or no assignment — allow
-        setIsAssignedBuddy(true);
-      }, () => setIsAssignedBuddy(true)); // On error, allow (fail open for safety)
+      .single();
+
+    if (error) {
+      console.error('Error checking buddy assignment:', error);
+      // Fail CLOSED: an error verifying assignment must never be treated as "allowed".
+      setIsAssignedBuddy(false);
+      setAssignedBuddyError('Could not verify your buddy assignment for this joinee. Please retry.');
+      return;
+    }
+
+    setAssignedBuddyError(null);
+    const assigned = (profileRow as { assigned_buddy_id: string | null } | null)?.assigned_buddy_id;
+    // When no buddy is assigned, allow any buddy to act (fallback)
+    if (assigned === null || assigned === undefined) { setIsAssignedBuddy(true); return; }
+    // When another buddy is assigned, deny
+    if (assigned !== profile?.id) { setIsAssignedBuddy(false); return; }
+    // Same buddy — allow
+    setIsAssignedBuddy(true);
   }, [isBuddy, userId, profile?.id]);
+
+  useEffect(() => {
+    checkAssignedBuddy();
+  }, [checkAssignedBuddy]);
 
   // Buddy can approve their assigned joinees' worksheets → buddy_approved
   // Manager can only approve at phase-level (via PhaseReview page) but can VIEW individual worksheets
+  // and request revision on a buddy-approved worksheet directly from this page.
   // Onboarding Lead can only VIEW (read-only)
   const canApprove = isBuddy && isAssignedBuddy !== false;
   const isReadOnly = isOnboardingLead || (isManager && submission?.review_status !== 'buddy_approved') || (isBuddy && isAssignedBuddy === false);
 
-  useEffect(() => {
-    if (isReviewer && userId && worksheetId) loadData();
-    // loadData intentionally omitted: closes over fresh userId/worksheetId each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReviewer, userId, worksheetId]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [subRes, instrRes] = await Promise.all([
         supabase.from('worksheet_submissions').select('*').eq('user_id', userId).eq('worksheet_id', worksheetId).maybeSingle(),
         supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
       ]);
-      if (subRes.error) console.error('Error loading submission:', subRes.error);
-      else if (subRes.data) setSubmission(subRes.data as unknown as WorksheetSubmission);
-      if (instrRes.error) console.error('Error loading instructor:', instrRes.error);
-      else if (instrRes.data) setInstructor(instrRes.data as unknown as UserProfile);
+      if (subRes.error) {
+        console.error('Error loading submission:', subRes.error);
+        setLoadError('Failed to load this worksheet: ' + subRes.error.message);
+        setLoading(false);
+        return;
+      }
+      setSubmission(subRes.data ? (subRes.data as unknown as WorksheetSubmission) : null);
+
+      if (instrRes.error) {
+        console.error('Error loading instructor:', instrRes.error);
+        setLoadError('Failed to load the instructor profile: ' + instrRes.error.message);
+        setLoading(false);
+        return;
+      }
+      setInstructor(instrRes.data ? (instrRes.data as unknown as UserProfile) : null);
     } catch (err) {
       console.error('Failed to load worksheet review data:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load worksheet review data.');
     }
     setLoading(false);
+  }, [userId, worksheetId]);
+
+  useEffect(() => {
+    if (isReviewer && userId && worksheetId) loadData();
+  }, [isReviewer, userId, worksheetId, loadData]);
+
+  function handleRetry() {
+    loadData();
+    if (isBuddy) checkAssignedBuddy();
   }
 
   async function handleBuddyApprove() {
-    // Validate current state
-    const currentStatus = submission?.review_status;
-    if (currentStatus !== 'pending_review' && currentStatus !== 'revision_submitted') {
-      setActionMessage(`Cannot approve: worksheet is in "${currentStatus}" state. Only pending/re-submitted worksheets can be approved by the buddy.`);
+    // Validate current state — reviewStateMachine is the single source of
+    // truth for who may transition from what (see src/utils/reviewStateMachine.ts).
+    const loadedStatus = submission?.review_status;
+    const transition = computeReviewTransition('approve', loadedStatus || '', profile?.role || 'new_joinee');
+    if (!transition.allowed) {
+      setActionMessage(`Cannot approve: worksheet is in "${loadedStatus}" state. Only pending/re-submitted worksheets can be approved by the buddy.`);
       return;
     }
 
     setActionLoading(true);
     setActionMessage('');
-    const update: Record<string, unknown> = {
-      review_status: 'buddy_approved',
-      reviewed_by: profile?.id,
-      reviewed_at: new Date().toISOString(),
-      reviewer_name: profile?.full_name || profile?.email || 'Buddy',
-    };
+    const nowIso = new Date().toISOString();
+    const reviewerName = profile?.full_name || profile?.email || 'Buddy';
 
-    const historyEntry: ReviewHistoryEntry = {
-      action: 'buddy_approved',
-      reviewer_name: profile?.full_name || profile?.email || 'Buddy',
-      reviewer_id: profile?.id || '',
-      comment: comment.trim() || null,
-      timestamp: update.reviewed_at as string,
-    };
-    const existingHistory = submission?.review_history || [];
-
-    const { error } = await supabase
+    // Optimistic-concurrency guard: only apply the transition if the row is still
+    // in the state we loaded it in. review_history is appended server-side by the
+    // BEFORE UPDATE trigger — the client never writes to it directly.
+    const { data: rows, error } = await supabase
       .from('worksheet_submissions')
-      .update({ ...update, review_history: [...existingHistory, historyEntry] })
+      .update({
+        review_status: transition.nextStatus,
+        reviewed_by: profile?.id,
+        reviewed_at: nowIso,
+        reviewer_name: reviewerName,
+        review_comment: comment.trim() || null,
+      })
       .eq('user_id', userId)
-      .eq('worksheet_id', worksheetId);
+      .eq('worksheet_id', worksheetId)
+      .eq('review_status', loadedStatus)
+      .select();
 
     if (error) {
       setActionMessage('Error: ' + error.message);
-    } else {
-      setActionMessage('Worksheet approved by buddy. ✓');
-      setSubmission(prev => prev ? {
-        ...prev, ...update,
-        review_history: [...(prev.review_history || []), historyEntry],
-      } as unknown as WorksheetSubmission : null);
-      setComment('');
-
-      await triggerNotification({
-        userId: userId || '',
-        fromUserId: profile?.id,
-        worksheetId: worksheetId || '',
-        type: 'buddy_approved',
-        message: `Your worksheet (${worksheetId}) has been approved by your buddy (${profile?.full_name || 'Buddy'}). It's now pending manager phase approval.`,
-      });
-
-      // Notify the ASSIGNED manager that a worksheet is now buddy-approved
-      let managerIds = await getAssignedReviewerIds(userId || '', 'manager');
-      // Fallback to all managers if no assigned manager found
-      if (managerIds.length === 0) {
-        managerIds = await getReviewerUserIds('manager');
-      }
-      for (const mgrId of managerIds) {
-        await triggerNotification({
-          userId: mgrId,
-          fromUserId: profile?.id,
-          worksheetId: worksheetId || '',
-          type: 'buddy_approved',
-          message: `Worksheet (${worksheetId}) for ${instructor?.full_name || 'joinee'} has been buddy-approved and is ready for phase-level review.`,
-        });
-      }
-
-      setTimeout(() => navigate(-1), 2000);
+      setActionLoading(false);
+      return;
     }
+
+    if (!rows || rows.length === 0) {
+      setActionMessage('This worksheet changed since you loaded it. Reloading the latest version…');
+      await loadData();
+      setActionLoading(false);
+      return;
+    }
+
+    setActionMessage('Worksheet approved by buddy. ✓');
+    setSubmission(rows[0] as unknown as WorksheetSubmission);
+    setComment('');
+    setTimeout(() => navigate(-1), 2000);
     setActionLoading(false);
   }
 
@@ -170,50 +183,102 @@ export default function WorksheetReview() {
       setActionMessage('Please add a comment explaining what needs revision.');
       return;
     }
+    const loadedStatus = submission?.review_status;
+    const transition = computeReviewTransition('request_revision', loadedStatus || '', profile?.role || 'new_joinee');
+    if (!transition.allowed) {
+      setActionMessage(`Cannot request revision: worksheet is in "${loadedStatus}" state.`);
+      return;
+    }
+
     setActionLoading(true);
     setActionMessage('');
-    const update: Record<string, unknown> = {
-      review_status: 'needs_revision',
-      reviewed_by: profile?.id,
-      reviewed_at: new Date().toISOString(),
-      reviewer_name: profile?.full_name || profile?.email || 'Buddy',
-      review_comment: comment.trim(),
-    };
-    const historyEntry: ReviewHistoryEntry = {
-      action: 'needs_revision',
-      reviewer_name: profile?.full_name || profile?.email || 'Buddy',
-      reviewer_id: profile?.id || '',
-      comment: comment.trim(),
-      timestamp: update.reviewed_at as string,
-    };
-    const existingHistory = submission?.review_history || [];
+    const nowIso = new Date().toISOString();
+    const reviewerName = profile?.full_name || profile?.email || 'Buddy';
 
-    const { error } = await supabase
+    const { data: rows, error } = await supabase
       .from('worksheet_submissions')
-      .update({ ...update, review_history: [...existingHistory, historyEntry] })
+      .update({
+        review_status: transition.nextStatus,
+        reviewed_by: profile?.id,
+        reviewed_at: nowIso,
+        reviewer_name: reviewerName,
+        review_comment: comment.trim(),
+      })
       .eq('user_id', userId)
-      .eq('worksheet_id', worksheetId);
+      .eq('worksheet_id', worksheetId)
+      .eq('review_status', loadedStatus)
+      .select();
 
     if (error) {
       setActionMessage('Error: ' + error.message);
-    } else {
-      setActionMessage('Revision requested.');
-      setSubmission(prev => prev ? {
-        ...prev, ...update,
-        review_history: [...(prev.review_history || []), historyEntry],
-      } as unknown as WorksheetSubmission : null);
-      setComment('');
-
-      await triggerNotification({
-        userId: userId || '',
-        fromUserId: profile?.id,
-        worksheetId: worksheetId || '',
-        type: 'needs_revision',
-        message: `Your worksheet (${worksheetId}) needs revision. Comment: ${comment.trim()}`,
-      });
-
-      setTimeout(() => navigate(-1), 2000);
+      setActionLoading(false);
+      return;
     }
+
+    if (!rows || rows.length === 0) {
+      setActionMessage('This worksheet changed since you loaded it. Reloading the latest version…');
+      await loadData();
+      setActionLoading(false);
+      return;
+    }
+
+    setActionMessage('Revision requested.');
+    setSubmission(rows[0] as unknown as WorksheetSubmission);
+    setComment('');
+    setTimeout(() => navigate(-1), 2000);
+    setActionLoading(false);
+  }
+
+  // ── Manager rejection path (H28): academic_head can send a buddy-approved
+  // worksheet back for revision directly from this page. ──
+  async function handleManagerRevision() {
+    if (!comment.trim()) {
+      setActionMessage('Please add a comment explaining what needs revision.');
+      return;
+    }
+    const loadedStatus = submission?.review_status;
+    const transition = computeReviewTransition('request_revision', loadedStatus || '', profile?.role || 'new_joinee');
+    if (!transition.allowed) {
+      setActionMessage(`Cannot request revision: worksheet is in "${loadedStatus}" state.`);
+      return;
+    }
+
+    setActionLoading(true);
+    setActionMessage('');
+    const nowIso = new Date().toISOString();
+    const reviewerName = profile?.full_name || profile?.email || 'Manager';
+
+    const { data: rows, error } = await supabase
+      .from('worksheet_submissions')
+      .update({
+        review_status: transition.nextStatus,
+        reviewed_by: profile?.id,
+        reviewed_at: nowIso,
+        reviewer_name: reviewerName,
+        review_comment: comment.trim(),
+      })
+      .eq('user_id', userId)
+      .eq('worksheet_id', worksheetId)
+      .eq('review_status', loadedStatus)
+      .select();
+
+    if (error) {
+      setActionMessage('Error: ' + error.message);
+      setActionLoading(false);
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      setActionMessage('This worksheet changed since you loaded it. Reloading the latest version…');
+      await loadData();
+      setActionLoading(false);
+      return;
+    }
+
+    setActionMessage('Revision requested by manager.');
+    setSubmission(rows[0] as unknown as WorksheetSubmission);
+    setComment('');
+    setTimeout(() => navigate(-1), 2000);
     setActionLoading(false);
   }
 
@@ -257,6 +322,22 @@ export default function WorksheetReview() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container">
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.error, marginBottom: '1rem' }}>Couldn't Load Worksheet</h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, marginBottom: '1.5rem' }}>{loadError}</p>
+          <button onClick={handleRetry} className="lux-btn lux-btn-primary" style={{ marginRight: '0.75rem' }}>
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
+          <button onClick={() => navigate(-1)} className="lux-btn lux-btn-secondary">Go Back</button>
+        </div>
+      </div>
+    );
+  }
+
   if (!submission) {
     return (
       <div className="lux-section" style={{ textAlign: 'center' }}>
@@ -273,6 +354,22 @@ export default function WorksheetReview() {
     );
   }
 
+  if (assignedBuddyError) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container">
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.error, marginBottom: '1rem' }}>Couldn't Verify Access</h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, marginBottom: '1.5rem' }}>{assignedBuddyError}</p>
+          <button onClick={handleRetry} className="lux-btn lux-btn-primary" style={{ marginRight: '0.75rem' }}>
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
+          <button onClick={() => navigate(-1)} className="lux-btn lux-btn-secondary">Go Back</button>
+        </div>
+      </div>
+    );
+  }
+
   const reviewStatus = submission.review_status;
   const isBuddyApproved = reviewStatus === 'buddy_approved';
   const isApproved = reviewStatus === 'approved';
@@ -280,6 +377,7 @@ export default function WorksheetReview() {
   const isNeedsRevision = reviewStatus === 'needs_revision';
 
   const canBuddyAct = canApprove && isPending && isAssignedBuddy !== null;
+  const canManagerRequestRevision = isManager && isBuddyApproved;
 
   function StatusBadge({ status }: { status: string }) {
     if (status === 'approved') return <span className="lux-badge" style={{ borderColor: t.success, color: t.success, fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
@@ -421,6 +519,36 @@ export default function WorksheetReview() {
                 </span>
               </button>
               <button onClick={handleBuddyRevision} disabled={actionLoading}
+                className="lux-btn lux-btn-secondary" style={{ borderColor: t.error, color: t.error, minWidth: '200px' }}>
+                {actionLoading ? 'Processing…' : <><ThumbsDown size={16} strokeWidth={1.5} /> Request Revision</>}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Review Actions — Manager rejection path on a buddy-approved worksheet (H28) */}
+        {canManagerRequestRevision && (
+          <div style={{ borderTop: '2px solid var(--color-charcoal)', padding: '1.5rem 0' }}>
+            <h3 style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.ch, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Send size={14} strokeWidth={1.5} /> Manager Review Decision
+            </h3>
+            <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg, marginBottom: '1rem' }}>
+              This worksheet has been buddy-approved. As academic head, you can send it back for revision here, or approve the full phase from the dashboard once every worksheet in the phase is buddy-approved.
+            </p>
+            <div className="lux-form-group">
+              <label className="lux-label" htmlFor="manager-review-comment">Revision Comments <span style={{ fontFamily: t.body, fontWeight: 400, color: t.wg }}>(required)</span></label>
+              <textarea id="manager-review-comment" className="lux-textarea" rows={4} value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder={"• What needs to change before this can be approved?"} />
+            </div>
+            {actionMessage && (
+              <div className={`lux-alert ${actionMessage.includes('Error') ? 'lux-alert-error' : 'lux-alert-success'}`} style={{ marginBottom: '1rem' }}>
+                {actionMessage.includes('Error') ? <AlertCircle size={16} strokeWidth={1.5} /> : <CheckCircle2 size={16} strokeWidth={1.5} />}
+                <span>{actionMessage}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button onClick={handleManagerRevision} disabled={actionLoading}
                 className="lux-btn lux-btn-secondary" style={{ borderColor: t.error, color: t.error, minWidth: '200px' }}>
                 {actionLoading ? 'Processing…' : <><ThumbsDown size={16} strokeWidth={1.5} /> Request Revision</>}
               </button>

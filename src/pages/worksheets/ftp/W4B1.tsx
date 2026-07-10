@@ -19,22 +19,22 @@ export default function W4B1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Your Info">
-            <FieldGroup label="Your Name" required><input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Your Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Reflection Cycle #1">
-            <FieldGroup label="What has been the most challenging part of this onboarding journey?">
-              <textarea className="lux-textarea" rows={3} value={data.reflectionPrompt1 as string} onChange={e => updateField('reflectionPrompt1', e.target.value)} />
+            <FieldGroup label="What has been the most challenging part of this onboarding journey?" id="reflectionPrompt1">
+              <textarea id="reflectionPrompt1" className="lux-textarea" rows={3} value={data.reflectionPrompt1 as string} onChange={e => updateField('reflectionPrompt1', e.target.value)} />
             </FieldGroup>
-            <FieldGroup label="What has been the most surprising or rewarding moment?">
-              <textarea className="lux-textarea" rows={3} value={data.reflectionPrompt2 as string} onChange={e => updateField('reflectionPrompt2', e.target.value)} />
+            <FieldGroup label="What has been the most surprising or rewarding moment?" id="reflectionPrompt2">
+              <textarea id="reflectionPrompt2" className="lux-textarea" rows={3} value={data.reflectionPrompt2 as string} onChange={e => updateField('reflectionPrompt2', e.target.value)} />
             </FieldGroup>
-            <FieldGroup label="What will you carry forward into your independent teaching?">
-              <textarea className="lux-textarea" rows={3} value={data.reflectionPrompt3 as string} onChange={e => updateField('reflectionPrompt3', e.target.value)} />
+            <FieldGroup label="What will you carry forward into your independent teaching?" id="reflectionPrompt3">
+              <textarea id="reflectionPrompt3" className="lux-textarea" rows={3} value={data.reflectionPrompt3 as string} onChange={e => updateField('reflectionPrompt3', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Commitment Ceremony">
-            <FieldGroup label="Your first-semester commitment (name it aloud to your Course Lead)" required>
-              <textarea className="lux-textarea" rows={2} value={data.commitment as string} onChange={e => updateField('commitment', e.target.value)}
+            <FieldGroup label="Your first-semester commitment (name it aloud to your Course Lead)" required id="commitment">
+              <textarea id="commitment" className="lux-textarea" rows={2} value={data.commitment as string} onChange={e => updateField('commitment', e.target.value)}
                 placeholder="e.g. 'I commit to asking for feedback after every lecture in my first month.'" />
             </FieldGroup>
           </WorksheetSection>

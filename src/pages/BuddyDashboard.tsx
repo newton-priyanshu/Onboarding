@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck } from 'lucide-react';
+import { unwrap } from '../api/db';
+import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle } from 'lucide-react';
 import { WORKSHEET_NAMES, type WorksheetSubmission } from '../config/worksheetConfig';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
@@ -47,6 +48,7 @@ export default function BuddyDashboard() {
   const [myInstructors, setMyInstructors] = useState<SimpleInstructor[]>([]);
   const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('pending');
   const [viewMode, setViewMode] = useState('all');
 
@@ -59,23 +61,34 @@ export default function BuddyDashboard() {
 
   async function loadData() {
     setLoading(true);
+    setLoadError(null);
     try {
       const [asLead, asBuddy] = await Promise.all([
         supabase.from('user_profiles').select('id, full_name, email').eq('assigned_lead_id', user!.id),
         supabase.from('user_profiles').select('id, full_name, email').eq('assigned_buddy_id', user!.id),
       ]);
+      if (asLead.error) throw asLead.error;
+      if (asBuddy.error) throw asBuddy.error;
       const unique = [...(asLead.data || []), ...(asBuddy.data || [])].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
       setMyInstructors(unique as SimpleInstructor[]);
       const ids = unique.map(a => a.id);
       if (ids.length > 0) {
-        const wsData = await fetchWithCache(`buddy-worksheets-${ids.sort().join(',')}`, () =>
-          supabase.from('worksheet_submissions').select('id, user_id, worksheet_id, review_status, status, updated_at, reviewer_name, review_history').in('user_id', ids).order('updated_at', { ascending: false }).limit(200)
-            .then(r => r.data as unknown as WorksheetSubmission[])
+        const wsData = await fetchWithCache(`buddy-worksheets-${ids.slice().sort().join(',')}`, () =>
+          supabase.from('worksheet_submissions')
+            // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
+            .select('id, user_id, worksheet_id, review_status, status, updated_at, reviewer_name')
+            .in('user_id', ids)
+            .order('updated_at', { ascending: false })
+            .limit(200)
+            .then(unwrap)
         , { ttl: 15_000 });
-        if (wsData) setAllWorksheets(wsData);
+        setAllWorksheets(wsData as unknown as WorksheetSubmission[]);
+      } else {
+        setAllWorksheets([]);
       }
     } catch (err) {
       console.error('Failed to load buddy data:', err);
+      setLoadError('We could not load your review queue. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -106,6 +119,24 @@ export default function BuddyDashboard() {
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.ch, marginBottom: '1rem' }}>Access Restricted</h2>
           <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg }}>This dashboard is for Buddies and Mentors only.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError && !loading) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container" style={{ maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+            Couldn&apos;t Load Review Queue
+          </h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
+          <button onClick={() => { invalidateCacheByPrefix('buddy-'); loadData(); }} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
         </div>
       </div>
     );

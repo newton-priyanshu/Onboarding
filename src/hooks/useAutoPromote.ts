@@ -1,6 +1,5 @@
 import { supabase } from '../api/supabase';
 import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
-import { triggerNotification, getReviewerUserIds } from './useNotifications';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -57,43 +56,21 @@ export async function checkAndPromote(userId: string | null): Promise<PromoteRes
       return { promoted: false, message: `${approved}/${allWsIds.length} worksheets approved — not yet complete` };
     }
 
-    // All approved! Promote the user
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({ role: 'lead_instructor' })
-      .eq('id', userId);
+    // All approved locally — ask the server to verify eligibility and promote.
+    // SECURITY: role changes happen ONLY through this SECURITY DEFINER RPC. It
+    // re-validates that every required worksheet is 'approved' and then updates
+    // user_profiles.role AND auth app_metadata for the CALLING user (auth.uid()).
+    // Clients never write role directly (no table .update({role}) and no
+    // supabase.auth.updateUser({ data: { role } })).
+    const { error: rpcError } = await supabase.rpc('promote_user_if_eligible');
 
-    if (updateError) throw updateError;
+    if (rpcError) throw rpcError;
 
-    // Also update the user metadata in auth
-    const { error: metaError } = await supabase.auth.updateUser({
-      data: { role: 'lead_instructor' },
-    });
-
-    if (metaError) {
-      console.warn('Could not update auth metadata role:', metaError);
-    }
-
-    // Notify the promoted user
-    await triggerNotification({
-      userId,
-      fromUserId: null as unknown as string,
-      worksheetId: '',
-      type: 'approved',
-      message: `🎉 Congratulations! All ${allWsIds.length} worksheets across all 3 phases have been approved. You have been promoted to Buddy/Mentor (lead_instructor)! You can now review other instructors' worksheets.`,
-    });
-
-    // Notify all managers about the promotion
-    const managerIds = await getReviewerUserIds('manager');
-    for (const mgrId of managerIds) {
-      await triggerNotification({
-        userId: mgrId,
-        fromUserId: userId,
-        worksheetId: '',
-        type: 'approved',
-        message: 'A joinee has completed all 3 phases and been promoted to lead_instructor. They can now serve as a buddy/mentor.',
-      });
-    }
+    // Notifications for the promoted user and for managers are now created
+    // server-side by promote_user_if_eligible() itself, so no client-side
+    // triggerNotification calls are needed here — doing so would both
+    // duplicate the self-notify and silently no-op the manager-broadcast
+    // under the tightened notifications INSERT policy.
 
     return { promoted: true, message: `All ${allWsIds.length} worksheets approved! User promoted to Buddy/Mentor (lead_instructor).` };
   } catch (err) {

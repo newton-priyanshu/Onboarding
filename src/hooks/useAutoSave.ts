@@ -1,15 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../api/supabase';
 import { getReviewerType } from '../config/worksheetConfig';
-import { REVIEW_STATUS, SUBMISSION_STATUS, NOTIFICATION_TYPE } from '../constants/status';
+import { REVIEW_STATUS } from '../constants/status';
+import { computeSubmitReviewStatus } from '../utils/reviewStateMachine';
 import { notifyError } from '../utils/errorHandling';
-import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from './useNotifications';
 import { calculateDueDate } from './useDueDates';
 import type { User } from '@supabase/supabase-js';
 
 // ─── Types ──────────────────────────────────────────────
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+interface SaveOpts {
+  /** True only when this save is triggered by an explicit user submit/resubmit
+   *  action (via flushSave). Background debounced saves must NEVER transition
+   *  review_status — the DB trigger is the sole guard for that state machine,
+   *  and resending it on every keystroke risks re-triggering a transition
+   *  (e.g. needs_revision -> revision_submitted) before the user has actually
+   *  resubmitted. */
+  isSubmit?: boolean;
+}
 
 interface UpsertPayload {
   user_id: string;
@@ -18,7 +28,7 @@ interface UpsertPayload {
   phase: string;
   reviewer_type: string;
   status: string;
-  review_status: string;
+  review_status?: string;
   updated_at: string;
   due_date?: string;
   reviewed_by?: string | null;
@@ -31,9 +41,23 @@ interface SavedWorksheetData {
   review_status?: string;
   review_comment?: string | null;
   reviewer_name?: string | null;
+  reviewed_by?: string | null;
   review_history?: unknown[];
   reviewed_at?: string | null;
+  updated_at?: string | null;
   [key: string]: unknown;
+}
+
+interface UserProfileStartDate {
+  start_date?: string | null;
+  created_at?: string | null;
+}
+
+const MAX_SAVE_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = 3000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // ─── Hook ───────────────────────────────────────────────
@@ -44,170 +68,200 @@ export function useAutoSave(
   worksheetId: string,
   phase: string = 'phase-1',
   /** Skip auto-save until data is fully loaded from Supabase */
-  loaded: boolean = true
+  loaded: boolean = true,
+  /** True only after a real, user-driven field edit has occurred. Background
+   *  autosave never fires until this is true — this both prevents autosave
+   *  from firing on hydration/prefill alone (H29), and naturally disables
+   *  autosave in buddy/viewer (overrideUserId) mode unless the buddy actually
+   *  edits something, since hydration never marks the data dirty. */
+  dirty: boolean = false,
+  /** True when this hook instance is saving on behalf of another user
+   *  (buddy/manager reviewing a joinee's worksheet). Only in this mode may
+   *  reviewer columns (reviewed_by/reviewed_at/reviewer_name) be written —
+   *  the worksheet owner's own autosave path must never touch them. */
+  isBuddyMode: boolean = false
 ): { saveStatus: SaveStatus; flushSave: (data: Record<string, unknown>) => Promise<void> } {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
-  const initialSaveDoneRef = useRef(false);
   const dueDateSetRef = useRef(false);
-  const errorShownRef = useRef(false);
-  const retryCountRef = useRef(0);
+  const lastSavedJsonRef = useRef<string | null>(null);
+  const startDateRef = useRef<Date | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
-    initialSaveDoneRef.current = false;
     return () => { mountedRef.current = false; };
   }, [worksheetId]);
 
-  const save = useCallback(async (data: Record<string, unknown>) => {
+  // ── Fetch the real onboarding start date for due-date calculation ───────
+  // Never derive due dates from a rolling "N days ago" guess (H07/H23) —
+  // read the joinee's actual start_date (falling back to created_at).
+  useEffect(() => {
     if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('start_date, created_at')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error) {
+          console.error('[AutoSave] Failed to load start date for due-date calc:', error);
+          return;
+        }
+        const p = profile as UserProfileStartDate | null;
+        const raw = p?.start_date || p?.created_at || null;
+        startDateRef.current = raw ? new Date(raw) : null;
+      } catch (err) {
+        if (!cancelled) console.error('[AutoSave] Failed to load start date for due-date calc:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const save = useCallback(async (data: Record<string, unknown>, opts: SaveOpts = {}) => {
+    if (!user?.id) return;
+    const isSubmit = opts.isSubmit === true;
     setSaveStatus('saving');
     const reviewerType = getReviewerType(worksheetId);
-    try {
-      // ── Conflict detection ────────────────────────────────
-      const savedAt = data._savedUpdatedAt as string | undefined;
-      if (savedAt) {
-        const { data: current } = await supabase
+
+    // ── Conflict detection ────────────────────────────────
+    const savedAt = data._savedUpdatedAt as string | undefined;
+    if (savedAt) {
+      try {
+        const { data: current, error: conflictError } = await supabase
           .from('worksheet_submissions')
           .select('updated_at')
           .eq('user_id', user.id)
           .eq('worksheet_id', worksheetId)
           .maybeSingle();
-        if (current && current.updated_at !== savedAt) {
+        if (conflictError) {
+          console.error('[AutoSave] Conflict check failed:', conflictError);
+        } else if (current && current.updated_at !== savedAt) {
           console.warn(
             `[AutoSave] Conflict detected for ${worksheetId}: ` +
             `local updated_at=${savedAt}, server updated_at=${current.updated_at}. ` +
             `Saving anyway (last-write-wins).`
           );
         }
-      }
-
-      // If the worksheet is already approved, do NOT overwrite review_status
-      // If it's buddy_approved, preserve it (awaiting manager)
-      const newReviewStatus = data.status === SUBMISSION_STATUS.SUBMITTED
-        ? (data._savedReviewStatus === REVIEW_STATUS.NEEDS_REVISION ? REVIEW_STATUS.REVISION_SUBMITTED
-          : data._savedReviewStatus === REVIEW_STATUS.BUDDY_APPROVED ? REVIEW_STATUS.BUDDY_APPROVED
-          : REVIEW_STATUS.PENDING_REVIEW)
-        : (data._savedReviewStatus === REVIEW_STATUS.APPROVED ? REVIEW_STATUS.APPROVED
-          : data._savedReviewStatus === REVIEW_STATUS.BUDDY_APPROVED ? REVIEW_STATUS.BUDDY_APPROVED
-          : REVIEW_STATUS.EMPTY);
-      // Calculate due_date ONLY once (tracked via dueDateSetRef).
-      let dueDateValue: string | undefined;
-      if (!dueDateSetRef.current && newReviewStatus !== 'approved' && newReviewStatus !== 'buddy_approved') {
-        dueDateValue = calculateDueDate(worksheetId)?.toISOString().split('T')[0] || undefined;
-        dueDateSetRef.current = true;
-      }
-
-      // Pass through buddy review fields if present in worksheet_data
-      const reviewedBy = data._savedReviewedBy as string | null | undefined;
-      const reviewedAt = data._savedReviewedAt as string | null | undefined;
-      const reviewerName = data._savedReviewerName as string | null | undefined;
-
-      const upsertPayload: UpsertPayload = {
-        user_id: user.id,
-        worksheet_id: worksheetId,
-        worksheet_data: data,
-        phase,
-        reviewer_type: reviewerType,
-        status: (data.status as string) || 'In Progress',
-        review_status: newReviewStatus,
-        updated_at: new Date().toISOString(),
-        reviewed_by: reviewedBy || null,
-        reviewed_at: reviewedAt || null,
-        reviewer_name: reviewerName || null,
-      };
-      // Only include due_date on initial save — never overwrite persisted value
-      if (dueDateValue !== undefined) upsertPayload.due_date = dueDateValue;
-
-      const { error } = await supabase.from('worksheet_submissions').upsert(upsertPayload, { onConflict: 'user_id,worksheet_id' });
-      if (error) throw error;
-
-      // Trigger notification on first-time submission only
-      const isNewSubmission = data.status === SUBMISSION_STATUS.SUBMITTED
-        && data._savedReviewStatus !== REVIEW_STATUS.APPROVED
-        && data._savedReviewStatus !== REVIEW_STATUS.BUDDY_APPROVED
-        && data._savedReviewStatus !== REVIEW_STATUS.PENDING_REVIEW
-        && data._savedReviewStatus !== REVIEW_STATUS.REVISION_SUBMITTED;
-      if (isNewSubmission) {
-        // Notify the ASSIGNED reviewer, not all users with that role
-        let reviewerUserIds: string[] = [];
-        if (reviewerType === 'buddy' || reviewerType === 'manager') {
-          reviewerUserIds = await getAssignedReviewerIds(user.id, reviewerType);
-        }
-        // Fallback to all role users for non-assigned types (onboarding_lead)
-        if (reviewerUserIds.length === 0) {
-          reviewerUserIds = await getReviewerUserIds(reviewerType);
-        }
-        const phaseNames: Record<string, string> = {
-        'phase-1': 'Phase 1', 'phase-2': 'Phase 2', 'phase-3': 'Phase 3',
-        'week-1': 'Week 1 — Anchor', 'week-2': 'Week 2 — Co-create',
-        'week-3': 'Week 3 — Co-deliver', 'week-4': 'Week 4 — Independence Review',
-      };
-        const phaseName = phaseNames[phase] || phase;
-        for (const reviewerId of reviewerUserIds) {
-          await triggerNotification({
-            userId: reviewerId,
-            fromUserId: user.id,
-            worksheetId,
-            type: data._savedReviewStatus === REVIEW_STATUS.NEEDS_REVISION ? NOTIFICATION_TYPE.REVISION_SUBMITTED : NOTIFICATION_TYPE.SUBMITTED,
-            message: `A worksheet (${worksheetId}) was submitted in ${phaseName} and is ready for review.`,
-          });
-        }
-      }
-
-      // Reset retry counter on successful save
-      retryCountRef.current = 0;
-      if (mountedRef.current) {
-        setSaveStatus('saved');
-        setTimeout(() => {
-          if (mountedRef.current) setSaveStatus((p: SaveStatus) => p === 'saved' ? 'idle' : p);
-        }, 2000);
-      }
-    } catch (err) {
-      notifyError('Auto-save failed:', err);
-      if (mountedRef.current) {
-        setSaveStatus('error');
-        errorShownRef.current = true;
-        retryCountRef.current += 1;
-        // Retry up to 2 times on failure (with backoff)
-        if (retryCountRef.current <= 2) {
-          const backoff = retryCountRef.current * 3000;
-          setTimeout(() => {
-            if (mountedRef.current) {
-              save(data);
-            }
-          }, backoff);
-        } else {
-          // Exhausted retries — reset retry count so future saves can retry again
-          retryCountRef.current = 0;
-          // Rethrow so callers (flushSave, handleSubmit) can catch and show proper errors
-          throw err;
-        }
+      } catch (err) {
+        console.error('[AutoSave] Conflict check threw:', err);
       }
     }
-  }, [user?.id, worksheetId, phase]);
+
+    // Only an explicit submit/resubmit may transition review_status. The
+    // transition itself is the single shared reviewStateMachine calculation
+    // (see src/utils/reviewStateMachine.ts) so this can't drift from the
+    // reviewer-side transitions in WorksheetReview.tsx.
+    let newReviewStatus: string | undefined;
+    if (isSubmit) {
+      newReviewStatus = computeSubmitReviewStatus(
+        data.status as string,
+        data._savedReviewStatus as string
+      );
+    }
+
+    // Calculate due_date ONLY once (tracked via dueDateSetRef), based on the
+    // joinee's real onboarding start date — never overwrite a persisted value.
+    let dueDateValue: string | undefined;
+    const currentReviewStatus = data._savedReviewStatus as string | undefined;
+    if (
+      !dueDateSetRef.current &&
+      currentReviewStatus !== REVIEW_STATUS.APPROVED &&
+      currentReviewStatus !== REVIEW_STATUS.BUDDY_APPROVED
+    ) {
+      dueDateValue = calculateDueDate(worksheetId, startDateRef.current)?.toISOString().split('T')[0] || undefined;
+      dueDateSetRef.current = true;
+    }
+
+    const upsertPayload: UpsertPayload = {
+      user_id: user.id,
+      worksheet_id: worksheetId,
+      worksheet_data: data,
+      phase,
+      reviewer_type: reviewerType,
+      status: (data.status as string) || 'In Progress',
+      updated_at: new Date().toISOString(),
+    };
+    // Only send review_status on an explicit submit/resubmit (see above).
+    if (newReviewStatus !== undefined) upsertPayload.review_status = newReviewStatus;
+    // Only include due_date on initial save — never overwrite persisted value
+    if (dueDateValue !== undefined) upsertPayload.due_date = dueDateValue;
+    // Reviewer columns: only the buddy/manager save path may write these —
+    // the worksheet owner's own autosave path must never touch them (H15).
+    if (isBuddyMode) {
+      upsertPayload.reviewed_by = (data._savedReviewedBy as string | null | undefined) || null;
+      upsertPayload.reviewed_at = (data._savedReviewedAt as string | null | undefined) || null;
+      upsertPayload.reviewer_name = (data._savedReviewerName as string | null | undefined) || null;
+    }
+
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= MAX_SAVE_ATTEMPTS; attempt++) {
+      let error: unknown = null;
+      try {
+        const res = await supabase
+          .from('worksheet_submissions')
+          .upsert(upsertPayload, { onConflict: 'user_id,worksheet_id' });
+        error = res.error;
+      } catch (thrown) {
+        error = thrown;
+      }
+
+      if (!error) {
+        lastSavedJsonRef.current = JSON.stringify(data);
+        if (mountedRef.current) {
+          setSaveStatus('saved');
+          setTimeout(() => {
+            if (mountedRef.current) setSaveStatus((p: SaveStatus) => p === 'saved' ? 'idle' : p);
+          }, 2000);
+        }
+        return;
+      }
+
+      lastError = error;
+      notifyError('Auto-save failed:', error);
+      if (!mountedRef.current) break;
+      if (attempt < MAX_SAVE_ATTEMPTS) {
+        await sleep(attempt * RETRY_BACKOFF_MS);
+        if (!mountedRef.current) break;
+      }
+    }
+
+    // Exhausted retries (or unmounted mid-retry) — surface a persistent error
+    // state and rethrow so callers (flushSave -> handleSubmit) see the failure
+    // and do NOT report success on a failed write (H06/H17/H32).
+    if (mountedRef.current) setSaveStatus('error');
+    throw lastError;
+  }, [user?.id, worksheetId, phase, isBuddyMode]);
 
   useEffect(() => {
     if (!user?.id) return;
     // Skip auto-save until data is fully loaded from Supabase
     if (!loaded) return;
+    // Skip auto-save until a real, user-driven edit has happened (H29).
+    if (!dirty) return;
+    // Skip redundant re-saves of data that's already persisted — e.g. right
+    // after an explicit submit already flushed this exact payload (H30).
+    const dataJson = JSON.stringify(worksheetData);
+    if (dataJson === lastSavedJsonRef.current) return;
     if (timerRef.current) clearTimeout(timerRef.current);
-    const hasRealData = Object.keys(worksheetData).length > 2 ||
-      (worksheetData.employeeName as string)?.trim() ||
-      worksheetData._savedReviewStatus;
-    if (!hasRealData && !initialSaveDoneRef.current) return;
-    initialSaveDoneRef.current = true;
-    timerRef.current = setTimeout(() => save(worksheetData), 1500);
+    timerRef.current = setTimeout(() => {
+      // Background saves are fire-and-forget from the caller's perspective —
+      // save() already sets a persistent saveStatus='error' on failure, so we
+      // just swallow the rejection here to avoid an unhandled promise error.
+      save(worksheetData, { isSubmit: false }).catch(() => { /* saveStatus already reflects the error */ });
+    }, 1500);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [worksheetData, save, user?.id, loaded]);
+  }, [worksheetData, save, user?.id, loaded, dirty]);
 
   const flushSave = useCallback(async (data: Record<string, unknown>): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    initialSaveDoneRef.current = true;
-    // Retry counter starts at initial call, so reset for flush-based saves
-    retryCountRef.current = 0;
-    await save(data);
+    // flushSave is only ever invoked from an explicit submit/resubmit action
+    // (handleSubmit). It awaits the full retry loop and rethrows on failure
+    // so the caller never reports success on a failed write.
+    await save(data, { isSubmit: true });
   }, [save]);
 
   return { saveStatus, flushSave };
@@ -218,15 +272,20 @@ export function useAutoSave(
 export async function loadWorksheetData(
   userId: string | null,
   worksheetId: string | null
-): Promise<SavedWorksheetData | null> {
-  if (!userId || !worksheetId) return null;
-  const { data } = await supabase
-    .from('worksheet_submissions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('worksheet_id', worksheetId)
-    .maybeSingle();
-  return data as SavedWorksheetData | null;
+): Promise<{ data: SavedWorksheetData | null; error: unknown }> {
+  if (!userId || !worksheetId) return { data: null, error: null };
+  try {
+    const { data, error } = await supabase
+      .from('worksheet_submissions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('worksheet_id', worksheetId)
+      .maybeSingle();
+    if (error) return { data: null, error };
+    return { data: data as SavedWorksheetData | null, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
 }
 
 export async function getOAuthName(): Promise<string> {

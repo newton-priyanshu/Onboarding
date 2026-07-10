@@ -116,35 +116,62 @@ export function getDueDateInfo(worksheetId: string, startDate: Date | null = nul
 
 /**
  * useDueDates — Fetches/syncs due dates for a user's worksheets.
+ *
+ * Never overwrites a persisted due_date (only fills gaps). For worksheets
+ * without a stored due_date, computes a default from the user's REAL
+ * onboarding start_date (falling back to created_at) — never from a rolling
+ * "N days ago" guess (H07/H23).
  */
 export function useDueDates(userId: string | null, worksheetIds: string[] = []): DueDateMap {
   const [dueDates, setDueDates] = useState<DueDateMap>({});
 
   useEffect(() => {
     if (!userId) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('worksheet_submissions')
-        .select('worksheet_id, due_date')
-        .eq('user_id', userId);
+      const [subsRes, profileRes] = await Promise.all([
+        supabase
+          .from('worksheet_submissions')
+          .select('worksheet_id, due_date')
+          .eq('user_id', userId),
+        supabase
+          .from('user_profiles')
+          .select('start_date, created_at')
+          .eq('id', userId)
+          .maybeSingle(),
+      ]);
 
-      const dateMap: DueDateMap = {};
-      if (data) {
-        (data as Array<{ worksheet_id: string; due_date: string | null }>).forEach(row => {
-          if (row.due_date) dateMap[row.worksheet_id] = row.due_date;
-        });
+      if (cancelled) return;
+
+      if (subsRes.error) {
+        console.error('[useDueDates] Failed to load worksheet due dates:', subsRes.error);
+      }
+      if (profileRes.error) {
+        console.error('[useDueDates] Failed to load start date for due-date calc:', profileRes.error);
       }
 
-      // Fill in defaults for worksheets without stored due dates
+      const dateMap: DueDateMap = {};
+      const subs = subsRes.data as Array<{ worksheet_id: string; due_date: string | null }> | null;
+      (subs || []).forEach(row => {
+        if (row.due_date) dateMap[row.worksheet_id] = row.due_date;
+      });
+
+      const profile = profileRes.data as { start_date?: string | null; created_at?: string | null } | null;
+      const startDateStr = profile?.start_date || profile?.created_at || null;
+      const startDate = startDateStr ? new Date(startDateStr) : null;
+
+      // Fill in defaults (from the real onboarding start date) for
+      // worksheets without a stored due_date. Never overwrites a persisted one.
       worksheetIds.forEach(id => {
         if (!dateMap[id]) {
-          const calc = calculateDueDate(id);
+          const calc = calculateDueDate(id, startDate);
           if (calc) dateMap[id] = calc.toISOString().split('T')[0] as string;
         }
       });
 
       setDueDates(dateMap);
     })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, worksheetIds.join(',')]);
 

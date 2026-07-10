@@ -95,7 +95,7 @@ export function useGateControl({
   const {
     data, setData, loaded, submitting, setSubmitting,
     submitError, setSubmitError, updateField, flushSave,
-    isBuddyApproved, isApproved, isSubmitted,
+    isBuddyApproved, isApproved, isSubmitted, loadError, retryLoad, markClean,
   } = ws;
 
   const showToast = useToast().showToast;
@@ -121,6 +121,12 @@ export function useGateControl({
     submitGuardRef.current = true;
 
     setSubmitError('');
+
+    if (loadError) {
+      setSubmitError('Unable to load worksheet data. Please retry loading before submitting.');
+      submitGuardRef.current = false;
+      return;
+    }
 
     // Validate required fields
     const missing = requiredFields.filter(f => !(data[f.key] as string)?.trim());
@@ -170,7 +176,35 @@ export function useGateControl({
         _savedReviewerName: isBuddyMode ? ((profile?.full_name as string) || 'Buddy') : null,
       };
       setData(d);
-      await flushSave(d);
+
+      if (isBuddyMode) {
+        // Buddy-authored gate passes (gc1/gc2/gc3) don't have a row until
+        // their buddy files one, so this can be a fresh INSERT. The direct
+        // client-side upsert path (useWorksheet's flushSave -> useAutoSave)
+        // cannot perform that INSERT: worksheet_submissions' "Insert own
+        // submissions" RLS policy requires auth.uid() = user_id, which is
+        // never true for a buddy writing a row owned by their joinee — that
+        // write would be silently rejected. Route buddy-mode submissions
+        // through the upsert_gate_submission() SECURITY DEFINER RPC instead,
+        // which authorizes the caller itself (assigned buddy or
+        // academic_head) and bypasses RLS to perform the upsert.
+        if (!targetUserId) {
+          throw new Error('No target joinee specified for buddy gate submission');
+        }
+        const { error: rpcError } = await supabase.rpc('upsert_gate_submission', {
+          p_user_id: targetUserId,
+          p_worksheet_id: worksheetId,
+          p_data: d,
+          p_status: 'buddy_approved',
+        });
+        if (rpcError) throw rpcError;
+      } else {
+        await flushSave(d);
+      }
+
+      // Fully in sync with the server now — clear dirty so the background
+      // autosave effect doesn't immediately re-fire for the same payload (H30).
+      markClean();
 
       showToast(
         isBuddyMode
@@ -188,18 +222,21 @@ export function useGateControl({
       submitGuardRef.current = false;
       setSubmitting(false);
     }
-  }, [data, requiredFields, isBuddyMode, user?.id, profile?.full_name, targetUserId, phase, showToast, setData, setSubmitError, setSubmitting, flushSave]);
+  }, [data, requiredFields, isBuddyMode, user?.id, profile?.full_name, targetUserId, worksheetId, phase, showToast, setData, setSubmitError, setSubmitting, flushSave, markClean, loadError]);
 
   return {
     data,
     setData,
     loaded,
+    loadError,
+    retryLoad,
     submitting,
     setSubmitting,
     submitError,
     setSubmitError,
     updateField,
     flushSave,
+    markClean,
     isBuddyApproved,
     isApproved,
     isSubmitted,

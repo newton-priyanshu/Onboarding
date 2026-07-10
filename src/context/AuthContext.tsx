@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { supabase } from '../api/supabase';
 import { notifyError } from '../utils/errorHandling';
-import { triggerNotification, getReviewerUserIds } from '../hooks/useNotifications';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile, UserRole } from '../types/supabase';
 
@@ -68,16 +67,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // DEGRADED FALLBACK ONLY: used when an RLS recursion error prevents reading the
+  // user_profiles row directly. This builds a best-effort, read-only profile from
+  // the JWT rather than the database. SECURITY: role must NEVER be sourced from
+  // user_metadata (client-writable) — it is resolved exclusively from app_metadata
+  // (server-set at signup/promotion), defaulting to the least-privileged role.
   async function buildProfileFromMetadata(): Promise<void> {
     try {
-      const { data: { user: u } } = await supabase.auth.getUser();
+      const { data: { user: u }, error } = await supabase.auth.getUser();
+      if (error) {
+        notifyError('Metadata fallback error:', error);
+        return;
+      }
       if (!u) return;
       const meta = u.user_metadata || {};
+      const appMeta = u.app_metadata || {};
       setProfile({
         id: u.id,
         email: u.email ?? null,
         full_name: (meta.full_name as string) || (meta.name as string) || u.email?.split('@')[0] || 'User',
-        role: (meta.role as UserRole) || 'new_joinee',
+        role: (appMeta.role as UserRole) || 'new_joinee',
         department: null,
         assigned_lead_id: null,
         assigned_buddy_id: null,
@@ -93,32 +102,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function createProfileFromAuth(userId: string): Promise<void> {
     try {
-      const { data: { user: u } } = await supabase.auth.getUser();
+      const { data: { user: u }, error: getUserError } = await supabase.auth.getUser();
+      if (getUserError) {
+        notifyError('Auto-profile creation error:', getUserError);
+        return;
+      }
       if (!u) return;
 
       const fullName: string = (u.user_metadata?.full_name as string) ||
         (u.user_metadata?.name as string) ||
         u.email?.split('@')[0] || 'User';
 
-      const role = (u.user_metadata?.role as string) || 'new_joinee';
-
+      // SECURITY: role is intentionally omitted here — clients never write role.
+      // The row's role is assigned server-side (handle_new_user trigger / column
+      // default), never from user_metadata.
       const { data: newProfile, error } = await supabase
         .from('user_profiles')
         .insert({
           id: userId,
           email: u.email,
           full_name: fullName,
-          role,
         })
         .select()
         .single();
 
       if (error) {
-        const { data: retryProfile } = await supabase
+        const { data: retryProfile, error: retryError } = await supabase
           .from('user_profiles')
           .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, created_at, updated_at')
           .eq('id', userId)
           .single();
+        if (retryError) {
+          notifyError('Auto-profile creation error:', retryError);
+          return;
+        }
         if (retryProfile) setProfile(retryProfile as UserProfile);
         return;
       }
@@ -134,8 +151,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return;
+      if (error) {
+        notifyError('Error fetching session:', error);
+        setLoading(false);
+        return;
+      }
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
@@ -166,43 +188,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Auth actions ──────────────────────────────────────────────
-  const signUp = useCallback(async (email: string, password: string, fullName: string, role: UserRole = 'new_joinee') => {
+  // SECURITY: signUp never accepts or transmits a role. The `_role` parameter is
+  // retained only so existing call sites keep compiling; it is intentionally
+  // unused. handle_new_user (a server-side trigger) creates the user_profiles row
+  // with role='new_joinee' and a DB trigger notifies managers/leads of the new
+  // signup — the client no longer writes a role or inserts that notification.
+  const signUp = useCallback(async (email: string, password: string, fullName: string, _role: UserRole = 'new_joinee') => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, role },
+        data: { full_name: fullName },
       },
     });
     if (error) throw error;
 
     if (data?.user?.identities && data.user.identities.length === 0) {
       throw new Error('An account with this email already exists. Please sign in instead.');
-    }
-
-    if (data.user) {
-      const { error: profileError } = await supabase.from('user_profiles').insert({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-        role,
-      });
-      if (profileError) notifyError('Profile creation error:', profileError);
-
-      if (role === 'new_joinee' || role === 'lab_instructor') {
-        const adminIds = await getReviewerUserIds('manager');
-        const onboardingIds = await getReviewerUserIds('onboarding_lead');
-        const allRecipients = [...new Set([...adminIds, ...onboardingIds])];
-        for (const recipientId of allRecipients) {
-          await triggerNotification({
-            userId: recipientId,
-            fromUserId: data.user.id,
-            worksheetId: '',
-            type: 'submitted',
-            message: `New ${role === 'new_joinee' ? 'Joinee' : 'Lab Instructor'} joined: ${fullName} (${email}). They need a manager and buddy assigned.`,
-          });
-        }
-      }
     }
 
     return { user: data.user };

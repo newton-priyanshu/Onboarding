@@ -1,5 +1,6 @@
-import { BookOpen, Users, MessageSquare, MessageCircle, Shield, CheckCircle2, Anchor, Layers, Flag, type LucideIcon } from 'lucide-react';
+import { BookOpen, Users, MessageSquare, MessageCircle, Shield, CheckCircle2, AlertCircle, RefreshCw, Anchor, Layers, Flag, type LucideIcon } from 'lucide-react';
 import { supabase } from '../api/supabase';
+import { unwrap } from '../api/db';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
@@ -55,6 +56,7 @@ export default function Phase1() {
   const { user } = useAuth();
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) loadStatuses();
@@ -65,16 +67,17 @@ export default function Phase1() {
 
   async function loadStatuses() {
     setLoading(true);
+    setLoadError(null);
     try {
-      const { data } = await supabase
+      const data = await supabase
         .from('worksheet_submissions')
         .select('worksheet_id, status, review_status')
-        .eq('user_id', user?.id);
-      if (data) {
-        setStatuses(buildStatusMap(data));
-      }
+        .eq('user_id', user?.id)
+        .then(unwrap);
+      setStatuses(buildStatusMap(data as unknown as Array<{ worksheet_id: string; status: string | null; review_status: string | null }>));
     } catch (err) {
       console.error('Failed to load Phase 1 statuses:', err);
+      setLoadError('We could not load your Phase 1 progress. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -148,6 +151,24 @@ export default function Phase1() {
               ))}
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container" style={{ maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+            Couldn&apos;t Load Phase 1
+          </h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
+          <button onClick={() => loadStatuses()} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
         </div>
       </div>
     );

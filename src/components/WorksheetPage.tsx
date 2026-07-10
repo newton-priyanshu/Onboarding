@@ -123,6 +123,34 @@ export default function WorksheetPage({
 
   return (
     <div className="lux-section">
+      {/*
+        Shared responsive/a11y utilities for all worksheet forms (H26 + a11y fixes).
+        Kept here rather than duplicated in every worksheet file:
+        - .ws-sr-only: visually-hidden label text (still read by screen readers),
+          used to give bare table-style inputs a real associated <label> without
+          changing the visual design.
+        - .ws-scroll-x + .ws-matrix-row: wide "spreadsheet" style rows (fixed
+          multi-column grids used for review matrices/logs) become horizontally
+          scrollable on narrow screens instead of squashing into unreadable columns.
+        - .ws-stack-sm: simple side-by-side field pairs collapse to a single
+          column on phones.
+        - .ws-star-btn: ensures star/rating buttons meet the 44px touch target.
+      */}
+      <style>{`
+        .ws-sr-only {
+          position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+          overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
+        .ws-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .ws-matrix-row { min-width: 620px; }
+        .ws-star-btn {
+          min-width: 44px; min-height: 44px;
+          display: inline-flex; align-items: center; justify-content: center;
+        }
+        @media (max-width: 640px) {
+          .ws-stack-sm, .ws-stack-sm > div { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to={backTo} label={`Back to ${phaseLabel(phase)}`} />
         <WorksheetHeader icon={icon} title={title} subtitle={subtitle} saveStatus={saveStatus} />

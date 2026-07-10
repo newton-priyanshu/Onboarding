@@ -31,30 +31,34 @@ export default function Phase3Worksheet3() {
         const uBloom = (i: number, f: string, v: string | boolean) => setData(p => { const arr = [...p.bloomGrid]; arr[i] = { ...arr[i], [f]: v }; return { ...p, bloomGrid: arr }; });
         return (
           <>
-            <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+            <WorksheetSection title="About You"><FieldGroup label="Full Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
             <WorksheetSection title="Bloom's Taxonomy Coverage Grid" subtitle="For each cognitive level, describe how your assessment addresses it and provide one example question/item.">
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 2.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
-                {['Cognitive Level', 'Coverage (How assessed?)', 'Example Question/Item'].map(h => (
-                  <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
+              <div className="ws-scroll-x">
+                <div className="ws-matrix-row" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 2.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
+                  {['Cognitive Level', 'Coverage (How assessed?)', 'Example Question/Item'].map(h => (
+                    <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
+                  ))}
+                </div>
+                {bloomLevels.map((level, i) => (
+                  <div key={level.key} className="ws-matrix-row" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 2.5fr', gap: '8px' }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', color: 'var(--color-charcoal)' }}>{level.label}</span>
+                    <label htmlFor={`bloom-coverage-${i}`} className="ws-sr-only">Coverage ({level.label})</label>
+                    <input id={`bloom-coverage-${i}`} className="lux-input" placeholder="How covered?" value={data.bloomGrid[i].coverage} onChange={e => uBloom(i, 'coverage', e.target.value)} />
+                    <label htmlFor={`bloom-example-${i}`} className="ws-sr-only">Example Question/Item ({level.label})</label>
+                    <input id={`bloom-example-${i}`} className="lux-input" placeholder="Example question" value={data.bloomGrid[i].exampleItem} onChange={e => uBloom(i, 'exampleItem', e.target.value)} />
+                  </div>
                 ))}
               </div>
-              {bloomLevels.map((level, i) => (
-                <div key={level.key} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 2.5fr', gap: '8px' }}>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', color: 'var(--color-charcoal)' }}>{level.label}</span>
-                  <input className="lux-input" placeholder="How covered?" value={data.bloomGrid[i].coverage} onChange={e => uBloom(i, 'coverage', e.target.value)} />
-                  <input className="lux-input" placeholder="Example question" value={data.bloomGrid[i].exampleItem} onChange={e => uBloom(i, 'exampleItem', e.target.value)} />
-                </div>
-              ))}
             </WorksheetSection>
             <WorksheetSection title="Assessment Design Decisions" subtitle="Explain the rationale behind your assessment structure.">
-              <FieldGroup label="What type of assessment are you designing (quiz, assignment, exam, project) and what are its primary learning objectives?">
-                <textarea className="lux-textarea" rows={2} value={data.blueprintAssessmentType || ''} onChange={e => updateField('blueprintAssessmentType', e.target.value)} placeholder="Describe the assessment and what it aims to measure..." />
+              <FieldGroup label="What type of assessment are you designing (quiz, assignment, exam, project) and what are its primary learning objectives?" id="blueprintAssessmentType">
+                <textarea id="blueprintAssessmentType" className="lux-textarea" rows={2} value={data.blueprintAssessmentType || ''} onChange={e => updateField('blueprintAssessmentType', e.target.value)} placeholder="Describe the assessment and what it aims to measure..." />
               </FieldGroup>
-              <FieldGroup label="How is difficulty distributed across questions — and how do you ensure both strong and struggling students are fairly assessed?">
-                <textarea className="lux-textarea" rows={2} value={data.blueprintDifficultyDistribution || ''} onChange={e => updateField('blueprintDifficultyDistribution', e.target.value)} placeholder="e.g. 30% recall, 40% application, 30% analysis..." />
+              <FieldGroup label="How is difficulty distributed across questions — and how do you ensure both strong and struggling students are fairly assessed?" id="blueprintDifficultyDistribution">
+                <textarea id="blueprintDifficultyDistribution" className="lux-textarea" rows={2} value={data.blueprintDifficultyDistribution || ''} onChange={e => updateField('blueprintDifficultyDistribution', e.target.value)} placeholder="e.g. 30% recall, 40% application, 30% analysis..." />
               </FieldGroup>
-              <FieldGroup label="How will you use assessment results to inform your subsequent teaching (closing the feedback loop)?">
-                <textarea className="lux-textarea" rows={2} value={data.blueprintFeedbackLoop || ''} onChange={e => updateField('blueprintFeedbackLoop', e.target.value)} placeholder="How will assessment data shape your next lessons?" />
+              <FieldGroup label="How will you use assessment results to inform your subsequent teaching (closing the feedback loop)?" id="blueprintFeedbackLoop">
+                <textarea id="blueprintFeedbackLoop" className="lux-textarea" rows={2} value={data.blueprintFeedbackLoop || ''} onChange={e => updateField('blueprintFeedbackLoop', e.target.value)} placeholder="How will assessment data shape your next lessons?" />
               </FieldGroup>
             </WorksheetSection>
           </>

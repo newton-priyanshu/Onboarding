@@ -25,7 +25,7 @@ export default function W2O1() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Your Info">
-            <FieldGroup label="Your Name" required><input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Your Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.8rem' }}>
               <input type="checkbox" checked={!!(data.policyRead as boolean)} onChange={e => updateField('policyRead', e.target.checked)}
                 style={{ width: '16px', height: '16px', accentColor: 'var(--color-charcoal)' }} />
@@ -35,16 +35,16 @@ export default function W2O1() {
           <WorksheetSection title="Scenario Responses">
             {['A student is found with unauthorised notes during an exam', 'A student submits a malpractice complaint against another student',
               'A student arrives 30 minutes late to the exam', 'The exam server goes down mid-test'].map((s, i) => (
-              <FieldGroup key={i} label={`Scenario ${i + 1}: ${s}`}>
-                <textarea className="lux-textarea" rows={2}
+              <FieldGroup key={i} label={`Scenario ${i + 1}: ${s}`} id={`scenario-${i}`}>
+                <textarea id={`scenario-${i}`} className="lux-textarea" rows={2}
                   value={(data.scenarios as any[])?.[i]?.response || ''}
                   onChange={e => { const a = [...((data.scenarios as any[]) || [])]; a[i] = { ...a[i], situation: s, response: e.target.value }; updateField('scenarios', a); }} />
               </FieldGroup>
             ))}
           </WorksheetSection>
           <WorksheetSection title="Questions">
-            <FieldGroup label="Any questions about exam policies?">
-              <textarea className="lux-textarea" rows={2} value={data.questions as string} onChange={e => updateField('questions', e.target.value)} />
+            <FieldGroup label="Any questions about exam policies?" id="questions">
+              <textarea id="questions" className="lux-textarea" rows={2} value={data.questions as string} onChange={e => updateField('questions', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
         </>

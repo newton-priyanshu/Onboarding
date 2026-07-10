@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, BookText, Users, FileText, ClipboardCheck, Lock, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { BookOpen, BookText, Users, FileText, ClipboardCheck, Lock, CheckCircle2, AlertCircle, RefreshCw, type LucideIcon } from 'lucide-react';
 import { supabase } from '../api/supabase';
+import { unwrap } from '../api/db';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
@@ -69,25 +70,51 @@ export default function Phase3() {
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
   const [allSubmissions, setAllSubmissions] = useState<WorksheetSubmission[]>([]);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) (async () => {
-      try {
-        const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user.id);
-        if (data) {
-          const subs = data.map(s => ({ ...s, user_id: user.id })) as unknown as WorksheetSubmission[];
-          setAllSubmissions(subs);
-          const m: Record<string, StatusInfo> = {};
-          data.forEach(s => { m[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-          setStatuses(m);
-        }
-      } catch (err) {
-        console.error('Failed to load Phase 3 submissions:', err);
-      } finally {
-        setCheckingAccess(false);
-      }
-    })();
+    if (user) loadSubmissions();
+    // loadSubmissions intentionally omitted: closes over fresh user each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  async function loadSubmissions() {
+    if (!user) return;
+    setCheckingAccess(true);
+    setLoadError(null);
+    try {
+      const data = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user.id).then(unwrap);
+      const subs = data.map(s => ({ ...s, user_id: user.id })) as unknown as WorksheetSubmission[];
+      setAllSubmissions(subs);
+      const m: Record<string, StatusInfo> = {};
+      data.forEach(s => { m[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+      setStatuses(m);
+    } catch (err) {
+      console.error('Failed to load Phase 3 submissions:', err);
+      // Fail closed: a failed access check must never be treated as "unlocked".
+      setLoadError('We could not verify your Phase 3 access. Please check your connection and try again.');
+    } finally {
+      setCheckingAccess(false);
+    }
+  }
+
+  if (!checkingAccess && loadError) {
+    return (
+      <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h1 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+            Couldn&apos;t Verify Access
+          </h1>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
+          <button onClick={() => loadSubmissions()} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!checkingAccess && !canAccessPhase(user?.id || '', 3, allSubmissions)) {
     return <PhaseLockedView phaseNum={3} previousPhaseNum={2} navigate={navigate} />;

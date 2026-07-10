@@ -25,7 +25,7 @@ export default function Phase2Worksheet4() {
         const toggleTask = (i: number, f: string) => setData(p => { const arr = [...p.tasks]; arr[i] = { ...arr[i], [f]: !arr[i][f] }; return { ...p, tasks: arr }; });
         return (
           <>
-            <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
+            <WorksheetSection title="About You"><FieldGroup label="Full Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
             <WorksheetSection title="Advanced Portal Operations Checklist" subtitle="By Day 60, you must independently handle all operations.">
               {portalTasks.map((task, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(26,26,26,0.06)' }}>
@@ -40,14 +40,16 @@ export default function Phase2Worksheet4() {
               ))}
             </WorksheetSection>
             <WorksheetSection title="Faculty Lead Live Demo Sign-Off">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <FieldGroup label="Demo conducted on (date)"><input type="date" className="lux-input" value={data.demoDate} onChange={e => updateField('demoDate', e.target.value)} /></FieldGroup>
-                <FieldGroup label="Tasks demonstrated"><input className="lux-input" value={data.demoTasks} onChange={e => updateField('demoTasks', e.target.value)} /></FieldGroup>
+              <div className="ws-stack-sm">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <FieldGroup label="Demo conducted on (date)" id="demoDate"><input id="demoDate" type="date" className="lux-input" value={data.demoDate} onChange={e => updateField('demoDate', e.target.value)} /></FieldGroup>
+                  <FieldGroup label="Tasks demonstrated" id="demoTasks"><input id="demoTasks" className="lux-input" value={data.demoTasks} onChange={e => updateField('demoTasks', e.target.value)} /></FieldGroup>
+                </div>
               </div>
-              <FieldGroup label="Gaps to address"><textarea className="lux-textarea" rows={1} value={data.demoGaps} onChange={e => updateField('demoGaps', e.target.value)} /></FieldGroup>
-              <FieldGroup label="Faculty Lead Signature"><input className="lux-input" value={data.demoSignature} onChange={e => updateField('demoSignature', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Gaps to address" id="demoGaps"><textarea id="demoGaps" className="lux-textarea" rows={1} value={data.demoGaps} onChange={e => updateField('demoGaps', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Faculty Lead Signature" id="demoSignature"><input id="demoSignature" className="lux-input" value={data.demoSignature} onChange={e => updateField('demoSignature', e.target.value)} /></FieldGroup>
             </WorksheetSection>
-            <WorksheetSection title="Verification"><FieldGroup label="Employee Signature"><input className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
+            <WorksheetSection title="Verification"><FieldGroup label="Employee Signature" id="employeeSignature"><input id="employeeSignature" className="lux-input" value={data.employeeSignature} onChange={e => updateField('employeeSignature', e.target.value)} /></FieldGroup></WorksheetSection>
           </>
         );
       }}

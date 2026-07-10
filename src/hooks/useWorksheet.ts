@@ -40,6 +40,14 @@ interface UseWorksheetResult {
   data: Record<string, unknown>;
   setData: React.Dispatch<React.SetStateAction<Record<string, unknown>>>;
   loaded: boolean;
+  /** Non-empty when the initial load from Supabase failed. While set, the hook
+   *  deliberately never reaches loaded=true and autosave stays blocked, so a
+   *  transient read failure can never result in defaults being upserted over
+   *  a real saved row. Callers should surface this with a retry affordance
+   *  (see retryLoad). */
+  loadError: string;
+  /** Re-attempts the initial load after a loadError. */
+  retryLoad: () => void;
   submitting: boolean;
   submitError: string;
   saveStatus: SaveStatus;
@@ -54,6 +62,11 @@ interface UseWorksheetResult {
   isSubmitted: boolean;
   reviewData: ReviewData;
   flushSave: (data: Record<string, unknown>) => Promise<void>;
+  /** Marks the in-memory data as "clean" (no pending unsaved edits). Called
+   *  after a successful explicit submit so the background autosave effect
+   *  doesn't immediately re-fire and re-save/re-notify for the same payload
+   *  (H30). */
+  markClean: () => void;
 }
 
 // ─── Helper ─────────────────────────────────────────────
@@ -89,69 +102,106 @@ export function useWorksheet({
   submittedMsg: _submittedMsg = 'Your worksheet has been submitted for review.',
   overrideUserId,
 }: UseWorksheetOpts): UseWorksheetResult {
-  const [data, setData] = useState<Record<string, unknown>>(() => ({
+  const [data, setDataRaw] = useState<Record<string, unknown>>(() => ({
     ...defaultData,
     _savedReviewStatus: '',
     _savedReviewComment: '',
     _savedReviewerName: '',
     _savedReviewHistory: [],
     _savedReviewedAt: '',
+    _savedReviewedBy: '',
   }));
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  // True once a real, user-driven edit has occurred. Autosave must never fire
+  // before this is true (H29) — hydration/prefill never sets it.
+  const [dirty, setDirty] = useState(false);
+
+  // Wrapped setter: any consumer-driven call marks the data dirty. Internal
+  // hydration/prefill code below uses the raw `setDataRaw` instead, so it
+  // never marks dirty.
+  const setData = useCallback<React.Dispatch<React.SetStateAction<Record<string, unknown>>>>((update) => {
+    setDirty(true);
+    setDataRaw(update);
+  }, []);
+
+  const markClean = useCallback(() => setDirty(false), []);
 
   // In buddy mode (overrideUserId), use that id for autoSave instead of the current user's id
+  const isBuddyMode = !!overrideUserId;
   const autoSaveUser = overrideUserId && user
     ? { ...user, id: overrideUserId, email: user.email } as User
     : overrideUserId && !user
       ? { id: overrideUserId, email: '', app_metadata: {}, user_metadata: {}, aud: '', created_at: '' } as User
       : user;
 
-  const { saveStatus, flushSave } = useAutoSave(autoSaveUser, data, worksheetId, phase, loaded);
+  const { saveStatus, flushSave } = useAutoSave(autoSaveUser, data, worksheetId, phase, loaded, dirty, isBuddyMode);
 
   // ── Load saved data from Supabase ───────────────────────────────
   const effectiveUserId = overrideUserId || user?.id;
   useEffect(() => {
     if (!effectiveUserId) return;
     let cancelled = false;
+    setLoadError('');
     (async () => {
-      try {
-        const saved = await loadWorksheetData(effectiveUserId, worksheetId);
-        if (cancelled) return;
-        if (saved?.worksheet_data) {
-          setData(prev => ({
-            ...prev,
-            ...saved.worksheet_data,
-            _savedReviewStatus: saved.review_status || '',
-            _savedReviewComment: saved.review_comment || '',
-            _savedReviewerName: saved.reviewer_name || '',
-            _savedReviewHistory: saved.review_history || [],
-            _savedReviewedAt: saved.reviewed_at || '',
-            _savedUpdatedAt: saved.updated_at || '',
-          }));
-        } else {
-          // In buddy mode, prefill with target user's profile name
-          if (overrideUserId) {
-            const { data: joinee } = await supabase.from('user_profiles').select('full_name').eq('id', overrideUserId).single();
-            if (!cancelled && joinee?.full_name) setData(prev => ({ ...prev, employeeName: joinee.full_name }));
-          } else {
-            const name = await getOAuthName();
-            if (!cancelled && name) setData(prev => ({ ...prev, employeeName: name }));
+      const { data: saved, error } = await loadWorksheetData(effectiveUserId, worksheetId);
+      if (cancelled) return;
+      if (error) {
+        console.error(`Load error [${worksheetId}]:`, error);
+        // DO NOT setLoaded(true) here — that would unblock autosave and could
+        // let a background save upsert defaults over a real saved row (C06/C09/C10).
+        setLoadError('Unable to load your saved worksheet. Please check your connection and retry.');
+        return;
+      }
+      if (saved?.worksheet_data) {
+        setDataRaw(prev => ({
+          ...prev,
+          ...saved.worksheet_data,
+          _savedReviewStatus: saved.review_status || '',
+          _savedReviewComment: saved.review_comment || '',
+          _savedReviewerName: saved.reviewer_name || '',
+          _savedReviewHistory: saved.review_history || [],
+          _savedReviewedAt: saved.reviewed_at || '',
+          _savedReviewedBy: saved.reviewed_by || '',
+          _savedUpdatedAt: saved.updated_at || '',
+        }));
+      } else {
+        // In buddy mode, prefill with target user's profile name
+        if (overrideUserId) {
+          const { data: joinee, error: joineeError } = await supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('id', overrideUserId)
+            .single();
+          if (cancelled) return;
+          if (joineeError) {
+            console.error(`Failed to load joinee profile [${overrideUserId}]:`, joineeError);
+          } else if (joinee?.full_name) {
+            setDataRaw(prev => ({ ...prev, employeeName: joinee.full_name }));
           }
+        } else {
+          const name = await getOAuthName();
+          if (!cancelled && name) setDataRaw(prev => ({ ...prev, employeeName: name }));
         }
-      } catch (err) {
-        if (!cancelled) console.error(`Load error [${worksheetId}]:`, err);
       }
       if (!cancelled) setLoaded(true);
     })();
     return () => { cancelled = true; };
-  }, [effectiveUserId, worksheetId, overrideUserId]);
+  }, [effectiveUserId, worksheetId, overrideUserId, reloadKey]);
+
+  const retryLoad = useCallback(() => {
+    setLoadError('');
+    setLoaded(false);
+    setReloadKey(k => k + 1);
+  }, []);
 
   // ── Helpers ─────────────────────────────────────────────────────
   const updateField = useCallback((field: string, value: unknown) => {
     setData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  }, [setData]);
 
   const updateArrayItem = useCallback(
     (field: string, index: number, subField: string) => (value: unknown) => {
@@ -161,7 +211,7 @@ export function useWorksheet({
         return { ...prev, [field]: arr };
       });
     },
-    []
+    [setData]
   );
 
   const updateArrayItemEvent = useCallback(
@@ -173,7 +223,7 @@ export function useWorksheet({
         return { ...prev, [field]: arr };
       });
     },
-    []
+    [setData]
   );
 
   const validate = useCallback(() => {
@@ -190,6 +240,10 @@ export function useWorksheet({
   // ── Submit ──────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     setSubmitError('');
+    if (loadError) {
+      setSubmitError('Unable to load your worksheet data. Please retry loading before submitting.');
+      return;
+    }
     if (!validate()) return;
     setSubmitting(true);
     try {
@@ -201,6 +255,9 @@ export function useWorksheet({
       };
       setData(submitData);
       await flushSave(submitData);
+      // Fully in sync with the server now — clear dirty so the background
+      // autosave effect doesn't immediately re-fire for the same payload (H30).
+      markClean();
       showToast(
         wasRevision
           ? 'Your revised worksheet has been submitted for re-review.'
@@ -214,7 +271,7 @@ export function useWorksheet({
     } finally {
       setSubmitting(false);
     }
-  }, [data, validate, flushSave, showToast]);
+  }, [data, validate, flushSave, showToast, loadError, setData, markClean]);
 
   // ── Derived view states ─────────────────────────────────────────
   const isApproved = loaded && data._savedReviewStatus === 'approved';
@@ -248,6 +305,8 @@ export function useWorksheet({
     data,
     setData,
     loaded,
+    loadError,
+    retryLoad,
     submitting,
     submitError,
     saveStatus,
@@ -262,5 +321,6 @@ export function useWorksheet({
     isSubmitted,
     reviewData,
     flushSave,
+    markClean,
   };
 }

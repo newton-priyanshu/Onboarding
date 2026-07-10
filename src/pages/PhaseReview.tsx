@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp, LucideIcon } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp, ThumbsDown, RefreshCw, AlertCircle, LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO, PHASE_LABELS, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import ReviewContent from '../components/ReviewContent';
-import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { checkAndPromote } from '../hooks/useAutoPromote';
 import { useToast } from '../components/Toast';
 import { t } from '../config/theme';
@@ -43,9 +42,16 @@ export default function PhaseReview() {
   const [instructor, setInstructor] = useState<UserProfile | null>(null);
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [expandedSheet, setExpandedSheet] = useState<string | null>(null);
+
+  // ── Per-worksheet manager "Request Revision" (H28) ──
+  const [revisionDrafts, setRevisionDrafts] = useState<Record<string, string>>({});
+  const [revisionMessages, setRevisionMessages] = useState<Record<string, string>>({});
+  const [revisionLoadingId, setRevisionLoadingId] = useState<string | null>(null);
+
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -58,27 +64,42 @@ export default function PhaseReview() {
   const wsList = PHASE_WORKSHEETS_MAP[phaseNumber] || [];
   const phaseLabel = PHASE_LABELS[phaseNumber] || { title: `Phase ${phaseNumber}`, days: '' };
 
-  useEffect(() => {
-    if (userId && phaseNum) loadData();
-    // loadData intentionally omitted: closes over fresh userId/phaseNum each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, phaseNum]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [instrRes, wsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
         supabase.from('worksheet_submissions').select('*').eq('user_id', userId).in('worksheet_id', wsList),
       ]);
-      if (instrRes.data) setInstructor(instrRes.data as unknown as UserProfile);
-      if (wsRes.data) setSubmissions(wsRes.data as unknown as WorksheetSubmission[]);
+
+      if (instrRes.error) {
+        console.error('Error loading instructor:', instrRes.error);
+        setLoadError('Failed to load the instructor profile: ' + instrRes.error.message);
+        setLoading(false);
+        return;
+      }
+      setInstructor(instrRes.data ? (instrRes.data as unknown as UserProfile) : null);
+
+      if (wsRes.error) {
+        console.error('Error loading submissions:', wsRes.error);
+        setLoadError('Failed to load worksheet submissions for this phase: ' + wsRes.error.message);
+        setLoading(false);
+        return;
+      }
+      setSubmissions(wsRes.data ? (wsRes.data as unknown as WorksheetSubmission[]) : []);
     } catch (err) {
       console.error('Failed to load phase review data:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load phase review data.');
     } finally {
       setLoading(false);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, JSON.stringify(wsList)]);
+
+  useEffect(() => {
+    if (userId && phaseNum) loadData();
+  }, [userId, phaseNum, loadData]);
 
   async function handleApprovePhase() {
     setActionLoading(true);
@@ -92,83 +113,111 @@ export default function PhaseReview() {
       return;
     }
 
-    const historyEntry: Record<string, unknown> = {
-      action: 'phase_approved',
-      reviewer_name: profile?.full_name || profile?.email || 'Manager',
-      reviewer_id: profile?.id,
-      comment: `Phase ${phaseNumber} fully approved by manager.`,
-      timestamp: new Date().toISOString(),
-    };
+    const nowIso = new Date().toISOString();
+    const reviewerName = profile?.full_name || profile?.email || 'Manager';
+    const ids = toApprove.map(s => s.id);
 
-    let allSucceeded = true;
-    const approvedNames: string[] = [];
+    // ── Atomic bulk approve ──
+    // A single UPDATE across all matching row ids replaces the old per-row loop:
+    // Postgres applies it as one statement (all-or-nothing on error), and the
+    // extra .eq('review_status', 'buddy_approved') re-checks each row's state at
+    // write time so a worksheet that changed concurrently is simply excluded
+    // rather than silently overwritten. review_history is appended server-side
+    // by the BEFORE UPDATE trigger for each affected row.
+    const { data: rows, error } = await supabase
+      .from('worksheet_submissions')
+      .update({
+        review_status: 'approved',
+        reviewed_by: profile?.id,
+        reviewed_at: nowIso,
+        reviewer_name: reviewerName,
+        review_comment: `Phase ${phaseNumber} approved by manager`,
+      })
+      .in('id', ids)
+      .eq('review_status', 'buddy_approved')
+      .select();
 
-    for (const sub of toApprove) {
-      const existingHistory = sub.review_history || [];
-      const { error } = await supabase
-        .from('worksheet_submissions')
-        .update({
-          review_status: 'approved',
-          reviewed_by: profile?.id,
-          reviewed_at: new Date().toISOString(),
-          reviewer_name: profile?.full_name || profile?.email || 'Manager',
-          review_comment: `Phase ${phaseNumber} approved by manager`,
-          review_history: [...existingHistory, historyEntry],
-        })
-        .eq('id', sub.id);
-
-      if (error) {
-        console.error(`Failed to approve ${sub.worksheet_id}:`, error);
-        allSucceeded = false;
-      } else {
-        approvedNames.push(sub.worksheet_id);
-        // Notify joinee for each approved worksheet
-        await triggerNotification({
-          userId: userId || '',
-          fromUserId: profile?.id,
-          worksheetId: sub.worksheet_id,
-          type: 'approved',
-          message: `Your worksheet (${sub.worksheet_id}) has been fully approved by the manager (${profile?.full_name || 'Manager'}). Phase ${phaseNumber} complete!`,
-        });
-      }
+    if (error) {
+      console.error('Failed to approve phase:', error);
+      setActionMessage('Error: ' + error.message);
+      showToast('Failed to approve phase: ' + error.message, 'error');
+      setActionLoading(false);
+      return;
     }
 
-    if (allSucceeded) {
-      showToast(`Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved.`, 'success');
-      setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved.`);
+    const updatedCount = rows ? rows.length : 0;
 
-      // Notify the ASSIGNED buddy that the phase has been manager-approved
-      let buddyIds = await getAssignedReviewerIds(userId || '', 'buddy');
-      // Fallback to all buddies if no assigned buddy found
-      if (buddyIds.length === 0) {
-        buddyIds = await getReviewerUserIds('buddy');
-      }
-      for (const buddyId of buddyIds) {
-        await triggerNotification({
-          userId: buddyId,
-          fromUserId: profile?.id,
-          worksheetId: wsList[0] || '',
-          type: 'approved',
-          message: `Phase ${phaseNumber} for ${instructor?.full_name || 'joinee'} has been approved by the manager.`,
-        });
-      }
-
-      // Check if all phases are now complete → auto-promote
-      const result = await checkAndPromote(userId || '');
-      if (result.promoted) {
-        showToast(`Phase ${phaseNumber} approved! 🎉 ${result.message}`, 'success');
-        setActionMessage(`✅ Phase ${phaseNumber} approved! ${approvedNames.length} worksheet(s) marked as approved. 🎉 ${result.message}`);
-      }
-
-      // Reload data to show updated state
-      reloadTimerRef.current = setTimeout(() => {
-        loadData();
-      }, 1500);
-    } else {
-      setActionMessage('⚠️ Some worksheets could not be approved. Check console for details.');
+    if (updatedCount < toApprove.length) {
+      setActionMessage(`⚠️ Only ${updatedCount} of ${toApprove.length} worksheet(s) were approved — the rest changed state since you loaded this page (approved or requested for revision by someone else). Reloading the latest state…`);
+      showToast(`Partial approval: ${updatedCount}/${toApprove.length} worksheet(s) approved. Refreshing…`, 'error');
+      setActionLoading(false);
+      reloadTimerRef.current = setTimeout(() => { loadData(); }, 1500);
+      return;
     }
+
+    showToast(`Phase ${phaseNumber} approved! ${updatedCount} worksheet(s) marked as approved.`, 'success');
+    setActionMessage(`✅ Phase ${phaseNumber} approved! ${updatedCount} worksheet(s) marked as approved.`);
+
+    // Check if all phases are now complete → auto-promote
+    const result = await checkAndPromote(userId || '');
+    if (result.promoted) {
+      showToast(`Phase ${phaseNumber} approved! 🎉 ${result.message}`, 'success');
+      setActionMessage(`✅ Phase ${phaseNumber} approved! ${updatedCount} worksheet(s) marked as approved. 🎉 ${result.message}`);
+    }
+
+    // Reload data to show updated state
+    reloadTimerRef.current = setTimeout(() => {
+      loadData();
+    }, 1500);
 
     setActionLoading(false);
+  }
+
+  // ── Manager rejection path (H28): send an individual buddy-approved
+  // worksheet back for revision, right from the phase list. ──
+  async function handleRequestRevision(sub: WorksheetSubmission) {
+    const commentText = (revisionDrafts[sub.worksheet_id] || '').trim();
+    if (!commentText) {
+      setRevisionMessages(prev => ({ ...prev, [sub.worksheet_id]: 'Please add a comment explaining what needs revision.' }));
+      return;
+    }
+
+    setRevisionLoadingId(sub.worksheet_id);
+    setRevisionMessages(prev => ({ ...prev, [sub.worksheet_id]: '' }));
+    const nowIso = new Date().toISOString();
+    const reviewerName = profile?.full_name || profile?.email || 'Manager';
+
+    const { data: rows, error } = await supabase
+      .from('worksheet_submissions')
+      .update({
+        review_status: 'needs_revision',
+        reviewed_by: profile?.id,
+        reviewed_at: nowIso,
+        reviewer_name: reviewerName,
+        review_comment: commentText,
+      })
+      .eq('id', sub.id)
+      .eq('review_status', 'buddy_approved')
+      .select();
+
+    if (error) {
+      console.error(`Failed to request revision for ${sub.worksheet_id}:`, error);
+      setRevisionMessages(prev => ({ ...prev, [sub.worksheet_id]: 'Error: ' + error.message }));
+      setRevisionLoadingId(null);
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      setRevisionMessages(prev => ({ ...prev, [sub.worksheet_id]: 'This worksheet changed since you loaded it. Reloading…' }));
+      setRevisionLoadingId(null);
+      await loadData();
+      return;
+    }
+
+    showToast(`Revision requested for ${WORKSHEET_INFO[sub.worksheet_id]?.title || sub.worksheet_id}.`, 'success');
+    setRevisionDrafts(prev => ({ ...prev, [sub.worksheet_id]: '' }));
+    setRevisionLoadingId(null);
+    await loadData();
   }
 
   const buddyApproved = submissions.filter(s => s.review_status === 'buddy_approved');
@@ -209,6 +258,21 @@ export default function PhaseReview() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container">
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', color: t.error }}>Couldn't Load Phase Review</h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, margin: '1rem 0 1.5rem' }}>{loadError}</p>
+          <button onClick={() => loadData()} className="lux-btn lux-btn-primary" style={{ marginRight: '0.75rem' }}>
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
+          <button onClick={() => navigate(-1)} className="lux-btn lux-btn-secondary">Back</button>
         </div>
       </div>
     );
@@ -303,6 +367,7 @@ export default function PhaseReview() {
             const data = sub?.worksheet_data || {};
             const info = WORKSHEET_INFO[wsId] || { title: wsId, phase: '' };
             const isExpanded = expandedSheet === wsId;
+            const canRequestRevision = isManager && status === 'buddy_approved' && !!sub;
 
             const statusColors: Record<string, string> = {
               approved: t.success,
@@ -345,6 +410,30 @@ export default function PhaseReview() {
                 {(isExpanded || expandedSheet === 'all') && data && Object.keys(data).length > 0 && (
                   <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(26, 26, 26, 0.02)', border: '1px solid rgba(26, 26, 26, 0.08)' }}>
                     <ReviewContent data={data as Record<string, unknown>} worksheetId={wsId} />
+                  </div>
+                )}
+
+                {/* Manager rejection path (H28) — per-worksheet Request Revision */}
+                {canRequestRevision && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(196, 30, 30, 0.03)', border: '1px solid rgba(196, 30, 30, 0.15)' }}>
+                    <label className="lux-label" htmlFor={`revision-comment-${wsId}`} style={{ fontSize: '0.6rem' }}>
+                      Request Revision <span style={{ fontFamily: t.body, fontWeight: 400, color: t.wg }}>(comment required)</span>
+                    </label>
+                    <textarea id={`revision-comment-${wsId}`} className="lux-textarea" rows={2}
+                      value={revisionDrafts[wsId] || ''}
+                      onChange={e => setRevisionDrafts(prev => ({ ...prev, [wsId]: e.target.value }))}
+                      placeholder="What needs to change before this can be approved?"
+                      style={{ marginBottom: '0.5rem' }} />
+                    {revisionMessages[wsId] && (
+                      <div className={`lux-alert ${revisionMessages[wsId].includes('Error') ? 'lux-alert-error' : 'lux-alert-success'}`} style={{ marginBottom: '0.5rem' }}>
+                        <AlertCircle size={14} strokeWidth={1.5} />
+                        <span>{revisionMessages[wsId]}</span>
+                      </div>
+                    )}
+                    <button onClick={() => handleRequestRevision(sub!)} disabled={revisionLoadingId === wsId}
+                      className="lux-btn lux-btn-secondary" style={{ borderColor: t.error, color: t.error, fontSize: '0.7rem' }}>
+                      {revisionLoadingId === wsId ? 'Processing…' : <><ThumbsDown size={14} strokeWidth={1.5} /> Request Revision</>}
+                    </button>
                   </div>
                 )}
               </div>

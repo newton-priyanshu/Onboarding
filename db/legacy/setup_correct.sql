@@ -1,3 +1,11 @@
+-- =============================================================================
+-- DEPRECATED — DO NOT RUN. Superseded by db/schema.sql and supabase/migrations/.
+-- Kept only for historical reference (see db/README.md). Running this file
+-- against a project that has already had db/schema.sql applied can reintroduce
+-- fixed vulnerabilities (client-writable role checks, RLS recursion, duplicate
+-- permissive policies, etc.) — see docs/audit/2026-07-10/.
+-- =============================================================================
+
 -- =====================================================
 -- COMPLETE SETUP: RLS Policies + Test Users + Data
 -- Run this ENTIRE file at once in Supabase SQL Editor

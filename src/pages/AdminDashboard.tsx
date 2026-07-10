@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, type LucideIcon } from 'lucide-react';
+import { unwrap } from '../api/db';
+import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, AlertCircle, type LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
@@ -55,6 +56,7 @@ export default function AdminDashboard() {
   const [allBuddyProfiles, setAllBuddyProfiles] = useState<BuddyProfile[]>([]);
   const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,30 +75,51 @@ export default function AdminDashboard() {
   async function loadData() {
     savedScrollY.current = window.scrollY;
     setLoading(true);
+    setLoadError(null);
     try {
-      const [instrData, wsData, buddyData] = await Promise.all([
+      // Step 1: load the visible hires first — everything else is scoped to their IDs
+      // so we never pull the entire worksheet_submissions table (H34/H36).
+      const [instrDataRaw, buddyDataRaw] = await Promise.all([
         fetchWithCache('admin-instructors', () =>
-          supabase.from('user_profiles').select('id, full_name, email, role, assigned_lead_id, assigned_buddy_id, created_at').in('role', ['new_joinee', 'lab_instructor']).order('created_at', { ascending: false })
-            .then(r => r.data as unknown as UserProfile[])
-        ),
-        fetchWithCache('admin-worksheets', () =>
-          supabase.from('worksheet_submissions').select('user_id, worksheet_id, review_status, status, updated_at, review_history').limit(500)
-            .then(r => r.data as unknown as WorksheetSubmission[])
+          supabase.from('user_profiles')
+            .select('id, full_name, email, role, assigned_lead_id, assigned_buddy_id, created_at')
+            .in('role', ['new_joinee', 'lab_instructor'])
+            .order('created_at', { ascending: false })
+            .limit(500)
+            .then(unwrap)
         ),
         fetchWithCache('admin-buddies', () =>
-          supabase.from('user_profiles').select('id, full_name, email, role').not('role', 'in', '("new_joinee","lab_instructor")')
-            .then(r => r.data as BuddyProfile[])
+          supabase.from('user_profiles')
+            .select('id, full_name, email, role')
+            .not('role', 'in', '("new_joinee","lab_instructor")')
+            .limit(500)
+            .then(unwrap)
         ),
       ]);
+      const instrData = instrDataRaw as unknown as UserProfile[];
+      const buddyData = buddyDataRaw as unknown as BuddyProfile[];
 
-      if (instrData) setInstructors(instrData);
-      if (wsData) setAllWorksheets(wsData);
-      if (buddyData) {
-        setLeadInstructors(buddyData.filter((p: BuddyProfile) => p.role === 'academic_head'));
-        setAllBuddyProfiles(buddyData);
-      }
+      const ids = instrData.map(i => i.id);
+      const wsDataRaw = ids.length === 0
+        ? []
+        : await fetchWithCache(`admin-worksheets-${ids.slice().sort().join(',')}`, () =>
+            supabase.from('worksheet_submissions')
+              // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
+              .select('user_id, worksheet_id, review_status, status, updated_at')
+              .in('user_id', ids)
+              .order('updated_at', { ascending: false })
+              .limit(2000)
+              .then(unwrap)
+          );
+      const wsData = wsDataRaw as unknown as WorksheetSubmission[];
+
+      setInstructors(instrData);
+      setAllWorksheets(wsData);
+      setLeadInstructors(buddyData.filter((p: BuddyProfile) => p.role === 'academic_head'));
+      setAllBuddyProfiles(buddyData);
     } catch (err) {
       console.error('Failed to load admin data:', err);
+      setLoadError('We could not load the dashboard data. Please check your connection and try again.');
     } finally {
       setLoading(false);
       requestAnimationFrame(() => window.scrollTo(0, savedScrollY.current));
@@ -110,6 +133,24 @@ export default function AdminDashboard() {
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, color: t.ch, marginBottom: '1rem' }}>Access Restricted</h2>
           <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg }}>This dashboard is for Managers and Onboarding Leads.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError && !loading) {
+    return (
+      <div className="lux-section" style={{ textAlign: 'center' }}>
+        <div className="lux-container" style={{ maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
+            Couldn&apos;t Load Dashboard Data
+          </h2>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
+          <button onClick={() => { invalidateCacheByPrefix('admin-'); loadData(); }} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
         </div>
       </div>
     );

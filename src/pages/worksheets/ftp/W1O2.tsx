@@ -25,8 +25,8 @@ export default function W1O2() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Your Info">
-            <FieldGroup label="Your Name" required>
-              <input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} />
+            <FieldGroup label="Your Name" required id="employeeName">
+              <input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
 
@@ -41,8 +41,8 @@ export default function W1O2() {
               { q: 'How do we handle a "this is basic" moment from a student?', section: '§4' },
               { q: 'What is the 20% rule for content review?', section: '§5' },
             ].map((item, i) => (
-              <FieldGroup key={i} label={`Q${i + 1}: ${item.q}`} hint={`Section: ${item.section}`}>
-                <textarea className="lux-textarea" rows={2}
+              <FieldGroup key={i} label={`Q${i + 1}: ${item.q}`} hint={`Section: ${item.section}`} id={`answer-${i}`}>
+                <textarea id={`answer-${i}`} className="lux-textarea" rows={2}
                   value={(data.answers as { q: string; a: string; section: string }[])?.[i]?.a || ''}
                   onChange={e => {
                     const arr = [...((data.answers as { q: string; a: string; section: string }[]) || [])];
@@ -55,8 +55,8 @@ export default function W1O2() {
           </WorksheetSection>
 
           <WorksheetSection title="Reflection">
-            <FieldGroup label="What was most surprising or valuable from the playbook?">
-              <textarea className="lux-textarea" rows={3} value={data.reflectionNote as string} onChange={e => updateField('reflectionNote', e.target.value)} />
+            <FieldGroup label="What was most surprising or valuable from the playbook?" id="reflectionNote">
+              <textarea id="reflectionNote" className="lux-textarea" rows={3} value={data.reflectionNote as string} onChange={e => updateField('reflectionNote', e.target.value)} />
             </FieldGroup>
           </WorksheetSection>
         </>

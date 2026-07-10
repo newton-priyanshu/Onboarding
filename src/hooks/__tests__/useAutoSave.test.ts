@@ -19,14 +19,14 @@ describe('loadWorksheetData', () => {
     vi.clearAllMocks();
   });
 
-  it('returns null when no userId provided', async () => {
+  it('returns { data: null, error: null } when no userId provided', async () => {
     const result = await loadWorksheetData(null, 'p1_w1');
-    expect(result).toBeNull();
+    expect(result).toEqual({ data: null, error: null });
   });
 
-  it('returns null when no worksheetId provided', async () => {
+  it('returns { data: null, error: null } when no worksheetId provided', async () => {
     const result = await loadWorksheetData('user-1', null);
-    expect(result).toBeNull();
+    expect(result).toEqual({ data: null, error: null });
   });
 
   it('fetches worksheet data from supabase', async () => {
@@ -49,26 +49,33 @@ describe('loadWorksheetData', () => {
     const result = await loadWorksheetData('user-1', 'p1_w1');
 
     expect(mockFrom).toHaveBeenCalledWith('worksheet_submissions');
-    expect(result).toEqual(mockData);
-    expect((result as { worksheet_data: { employeeName: string } }).worksheet_data.employeeName).toBe('Test User');
+    expect(result.error).toBeNull();
+    expect(result.data).toEqual(mockData);
+    expect((result.data as { worksheet_data: { employeeName: string } }).worksheet_data.employeeName).toBe('Test User');
   });
 
-  it('handles supabase errors gracefully', async () => {
+  it('propagates supabase errors instead of swallowing them as "no rows"', async () => {
+    const dbError = { message: 'Error' };
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: { message: 'Error' } }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: dbError }),
     };
     mockFrom.mockReturnValue(chain);
 
     const result = await loadWorksheetData('user-1', 'p1_w1');
-    expect(result).toBeNull();
+    expect(result.data).toBeNull();
+    expect(result.error).toEqual(dbError);
   });
 });
 
 describe('getOAuthName', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // getOAuthName caches its result in localStorage (real in the jsdom test
+    // environment, unlike under plain 'node'). Clear it so each case exercises
+    // the code path it's actually testing instead of a previous case's cache.
+    localStorage.clear();
   });
 
   it('returns full name from user_metadata', async () => {

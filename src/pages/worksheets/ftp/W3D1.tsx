@@ -22,7 +22,7 @@ export default function W3D1() {
               'Recording a lecture', 'Using in-class polling tools', 'Sound system & microphone test'].map((item, i) => (
               <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontFamily: 'var(--font-body)', fontSize: '0.8rem', cursor: 'pointer' }}>
                 <input type="checkbox" checked={((data.techConfirmed as string[]) || []).includes(item)}
-                  onChange={e => { const arr = [...((data.techConfirmed as string[]) || [])]; e.target.checked ? arr.push(item) : arr.splice(arr.indexOf(item), 1); updateField('techConfirmed', arr); }}
+                  onChange={e => { const arr = [...((data.techConfirmed as string[]) || [])]; if (e.target.checked) { arr.push(item); } else { arr.splice(arr.indexOf(item), 1); } updateField('techConfirmed', arr); }}
                   style={{ width: '16px', height: '16px', accentColor: 'var(--color-charcoal)' }} />
                 {item}
               </label>

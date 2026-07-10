@@ -1,4 +1,11 @@
 -- =============================================================================
+-- SEED DATA — optional, non-production. Apply db/schema.sql (or
+-- supabase/migrations/) FIRST. See db/README.md for details. Never run this
+-- against a production project — it creates/updates real rows via direct
+-- INSERT/UPDATE (bypassing RLS, as intended for service-role/SQL-editor use).
+-- =============================================================================
+
+-- =============================================================================
 -- Newton Onboarding Portal — Create 32 Test Users Directly
 -- Paste this ENTIRE script into Supabase Dashboard → SQL Editor → Run
 -- =============================================================================

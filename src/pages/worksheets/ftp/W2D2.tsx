@@ -20,15 +20,15 @@ export default function W2D2() {
       {({ data, updateField }) => (
         <>
           <WorksheetSection title="Micro-Teach Details">
-            <FieldGroup label="Your Name" required><input className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
-            <FieldGroup label="Topic taught"><input className="lux-input" value={data.topic as string} onChange={e => updateField('topic', e.target.value)} placeholder="e.g. Variables in Python" /></FieldGroup>
+            <FieldGroup label="Your Name" required id="employeeName"><input id="employeeName" className="lux-input" value={data.employeeName as string} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup>
+            <FieldGroup label="Topic taught" id="topic"><input id="topic" className="lux-input" value={data.topic as string} onChange={e => updateField('topic', e.target.value)} placeholder="e.g. Variables in Python" /></FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Feedback & Reflection">
-            <FieldGroup label="Feedback received from peers">
-              <textarea className="lux-textarea" rows={4} value={data.feedbackNotes as string} onChange={e => updateField('feedbackNotes', e.target.value)} placeholder="What did peers say went well? What could improve?" />
+            <FieldGroup label="Feedback received from peers" id="feedbackNotes">
+              <textarea id="feedbackNotes" className="lux-textarea" rows={4} value={data.feedbackNotes as string} onChange={e => updateField('feedbackNotes', e.target.value)} placeholder="What did peers say went well? What could improve?" />
             </FieldGroup>
-            <FieldGroup label="Self-reflection">
-              <textarea className="lux-textarea" rows={3} value={data.selfReflection as string} onChange={e => updateField('selfReflection', e.target.value)} placeholder="How did it feel? What would you do differently?" />
+            <FieldGroup label="Self-reflection" id="selfReflection">
+              <textarea id="selfReflection" className="lux-textarea" rows={3} value={data.selfReflection as string} onChange={e => updateField('selfReflection', e.target.value)} placeholder="How did it feel? What would you do differently?" />
             </FieldGroup>
           </WorksheetSection>
         </>

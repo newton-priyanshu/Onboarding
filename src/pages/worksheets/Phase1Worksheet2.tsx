@@ -28,12 +28,12 @@ export default function Phase1Worksheet2() {
         return (
           <>
             <WorksheetSection title="About You">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <FieldGroup label="Full Name" required>
-                  <input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} />
+              <div className="ws-stack-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <FieldGroup label="Full Name" required id="employeeName">
+                  <input id="employeeName" className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} />
                 </FieldGroup>
-                <FieldGroup label="Mentor Name" required>
-                  <input className="lux-input" placeholder="Your mentor's name" value={data.mentorName} onChange={e => updateField('mentorName', e.target.value)} />
+                <FieldGroup label="Mentor Name" required id="mentorName">
+                  <input id="mentorName" className="lux-input" placeholder="Your mentor's name" value={data.mentorName} onChange={e => updateField('mentorName', e.target.value)} />
                 </FieldGroup>
               </div>
             </WorksheetSection>
@@ -49,17 +49,20 @@ export default function Phase1Worksheet2() {
                       Mentor Sign-off
                     </label>
                   </div>
-                  <input className="lux-input" type="date" value={week.date as string} onChange={e => updateWeek(i, 'date', e.target.value)} style={{ marginBottom: '8px' }} />
-                  <textarea className="lux-textarea" rows={2} placeholder="Topics Discussed" value={week.topics as string} onChange={e => updateWeek(i, 'topics', e.target.value)} />
-                  <textarea className="lux-textarea" rows={2} placeholder="Actions / Follow-ups" value={week.actions as string} onChange={e => updateWeek(i, 'actions', e.target.value)} style={{ marginTop: '8px' }} />
+                  <label htmlFor={`week-date-${i}`} className="ws-sr-only">Date (Week {i + 1})</label>
+                  <input id={`week-date-${i}`} className="lux-input" type="date" value={week.date as string} onChange={e => updateWeek(i, 'date', e.target.value)} style={{ marginBottom: '8px' }} />
+                  <label htmlFor={`week-topics-${i}`} className="ws-sr-only">Topics Discussed (Week {i + 1})</label>
+                  <textarea id={`week-topics-${i}`} className="lux-textarea" rows={2} placeholder="Topics Discussed" value={week.topics as string} onChange={e => updateWeek(i, 'topics', e.target.value)} />
+                  <label htmlFor={`week-actions-${i}`} className="ws-sr-only">Actions / Follow-ups (Week {i + 1})</label>
+                  <textarea id={`week-actions-${i}`} className="lux-textarea" rows={2} placeholder="Actions / Follow-ups" value={week.actions as string} onChange={e => updateWeek(i, 'actions', e.target.value)} style={{ marginTop: '8px' }} />
                 </div>
               ))}
             </WorksheetSection>
 
             <WorksheetSection title="Mentor Feedback Summary (End of Phase 1)" subtitle="To be filled by your mentor — a brief assessment of your progress.">
-              <FieldGroup label="What strengths has the mentee demonstrated so far?"><textarea className="lux-textarea" rows={1} value={data.mentorStrengths} onChange={e => updateField('mentorStrengths', e.target.value)} /></FieldGroup>
-              <FieldGroup label="What areas need focused development?"><textarea className="lux-textarea" rows={1} value={data.mentorAreasForGrowth} onChange={e => updateField('mentorAreasForGrowth', e.target.value)} /></FieldGroup>
-              <FieldGroup label="Overall readiness to proceed to Phase 2?"><textarea className="lux-textarea" rows={1} value={data.mentorReadiness} onChange={e => updateField('mentorReadiness', e.target.value)} /></FieldGroup>
+              <FieldGroup label="What strengths has the mentee demonstrated so far?" id="mentorStrengths"><textarea id="mentorStrengths" className="lux-textarea" rows={1} value={data.mentorStrengths} onChange={e => updateField('mentorStrengths', e.target.value)} /></FieldGroup>
+              <FieldGroup label="What areas need focused development?" id="mentorAreasForGrowth"><textarea id="mentorAreasForGrowth" className="lux-textarea" rows={1} value={data.mentorAreasForGrowth} onChange={e => updateField('mentorAreasForGrowth', e.target.value)} /></FieldGroup>
+              <FieldGroup label="Overall readiness to proceed to Phase 2?" id="mentorReadiness"><textarea id="mentorReadiness" className="lux-textarea" rows={1} value={data.mentorReadiness} onChange={e => updateField('mentorReadiness', e.target.value)} /></FieldGroup>
             </WorksheetSection>
           </>
         );

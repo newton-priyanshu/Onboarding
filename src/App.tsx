@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -19,6 +19,8 @@ import Assessment from './pages/Assessment';
 import Stakeholders from './pages/Stakeholders';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
 
@@ -69,6 +71,26 @@ function AppLayout({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Role-aware landing for "/". lead_instructor users are buddies, not new
+ * joinees — sending them to the phase-card Dashboard dead-ends them, so route
+ * them to the buddy dashboard instead. All other roles keep the existing
+ * Dashboard.
+ */
+function HomeRoute() {
+  const { profile, loading } = useAuth();
+
+  if (loading) {
+    return <PageFallback />;
+  }
+
+  if (profile?.role === 'lead_instructor') {
+    return <Navigate to="/buddy" replace />;
+  }
+
+  return <Dashboard />;
+}
+
 /** Wraps the routed page content in an ErrorBoundary that resets on route change */
 function AppRoutes() {
   const location = useLocation();
@@ -99,6 +121,8 @@ function AppRoutes() {
         {/* Auth routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Admin / Lead — wrapped in Suspense for code-splitting */}
@@ -118,7 +142,7 @@ function AppRoutes() {
         <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
 
         {/* Dashboard / Phases */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><HomeRoute /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
         <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
@@ -130,16 +154,16 @@ function AppRoutes() {
         <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><Week3 /></WeekAccessGuard></ProtectedRoute>} />
         <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><Week4 /></WeekAccessGuard></ProtectedRoute>} />
         {/* FTP Week Worksheet Routes — also gated by week access */}
-        <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage /></ProtectedRoute>} />
-        <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekWorksheetPage /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekWorksheetPage /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekWorksheetPage /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage weekNum={1} /></ProtectedRoute>} />
+        <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekWorksheetPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekWorksheetPage weekNum={3} /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekWorksheetPage weekNum={4} /></WeekAccessGuard></ProtectedRoute>} />
 
         {/* Dynamic Worksheet Routes */}
         {worksheetRoutes}
 
         {/* Legacy */}
-        <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+        <Route path="/assessment" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'lead_instructor']}><Assessment /></ProtectedRoute>} />
         <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
 
         {/* 404 catch-all */}
@@ -191,7 +215,6 @@ export default function App() {
             }}>
               <span className="lux-line" style={{ margin: '0 auto 1rem' }} />
               <p><span style={{ fontWeight: 600, color: '#D4A853' }}>NST</span> BLR <span style={{ opacity: 0.3 }}>-</span> AARAMBH</p>
-              <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Programme</p>
               <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Programme</p>
             </footer>
           </AppLayout>

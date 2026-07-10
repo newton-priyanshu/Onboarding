@@ -1,4 +1,11 @@
 -- =============================================================================
+-- SEED DATA — optional, non-production. Apply db/schema.sql (or
+-- supabase/migrations/) FIRST. See db/README.md for details. Never run this
+-- against a production project — it creates/updates real rows via direct
+-- INSERT/UPDATE (bypassing RLS, as intended for service-role/SQL-editor use).
+-- =============================================================================
+
+-- =============================================================================
 -- Seed FTP Worksheet Submissions for Test Users
 -- Run this in Supabase SQL Editor AFTER running __seed_test_data.cjs
 -- This seeds all 20 FTP worksheets (16 content + 4 gates) for the 3 test joinees

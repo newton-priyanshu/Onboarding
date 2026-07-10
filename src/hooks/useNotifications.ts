@@ -19,6 +19,8 @@ interface NotificationsResult {
   notifications: NotificationItem[];
   unreadCount: number;
   loading: boolean;
+  /** Set when the last fetch failed — the returned notifications may be stale. */
+  error: string | null;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -51,6 +53,7 @@ export function useNotifications(
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
@@ -58,19 +61,24 @@ export function useNotifications(
     const u = user as { id?: string } | null;
     if (!u?.id) return;
     try {
-      const { data } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('notifications')
         .select('id, user_id, from_user_id, worksheet_id, type, message, read, created_at')
         .eq('user_id', u.id)
         .order('created_at', { ascending: false })
         .limit(50);
-      if (data && mountedRef.current) {
-        const items = data as NotificationItem[];
+      if (fetchError) throw fetchError;
+      if (mountedRef.current) {
+        const items = (data || []) as NotificationItem[];
         setNotifications(items);
         setUnreadCount(items.filter(n => !n.read).length);
+        setError(null);
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
+      // A failed fetch must not silently look like "no notifications" —
+      // keep whatever was last loaded and surface the failure instead.
+      if (mountedRef.current) setError('Failed to load notifications.');
     }
     if (mountedRef.current) setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,6 +91,7 @@ export function useNotifications(
     if (!u?.id) {
       setNotifications([]);
       setUnreadCount(0);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -102,10 +111,13 @@ export function useNotifications(
     const u = user as { id?: string } | null;
     if (!u?.id) return;
     try {
-      await supabase
+      const { error: updateError } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
+      if (updateError) throw updateError;
+      // Only reflect the change locally once the write is confirmed —
+      // an optimistic update here would misrepresent DB state on failure.
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
@@ -122,10 +134,11 @@ export function useNotifications(
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
     try {
-      await supabase
+      const { error: updateError } = await supabase
         .from('notifications')
         .update({ read: true })
         .in('id', unreadIds);
+      if (updateError) throw updateError;
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -137,6 +150,7 @@ export function useNotifications(
     notifications,
     unreadCount,
     loading,
+    error,
     markAsRead,
     markAllAsRead,
     refresh: fetchNotifications,
@@ -147,6 +161,14 @@ export function useNotifications(
 
 /**
  * triggerNotification — Creates a notification in the database.
+ *
+ * NOTE (security audit, contract item 5): DB triggers now create reviewer
+ * notifications on submission transitions into pending_review/revision_submitted,
+ * and on new-signup — those client-side inserts have been removed at their
+ * call sites. This helper remains for other, non-workflow-state notifications
+ * (e.g. buddy/manager assignment, phase approval, promotion) that are not
+ * covered by those triggers. Do not use this to re-announce a review_status
+ * transition that a DB trigger already handles.
  */
 export async function triggerNotification({ userId, fromUserId, worksheetId, type, message }: TriggerOpts): Promise<void> {
   if (!userId) return;
@@ -173,10 +195,11 @@ export async function getReviewerUserIds(reviewerType: string): Promise<string[]
   if (!role) return [];
 
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_profiles')
       .select('id')
       .eq('role', role);
+    if (error) throw error;
     return (data || []).map(p => (p as { id: string }).id);
   } catch (err) {
     console.error('Error fetching reviewer IDs:', err);
@@ -189,12 +212,13 @@ export async function getReviewerUserIds(reviewerType: string): Promise<string[]
  */
 export async function getAssignedReviewerIds(joineeUserId: string, reviewerType: string): Promise<string[]> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_profiles')
       .select('assigned_lead_id, assigned_buddy_id')
       .eq('id', joineeUserId)
       .single();
 
+    if (error) throw error;
     if (!data) return [];
 
     const d = data as { assigned_lead_id: string | null; assigned_buddy_id: string | null };

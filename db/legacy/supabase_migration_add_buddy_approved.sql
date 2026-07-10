@@ -1,4 +1,12 @@
 -- =============================================================================
+-- DEPRECATED — DO NOT RUN. Superseded by db/schema.sql and supabase/migrations/.
+-- Kept only for historical reference (see db/README.md). Running this file
+-- against a project that has already had db/schema.sql applied can reintroduce
+-- fixed vulnerabilities (client-writable role checks, RLS recursion, duplicate
+-- permissive policies, etc.) — see docs/audit/2026-07-10/.
+-- =============================================================================
+
+-- =============================================================================
 -- Migration: Add buddy_approved to worksheet_submissions.review_status
 -- 
 -- The new review flow adds an intermediate "buddy_approved" state:
