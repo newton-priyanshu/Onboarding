@@ -23,8 +23,8 @@ export default function Phase2Worksheet1() {
       buddyApproveMsg="Your Doubt Resolution log has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uE = (i: number, f: string, v: any) => setData(p => { const arr = [...p.entries]; arr[i] = { ...arr[i], [f]: v }; return { ...p, entries: arr }; });
-        const uEr = (i: number, f: string, v: any) => setData(p => { const arr = [...p.errors]; arr[i] = { ...arr[i], [f]: v }; return { ...p, errors: arr }; });
+        const uE = (i: number, f: string, v: string | boolean) => setData(p => { const arr = [...p.entries]; arr[i] = { ...arr[i], [f]: v }; return { ...p, entries: arr }; });
+        const uEr = (i: number, f: string, v: string | boolean) => setData(p => { const arr = [...p.errors]; arr[i] = { ...arr[i], [f]: v }; return { ...p, errors: arr }; });
         return (
           <>
             <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
@@ -32,12 +32,12 @@ export default function Phase2Worksheet1() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2.5fr 2.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
                 {['Date', 'Channel', 'Student Query', 'Resolution'].map(h => <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>)}
               </div>
-              {data.entries.map((e: any, i: number) => (
+              {(data.entries as Array<Record<string, unknown>>).map((e, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2.5fr 2.5fr', gap: '8px' }}>
-                  <input className="lux-input" type="date" value={e.date} onChange={ev => uE(i, 'date', ev.target.value)} />
-                  <input className="lux-input" placeholder="Portal/Slack/Lab" value={e.channel} onChange={ev => uE(i, 'channel', ev.target.value)} />
-                  <input className="lux-input" placeholder="What was the doubt?" value={e.query} onChange={ev => uE(i, 'query', ev.target.value)} />
-                  <textarea className="lux-textarea" rows={2} placeholder="How was it resolved?" value={e.resolution} onChange={ev => uE(i, 'resolution', ev.target.value)} />
+                  <input className="lux-input" type="date" value={e.date as string} onChange={ev => uE(i, 'date', ev.target.value)} />
+                  <input className="lux-input" placeholder="Portal/Slack/Lab" value={e.channel as string} onChange={ev => uE(i, 'channel', ev.target.value)} />
+                  <input className="lux-input" placeholder="What was the doubt?" value={e.query as string} onChange={ev => uE(i, 'query', ev.target.value)} />
+                  <textarea className="lux-textarea" rows={2} placeholder="How was it resolved?" value={e.resolution as string} onChange={ev => uE(i, 'resolution', ev.target.value)} />
                 </div>
               ))}
             </WorksheetSection>
@@ -45,12 +45,12 @@ export default function Phase2Worksheet1() {
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 2fr 2fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
                 {['Misconception', 'Topic', 'Root Cause', 'Suggested Fix'].map(h => <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>)}
               </div>
-              {data.errors.map((er: any, i: number) => (
+              {(data.errors as Array<Record<string, unknown>>).map((er, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 2fr 2fr', gap: '8px' }}>
-                  <input className="lux-input" placeholder="Error pattern" value={er.misconception} onChange={ev => uEr(i, 'misconception', ev.target.value)} />
-                  <input className="lux-input" placeholder="Topic" value={er.topic} onChange={ev => uEr(i, 'topic', ev.target.value)} />
-                  <textarea className="lux-textarea" rows={1} placeholder="Why does it happen?" value={er.rootCause} onChange={ev => uEr(i, 'rootCause', ev.target.value)} />
-                  <textarea className="lux-textarea" rows={1} placeholder="How to address it" value={er.fix} onChange={ev => uEr(i, 'fix', ev.target.value)} />
+                  <input className="lux-input" placeholder="Error pattern" value={er.misconception as string} onChange={ev => uEr(i, 'misconception', ev.target.value)} />
+                  <input className="lux-input" placeholder="Topic" value={er.topic as string} onChange={ev => uEr(i, 'topic', ev.target.value)} />
+                  <textarea className="lux-textarea" rows={1} placeholder="Why does it happen?" value={er.rootCause as string} onChange={ev => uEr(i, 'rootCause', ev.target.value)} />
+                  <textarea className="lux-textarea" rows={1} placeholder="How to address it" value={er.fix as string} onChange={ev => uEr(i, 'fix', ev.target.value)} />
                 </div>
               ))}
             </WorksheetSection>

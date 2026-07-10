@@ -52,7 +52,10 @@ export default function BuddyDashboard() {
 
   const isBuddy = profile?.role === 'lead_instructor' || profile?.role === 'academic_head';
 
-  useEffect(() => { if (isBuddy && user) loadData(); }, [isBuddy, user]);
+  useEffect(() => { if (isBuddy && user) loadData();
+    // loadData intentionally omitted: closes over fresh isBuddy/user each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBuddy, user]);
 
   async function loadData() {
     setLoading(true);

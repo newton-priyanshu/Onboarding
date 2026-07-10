@@ -121,7 +121,15 @@ export default function Login() {
               {googleLoading ? 'Redirecting to Google…' : 'Sign in with Google'}
             </button>
           </form>
-          <p style={{ textAlign: 'center', marginTop: '2rem', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>
+          <div style={{ textAlign: 'center', marginTop: '1rem', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>
+            <Link to="/forgot-password" style={{
+              color: 'var(--color-warm-grey)',
+              textDecoration: 'underline', textUnderlineOffset: '3px',
+              textDecorationColor: 'rgba(26, 26, 26, 0.3)',
+              fontSize: '0.75rem',
+            }}>Forgot your password?</Link>
+          </div>
+          <p style={{ textAlign: 'center', marginTop: '1.5rem', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>
             No account yet?{' '}
             <Link to="/signup" style={{ color: 'var(--color-charcoal)', fontWeight: 500, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'rgba(26, 26, 26, 0.3)' }}>Create one</Link>
           </p>

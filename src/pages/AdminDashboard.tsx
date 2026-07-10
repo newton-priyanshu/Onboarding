@@ -65,7 +65,10 @@ export default function AdminDashboard() {
   const isOnboardingLead = profile?.role === 'onboarding_lead';
   const canAssign = isManager || isOnboardingLead;
 
-  useEffect(() => { if (canAssign) loadData(); }, [canAssign]);
+  useEffect(() => { if (canAssign) loadData();
+    // loadData intentionally omitted: closes over fresh canAssign each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAssign]);
 
   async function loadData() {
     savedScrollY.current = window.scrollY;

@@ -23,7 +23,7 @@ export default function Phase1Worksheet7() {
       buddyApproveMsg="Your Courseware Review has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uRev = (i: number, f: string, v: any) => setData(p => { const arr = [...p.reviews]; arr[i] = { ...arr[i], [f]: v }; return { ...p, reviews: arr }; });
+        const uRev = (i: number, f: string, v: string | number) => setData(p => { const arr = [...p.reviews]; arr[i] = { ...arr[i], [f]: v }; return { ...p, reviews: arr }; });
         return (
           <>
             <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>

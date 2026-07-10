@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { t } from '../config/theme';
 import { ReviewerBadge } from '../config/worksheetConfig';
+import { REVIEW_STATUS, SUBMISSION_STATUS } from '../constants/status';
 import { getDueDateInfo } from '../hooks/useDueDates';
 
 interface WorksheetMeta {
@@ -24,11 +25,11 @@ interface PhaseWorksheetListProps {
 }
 
 function getBadge(status: string | null, reviewStatus: string | null): { label: string; color: string } {
-  if (reviewStatus === 'approved') return { label: 'Reviewed', color: t.success };
-  if (reviewStatus === 'buddy_approved') return { label: 'Buddy Approved', color: t.purple };
-  if (reviewStatus === 'needs_revision') return { label: 'Revise', color: t.error };
-  if (status === 'submitted' || reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted') return { label: 'Pending', color: t.pending };
-  if (status === 'In Progress') return { label: 'In Progress', color: t.ch };
+  if (reviewStatus === REVIEW_STATUS.APPROVED) return { label: 'Reviewed', color: t.success };
+  if (reviewStatus === REVIEW_STATUS.BUDDY_APPROVED) return { label: 'Buddy Approved', color: t.purple };
+  if (reviewStatus === REVIEW_STATUS.NEEDS_REVISION) return { label: 'Revise', color: t.error };
+  if (status === SUBMISSION_STATUS.SUBMITTED || reviewStatus === REVIEW_STATUS.PENDING_REVIEW || reviewStatus === REVIEW_STATUS.REVISION_SUBMITTED) return { label: 'Pending', color: t.pending };
+  if (status === SUBMISSION_STATUS.IN_PROGRESS) return { label: 'In Progress', color: t.ch };
   return { label: 'Not Started', color: t.wg };
 }
 

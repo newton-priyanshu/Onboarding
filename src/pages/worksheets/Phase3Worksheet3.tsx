@@ -28,7 +28,7 @@ export default function Phase3Worksheet3() {
       buddyApproveMsg="Your Assessment Blueprint has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uBloom = (i: number, f: string, v: any) => setData(p => { const arr = [...p.bloomGrid]; arr[i] = { ...arr[i], [f]: v }; return { ...p, bloomGrid: arr }; });
+        const uBloom = (i: number, f: string, v: string | boolean) => setData(p => { const arr = [...p.bloomGrid]; arr[i] = { ...arr[i], [f]: v }; return { ...p, bloomGrid: arr }; });
         return (
           <>
             <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>

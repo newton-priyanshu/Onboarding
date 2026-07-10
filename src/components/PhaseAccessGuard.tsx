@@ -57,17 +57,20 @@ export default function PhaseAccessGuard({ phaseNum, children }: PhaseAccessGuar
     if (phaseNum <= 1) return; // Phase 1 always accessible — skip query
     if (!user) return;
 
+    let cancelled = false;
     setChecking(true);
     supabase
       .from('worksheet_submissions')
       .select('worksheet_id, review_status, user_id')
       .eq('user_id', user.id)
       .then(({ data }) => {
+        if (cancelled) return;
         if (data) {
           setAllSubmissions(data as unknown as WorksheetSubmission[]);
         }
         setChecking(false);
       });
+    return () => { cancelled = true; };
   }, [user, phaseNum]);
 
   // Phase 1 is always accessible — render immediately, no query

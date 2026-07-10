@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAutoSave, loadWorksheetData, getOAuthName } from './useAutoSave';
 import { useToast } from '../components/Toast';
 import { supabase } from '../api/supabase';
+import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import type { User } from '@supabase/supabase-js';
 
 // ─── Types ──────────────────────────────────────────────
@@ -192,10 +193,10 @@ export function useWorksheet({
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const wasRevision = data._savedReviewStatus === 'needs_revision';
+      const wasRevision = data._savedReviewStatus === REVIEW_STATUS.NEEDS_REVISION;
       const submitData = {
         ...data,
-        status: 'submitted',
+        status: SUBMISSION_STATUS.SUBMITTED,
         dateSubmitted: new Date().toLocaleDateString('en-IN'),
       };
       setData(submitData);
@@ -219,12 +220,12 @@ export function useWorksheet({
   const isApproved = loaded && data._savedReviewStatus === 'approved';
   const isBuddyApproved = loaded && data._savedReviewStatus === 'buddy_approved';
   const isSubmitted = (
-    data.status === 'submitted'
+    data.status === SUBMISSION_STATUS.SUBMITTED
     && loaded
-    && data._savedReviewStatus !== 'needs_revision'
-    && data._savedReviewStatus !== 'revision_submitted'
-    && data._savedReviewStatus !== 'buddy_approved'
-    && data._savedReviewStatus !== 'approved'
+    && data._savedReviewStatus !== REVIEW_STATUS.NEEDS_REVISION
+    && data._savedReviewStatus !== REVIEW_STATUS.REVISION_SUBMITTED
+    && data._savedReviewStatus !== REVIEW_STATUS.BUDDY_APPROVED
+    && data._savedReviewStatus !== REVIEW_STATUS.APPROVED
   );
 
   const reviewData = useMemo<ReviewData>(() => ({

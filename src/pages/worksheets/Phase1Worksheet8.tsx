@@ -22,7 +22,7 @@ export default function Phase1Worksheet8() {
       buddyApproveMsg="Your Slack Audit has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uCh = (i: number, f: string, v: any) => setData(p => { const arr = [...p.channels]; arr[i] = { ...arr[i], [f]: v }; return { ...p, channels: arr }; });
+        const uCh = (i: number, f: string, v: string) => setData(p => { const arr = [...p.channels]; arr[i] = { ...arr[i], [f]: v }; return { ...p, channels: arr }; });
         return (
           <>
             <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
@@ -32,7 +32,7 @@ export default function Phase1Worksheet8() {
                   <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
                 ))}
               </div>
-              {data.channels.map((ch: any, i: number) => (
+              {(data.channels as Array<Record<string, string>>).map((ch, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 2fr 2fr', gap: '8px' }}>
                   <input className="lux-input" placeholder="Channel name" value={ch.channel} onChange={e => uCh(i, 'channel', e.target.value)} />
                   <input className="lux-input" placeholder="e.g. Jan-Mar 2025" value={ch.dateRange} onChange={e => uCh(i, 'dateRange', e.target.value)} />

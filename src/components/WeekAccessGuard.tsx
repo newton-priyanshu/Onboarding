@@ -4,6 +4,7 @@ import { Lock } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { WK_WORKSHEETS_MAP } from '../config/worksheetConfigData';
+import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 
 // ─── Props ──────────────────────────────────────────────
@@ -97,16 +98,14 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
         const submissionMap = new Map<string, { status: string; review_status: string }>();
         data.forEach((row: { worksheet_id: string; status: string; review_status: string }) => {
           submissionMap.set(row.worksheet_id, row);
-        });
-
-        const allComplete = previousWeekWorksheets.every((wsId: string) => {
+        });          const allComplete = previousWeekWorksheets.every((wsId: string) => {
           const sub = submissionMap.get(wsId);
           if (!sub) return false;
           // Consider "submitted", "buddy_approved", or "approved" as complete
           return (
-            sub.status === 'submitted' ||
-            sub.review_status === 'buddy_approved' ||
-            sub.review_status === 'approved'
+            sub.status === SUBMISSION_STATUS.SUBMITTED ||
+            sub.review_status === REVIEW_STATUS.BUDDY_APPROVED ||
+            sub.review_status === REVIEW_STATUS.APPROVED
           );
         });
 

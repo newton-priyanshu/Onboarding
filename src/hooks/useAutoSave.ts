@@ -156,6 +156,8 @@ export function useAutoSave(
         }
       }
 
+      // Reset retry counter on successful save
+      retryCountRef.current = 0;
       if (mountedRef.current) {
         setSaveStatus('saved');
         setTimeout(() => {

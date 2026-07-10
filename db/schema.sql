@@ -253,6 +253,169 @@ CREATE TRIGGER update_worksheet_submissions_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 
+
 -- =============================================================================
--- ✅ SCHEMA COMPLETE
+-- 7. NOTIFICATIONS TABLE (added by production migration)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  from_user_id UUID REFERENCES auth.users(id),
+  worksheet_id TEXT,
+  type TEXT NOT NULL DEFAULT 'submitted'
+    CHECK (type IN ('submitted', 'buddy_approved', 'approved', 'needs_revision', 'revision_submitted', 'phase_approved', 'promoted')),
+  message TEXT NOT NULL,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Users can read their own notifications
+CREATE POLICY "Users can read own notifications"
+  ON public.notifications
+  FOR SELECT
+  USING (user_id = auth.uid());
+
+-- Authenticated users can insert notifications
+CREATE POLICY "Users can insert notifications"
+  ON public.notifications
+  FOR INSERT
+  WITH CHECK (
+    auth.role() = 'authenticated'
+    AND (
+      user_id = auth.uid()
+      OR public.get_user_role() IN ('lead_instructor', 'academic_head', 'onboarding_lead')
+    )
+  );
+
+-- Users can mark their own notifications as read
+CREATE POLICY "Users can update own notifications"
+  ON public.notifications
+  FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+
+-- =============================================================================
+-- 8. WORKSHEET SUBMISSIONS — ADDITIONAL COLUMNS
+-- =============================================================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'worksheet_submissions' AND column_name = 'due_date'
+  ) THEN
+    ALTER TABLE public.worksheet_submissions ADD COLUMN due_date date;
+  END IF;
+END $$;
+
+
+-- =============================================================================
+-- 9. RLS MIGRATION — SECURITY FIXES (applied from production audit)
+-- =============================================================================
+
+-- 9a. Helper function: resolve user role from app_metadata (server-controlled)
+CREATE OR REPLACE FUNCTION public.get_user_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT COALESCE(
+    nullif(auth.jwt() -> 'app_metadata' ->> 'role', ''),
+    nullif(auth.jwt() -> 'user_metadata' ->> 'role', ''),
+    ''
+  );
+$$;
+
+-- 9b. Fix UPDATE policy on user_profiles — add WITH CHECK to prevent self-promotion
+DROP POLICY IF EXISTS "Users can update own profile" ON public.user_profiles;
+
+CREATE POLICY "Users can update own profile"
+  ON public.user_profiles
+  FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (
+    auth.uid() = id
+    AND (
+      NOT (role IS DISTINCT FROM (SELECT role FROM public.user_profiles WHERE id = auth.uid()))
+      OR public.get_user_role() IN ('academic_head', 'service_role')
+    )
+  );
+
+-- 9c. Fix UPDATE policies on worksheet_submissions — add WITH CHECK
+DROP POLICY IF EXISTS "Users can update own submissions" ON public.worksheet_submissions;
+DROP POLICY IF EXISTS "Reviewers can update submissions" ON public.worksheet_submissions;
+
+CREATE POLICY "Users can update own submissions"
+  ON public.worksheet_submissions
+  FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id
+    AND (
+      review_status IS NULL
+      OR review_status IN ('', 'pending_review', 'needs_revision', 'revision_submitted', 'buddy_approved', 'approved')
+    )
+  );
+
+CREATE POLICY "Reviewers can update submissions"
+  ON public.worksheet_submissions
+  FOR UPDATE
+  USING (
+    public.get_user_role() IN ('lead_instructor', 'academic_head', 'onboarding_lead')
+  )
+  WITH CHECK (
+    public.get_user_role() IN ('lead_instructor', 'academic_head', 'onboarding_lead')
+  );
+
+-- 9d. Trigger to force new users to start as 'new_joinee'
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.user_profiles (id, email, full_name, role)
+  VALUES (
+    new.id,
+    new.email,
+    COALESCE(
+      new.raw_user_meta_data ->> 'full_name',
+      new.raw_user_meta_data ->> 'name',
+      split_part(new.email, '@', 1)
+    ),
+    'new_joinee'
+  );
+  RETURN new;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+
+-- =============================================================================
+-- 10. ADDITIONAL INDEXES
+-- =============================================================================
+
+CREATE INDEX IF NOT EXISTS idx_worksheet_submissions_user_worksheet
+  ON public.worksheet_submissions (user_id, worksheet_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id
+  ON public.notifications (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_assigned_buddy
+  ON public.user_profiles (assigned_buddy_id);
+
+
+-- =============================================================================
+-- ✅ SCHEMA COMPLETE — See supabase_migration_fix_rls_security.sql for
+--    one-time data migration (copy existing roles to app_metadata).
 -- =============================================================================

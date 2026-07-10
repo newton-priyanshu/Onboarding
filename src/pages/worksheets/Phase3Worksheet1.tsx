@@ -23,7 +23,7 @@ export default function Phase3Worksheet1() {
       buddyApproveMsg="Your Lecture Delivery log has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uL = (i: number, f: string, v: any) => setData(p => { const arr = [...p.lectures]; arr[i] = { ...arr[i], [f]: v }; return { ...p, lectures: arr }; });
+        const uL = (i: number, f: string, v: string) => setData(p => { const arr = [...p.lectures]; arr[i] = { ...arr[i], [f]: v }; return { ...p, lectures: arr }; });
         return (
           <>
             <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
@@ -31,7 +31,7 @@ export default function Phase3Worksheet1() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 0.8fr 1.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
                 {['Date', 'Subject / Topic', 'Duration', 'Faculty Lead Present?'].map(h => <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>)}
               </div>
-              {data.lectures.map((l: any, i: number) => (
+              {(data.lectures as Array<Record<string, string>>).map((l, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 0.8fr 1.5fr', gap: '8px' }}>
                   <input className="lux-input" type="date" value={l.date} onChange={e => uL(i, 'date', e.target.value)} />
                   <input className="lux-input" placeholder="Topic" value={l.subject} onChange={e => uL(i, 'subject', e.target.value)} />

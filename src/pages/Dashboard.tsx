@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { t } from '../config/theme';
 import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { SUBMISSION_STATUS } from '../constants/status';
 import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 
 /** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
@@ -47,6 +48,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (user?.id) loadSubmissions();
     else setLoading(false);
+    // loadSubmissions intentionally omitted: closes over fresh user.id each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   async function loadSubmissions() {
@@ -71,7 +74,9 @@ export default function Dashboard() {
     if (sub.review_status === 'buddy_approved') return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
     if (sub.review_status === 'needs_revision') return { status: 'needs_revision', label: 'Needs Revision', color: t.error, icon: AlertCircle };
     if (sub.review_status === 'revision_submitted' || sub.review_status === 'pending_review') return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
-    if ((sub.status as string) === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };
+    // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
+    const rawStatus = (sub.status as string) || '';
+    if (rawStatus === SUBMISSION_STATUS.SUBMITTED || rawStatus === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };
     return { status: 'in_progress', label: 'In Progress', color: t.ch, icon: FileText };
   }
 

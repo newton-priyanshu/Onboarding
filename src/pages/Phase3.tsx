@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
 import { REVIEWER_LABELS, REVIEWER_STYLES, canAccessPhase, type WorksheetSubmission } from '../config/worksheetConfig';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
+import { countCompleted } from '../utils/worksheetHelpers';
 
 interface WorksheetMeta {
   id: string;
@@ -16,10 +17,7 @@ interface WorksheetMeta {
   desc: string;
 }
 
-interface StatusInfo {
-  status: string | null;
-  review_status: string | null;
-}
+import type { StatusInfo } from '../utils/worksheetHelpers';
 
 interface PhaseLockedViewProps {
   phaseNum: number;
@@ -74,15 +72,20 @@ export default function Phase3() {
 
   useEffect(() => {
     if (user) (async () => {
-      const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user.id);
-      if (data) {
-        const subs = data.map(s => ({ ...s, user_id: user.id })) as unknown as WorksheetSubmission[];
-        setAllSubmissions(subs);
-        const m: Record<string, StatusInfo> = {};
-        data.forEach(s => { m[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-        setStatuses(m);
+      try {
+        const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user.id);
+        if (data) {
+          const subs = data.map(s => ({ ...s, user_id: user.id })) as unknown as WorksheetSubmission[];
+          setAllSubmissions(subs);
+          const m: Record<string, StatusInfo> = {};
+          data.forEach(s => { m[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+          setStatuses(m);
+        }
+      } catch (err) {
+        console.error('Failed to load Phase 3 submissions:', err);
+      } finally {
+        setCheckingAccess(false);
       }
-      setCheckingAccess(false);
     })();
   }, [user]);
 
@@ -90,10 +93,7 @@ export default function Phase3() {
     return <PhaseLockedView phaseNum={3} previousPhaseNum={2} navigate={navigate} />;
   }
 
-  const completed = worksheets.filter(w => {
-    const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-  }).length;
+  const completed = countCompleted(worksheets.map(w => w.id), statuses);
 
   return (
     <div className="lux-section">

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { CheckCircle2, XCircle, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown, Shield } from 'lucide-react';
 import { WORKSHEET_INFO, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import ReviewContent from '../components/ReviewContent';
 import { triggerNotification, getReviewerUserIds, getAssignedReviewerIds } from '../hooks/useNotifications';
 import { t } from '../config/theme';
@@ -72,6 +73,8 @@ export default function WorksheetReview() {
 
   useEffect(() => {
     if (isReviewer && userId && worksheetId) loadData();
+    // loadData intentionally omitted: closes over fresh userId/worksheetId each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReviewer, userId, worksheetId]);
 
   async function loadData() {
@@ -281,8 +284,10 @@ export default function WorksheetReview() {
   function StatusBadge({ status }: { status: string }) {
     if (status === 'approved') return <span className="lux-badge" style={{ borderColor: t.success, color: t.success, fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
     if (status === 'buddy_approved') return <span className="lux-badge" style={{ borderColor: t.purple, color: t.purple, fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
+    // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
+    const subStatus = (submission!.status as string) || '';
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (status === 'pending_review' || (status === '' && (submission!.status as string) === 'Submitted')) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
+    if (status === REVIEW_STATUS.PENDING_REVIEW || (status === REVIEW_STATUS.EMPTY && (subStatus === SUBMISSION_STATUS.SUBMITTED || subStatus === 'Submitted'))) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
     if (status === 'needs_revision') return <span className="lux-badge" style={{ borderColor: t.error, color: t.error, fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
     if (status === 'revision_submitted') return <span className="lux-badge" style={{ borderColor: t.pending, color: t.pending, fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
     return null;

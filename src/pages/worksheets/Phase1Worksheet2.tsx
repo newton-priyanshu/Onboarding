@@ -24,7 +24,7 @@ export default function Phase1Worksheet2() {
       buddyApproveMsg="Your Faculty Mentor Sync worksheet has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const updateWeek = (i: number, f: string, v: any) => setData(p => { const arr = [...p.weeks]; arr[i] = { ...arr[i], [f]: v }; return { ...p, weeks: arr }; });
+        const updateWeek = (i: number, f: string, v: string | boolean) => setData(p => { const arr = [...p.weeks]; arr[i] = { ...arr[i], [f]: v }; return { ...p, weeks: arr }; });
         return (
           <>
             <WorksheetSection title="About You">
@@ -39,19 +39,19 @@ export default function Phase1Worksheet2() {
             </WorksheetSection>
 
             <WorksheetSection title="Weekly Mentor Sync Tracker" subtitle="Each session should cover progress, blockers, and one learning goal for the coming week.">
-              {data.weeks.map((week: any, i: number) => (
+              {(data.weeks as Array<Record<string, unknown>>).map((week, i) => (
                 <div key={i} style={{ borderBottom: '1px solid rgba(26,26,26,0.06)', paddingBottom: '1rem', marginBottom: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>Week {i + 1}</span>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--color-warm-grey)' }}>
-                      <input type="checkbox" checked={week.mentorSignoff} onChange={e => updateWeek(i, 'mentorSignoff', e.target.checked)}
+                      <input type="checkbox" checked={week.mentorSignoff as boolean} onChange={e => updateWeek(i, 'mentorSignoff', e.target.checked)}
                         style={{ width: '16px', height: '16px', accentColor: 'var(--color-charcoal)' }} />
                       Mentor Sign-off
                     </label>
                   </div>
-                  <input className="lux-input" type="date" value={week.date} onChange={e => updateWeek(i, 'date', e.target.value)} style={{ marginBottom: '8px' }} />
-                  <textarea className="lux-textarea" rows={2} placeholder="Topics Discussed" value={week.topics} onChange={e => updateWeek(i, 'topics', e.target.value)} />
-                  <textarea className="lux-textarea" rows={2} placeholder="Actions / Follow-ups" value={week.actions} onChange={e => updateWeek(i, 'actions', e.target.value)} style={{ marginTop: '8px' }} />
+                  <input className="lux-input" type="date" value={week.date as string} onChange={e => updateWeek(i, 'date', e.target.value)} style={{ marginBottom: '8px' }} />
+                  <textarea className="lux-textarea" rows={2} placeholder="Topics Discussed" value={week.topics as string} onChange={e => updateWeek(i, 'topics', e.target.value)} />
+                  <textarea className="lux-textarea" rows={2} placeholder="Actions / Follow-ups" value={week.actions as string} onChange={e => updateWeek(i, 'actions', e.target.value)} style={{ marginTop: '8px' }} />
                 </div>
               ))}
             </WorksheetSection>

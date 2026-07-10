@@ -62,7 +62,7 @@ export type ReviewStatus =
   | 'approved';
 
 // ─── Submission Status ───────────────────────────────────
-export type SubmissionStatus = 'Not Started' | 'In Progress' | 'Submitted' | 'Reviewed';
+export type SubmissionStatus = 'Not Started' | 'In Progress' | 'submitted' | 'Reviewed';
 
 // ─── Engine Tag Info for a session ───────────────────────
 export interface EngineTagInfo {

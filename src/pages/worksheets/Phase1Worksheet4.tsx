@@ -24,8 +24,8 @@ export default function Phase1Worksheet4() {
       buddyApproveMsg="Your University Governance worksheet has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uSem = (i: number, f: string, v: any) => setData(p => { const arr = [...p.semesters]; arr[i] = { ...arr[i], [f]: v }; return { ...p, semesters: arr }; });
-        const uCoh = (i: number, f: string, v: any) => setData(p => { const arr = [...p.cohorts]; arr[i] = { ...arr[i], [f]: v }; return { ...p, cohorts: arr }; });
+        const uSem = (i: number, f: string, v: string) => setData(p => { const arr = [...p.semesters]; arr[i] = { ...arr[i], [f]: v }; return { ...p, semesters: arr }; });
+        const uCoh = (i: number, f: string, v: string) => setData(p => { const arr = [...p.cohorts]; arr[i] = { ...arr[i], [f]: v }; return { ...p, cohorts: arr }; });
         return (
           <>
             <WorksheetSection title="About You">
@@ -39,7 +39,7 @@ export default function Phase1Worksheet4() {
                   <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
                 ))}
               </div>
-              {data.semesters.map((s: any, i: number) => (
+              {(data.semesters as Array<Record<string, string>>).map((s, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr', gap: '8px' }}>
                   <input className="lux-input" placeholder="e.g. Sem 1" value={s.semester} onChange={e => uSem(i, 'semester', e.target.value)} />
                   <input className="lux-input" type="date" value={s.startDate} onChange={e => uSem(i, 'startDate', e.target.value)} />
@@ -54,7 +54,7 @@ export default function Phase1Worksheet4() {
                   <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
                 ))}
               </div>
-              {data.cohorts.map((c: any, i: number) => (
+              {(data.cohorts as Array<Record<string, string>>).map((c, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr', gap: '8px' }}>
                   <input className="lux-input" placeholder="Cohort" value={c.name} onChange={e => uCoh(i, 'name', e.target.value)} />
                   <input className="lux-input" placeholder="Count" value={c.students} onChange={e => uCoh(i, 'students', e.target.value)} />

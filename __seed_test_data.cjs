@@ -15,9 +15,12 @@ const { WebSocket } = require('ws');
 
 // ── Configuration ──────────────────────────────────────────────────────────
 const PASSWORD = 'Test123!';
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://fuoqoryqndtdooujslee.supabase.co';
-const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'sb_publishable_1JTwEK8CgHC6PLtOOnYeSw_xaHwa-i9';
+if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+  console.error('❌ Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in environment');
+  process.exit(1);
+}
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: WebSocket },

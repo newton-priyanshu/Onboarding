@@ -60,6 +60,8 @@ export default function PhaseReview() {
 
   useEffect(() => {
     if (userId && phaseNum) loadData();
+    // loadData intentionally omitted: closes over fresh userId/phaseNum each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, phaseNum]);
 
   async function loadData() {

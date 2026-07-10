@@ -381,7 +381,7 @@ export const FIELD_SECTIONS: Record<string, SectionLayout> = {
   p1_w1: {
     sections: ['About You', 'Stakeholders', 'Conversations', 'Buddy Assignment', 'Reflection'],
     sectionMap: {
-      'About You': ['employeeName', 'department'],
+      'About You': ['employeeName', 'department', 'mentorName', 'mentorEmail'],
       'Stakeholders': ['stakeholders'],
       'Conversations': ['conversations'],
       'Buddy Assignment': ['buddyName', 'buddyAssignmentDate', 'buddyChannel', 'buddySyncDay'],

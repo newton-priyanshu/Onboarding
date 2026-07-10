@@ -4,8 +4,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { WebSocket } from 'ws';
 
-const SUPABASE_URL = 'https://fuoqoryqndtdooujslee.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_1JTwEK8CgHC6PLtOOnYeSw_xaHwa-i9';
+if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+  console.error('❌ Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in environment');
+  process.exit(1);
+}
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: WebSocket },
@@ -90,7 +94,8 @@ async function main() {
   console.log('  - User profiles: ✅ Deleted');
   console.log('  - Auth users: ⚠ Cannot delete with anon key alone');
   console.log('\n  To fully delete auth users:');
-  console.log('  1. Go to https://supabase.com/dashboard/project/fuoqoryqndtdooujslee');
+  const projectRef = (process.env.VITE_SUPABASE_URL || '').match(/https:\/\/([^.]+)\.supabase\.co/) || ['', 'your-project'];
+  console.log(`  1. Go to https://supabase.com/dashboard/project/${projectRef[1]}`);
   console.log('  2. Open SQL Editor');
   console.log('  3. Run: DELETE FROM auth.users;');
   console.log('  4. Then: DELETE FROM public.user_profiles;');

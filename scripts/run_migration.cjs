@@ -31,15 +31,14 @@ if (!pat) {
 }
 
 // The migrations to run, in order
-const MIGRATIONS = [
-  {
-    file: 'scripts/setup/__migration_notifications_dates.sql',
-    description: 'Notifications table + due_date column + review_status constraint',
-  },
-  {
-    file: 'scripts/setup/__due_date_notifications.sql',
-    description: 'Automated due_soon/overdue notification function',
-  },
+const MIGRATIONS = [    {
+      file: 'db/__migration_notifications_dates.sql',
+      description: 'Notifications table + due_date column + review_status constraint',
+    },
+    {
+      file: 'db/__due_date_notifications.sql',
+      description: 'Automated due_soon/overdue notification function',
+    },
 ];
 
 async function run() {

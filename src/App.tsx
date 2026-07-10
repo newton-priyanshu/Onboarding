@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -20,13 +20,15 @@ import Stakeholders from './pages/Stakeholders';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthCallback from './pages/AuthCallback';
-import AdminDashboard from './pages/AdminDashboard';
-import BuddyDashboard from './pages/BuddyDashboard';
-import OnboardingLeadDashboard from './pages/OnboardingLeadDashboard';
-import WorksheetReview from './pages/WorksheetReview';
-import PhaseReview from './pages/PhaseReview';
-import BuddyGatePass from './pages/BuddyGatePass';
 import NotFound from './pages/NotFound';
+
+// Lazy-loaded heavy pages (admin/buddy/review routes)
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const BuddyDashboard = lazy(() => import('./pages/BuddyDashboard'));
+const OnboardingLeadDashboard = lazy(() => import('./pages/OnboardingLeadDashboard'));
+const WorksheetReview = lazy(() => import('./pages/WorksheetReview'));
+const PhaseReview = lazy(() => import('./pages/PhaseReview'));
+const BuddyGatePass = lazy(() => import('./pages/BuddyGatePass'));
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
 import WeekWorksheetPage from './pages/WeekWorksheetPage';
@@ -44,9 +46,22 @@ interface PhaseData {
   }>;
 }
 
-// ─── Error Boundary Route Resetter ──────────────────────
+// ─── Fallback for lazy-loaded pages ────────────────────
 
-function ErrorBoundaryRouteResetter({ children }: { children: ReactNode }) {
+function PageFallback() {
+  return (
+    <div className="lux-section">
+      <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto', paddingTop: '4rem', textAlign: 'center' }}>
+        <div className="lux-line" style={{ margin: '0 auto 1.5rem', width: '60px' }} />
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>Loading…</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Layout Wrapper ─────────────────────────────────────
+
+function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {children}
@@ -86,21 +101,21 @@ function AppRoutes() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Admin / Lead */}
-        <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyDashboard /></ProtectedRoute>} />
-        <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><OnboardingLeadDashboard /></ProtectedRoute>} />
+        {/* Admin / Lead — wrapped in Suspense for code-splitting */}
+        <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><Suspense fallback={<PageFallback />}><AdminDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><Suspense fallback={<PageFallback />}><BuddyDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><Suspense fallback={<PageFallback />}><OnboardingLeadDashboard /></Suspense></ProtectedRoute>} />
         {/* Phase Review Routes */}
-        <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><PhaseReview /></ProtectedRoute>} />
-        <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><PhaseReview /></ProtectedRoute>} />
+        <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
+        <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
 
         {/* Buddy Gate Pass Routes */}
-        <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><BuddyGatePass /></ProtectedRoute>} />
+        <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><Suspense fallback={<PageFallback />}><BuddyGatePass /></Suspense></ProtectedRoute>} />
 
         {/* Individual Worksheet Review Routes */}
-        <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><WorksheetReview /></ProtectedRoute>} />
-        <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
-        <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><WorksheetReview /></ProtectedRoute>} />
+        <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+        <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+        <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
 
         {/* Dashboard / Phases */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -159,7 +174,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <ErrorBoundaryRouteResetter>
+          <AppLayout>
             <Navbar progress={progress} />
             <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
               <AppRoutes />
@@ -178,7 +193,7 @@ export default function App() {
               <p>Newton School of Technology <span style={{ opacity: 0.3 }}>·</span> Bengaluru</p>
               <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Portal</p>
             </footer>
-          </ErrorBoundaryRouteResetter>
+          </AppLayout>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

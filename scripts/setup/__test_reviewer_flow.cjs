@@ -1,8 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 const ws = require('ws');
 
+if (!process.env.VITE_SUPABASE_URL || !(process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_KEY)) {
+  console.error('❌ Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY/SUPABASE_KEY in environment');
+  process.exit(1);
+}
 const supabase = createClient(
-  'https://fuoqoryqndtdooujslee.supabase.co',
+  process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_KEY,
   { realtime: { transport: ws } }
 );

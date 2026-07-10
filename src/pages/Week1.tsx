@@ -1,26 +1,16 @@
-import { BookOpen, Monitor, Eye, BookText, Search, ClipboardList, Shield, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { BookOpen, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
 import { WEEK_LABELS, ENGINE_TAG_INFO, ENGINE_TAG_COLORS } from '../config/worksheetConfigData';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
-
-interface WorksheetMeta { id: string; num: number; path: string; title: string; icon: LucideIcon; desc: string; }
-interface StatusInfo { status: string | null; review_status: string | null; }
+import { countCompleted } from '../utils/worksheetHelpers';
+import type { StatusInfo } from '../utils/worksheetHelpers';
+import { week1Worksheets as worksheets } from '../config/weeklyWorksheets';
 
 const weekNum = 1;
 const weekLabel = WEEK_LABELS[weekNum]!;
-
-const worksheets: WorksheetMeta[] = [
-  { id: 'p1_w5', num: 1, path: '/week-1/worksheet/p1_w5', title: 'Systems & Platform Walkthrough', icon: Monitor, desc: 'Product orientation — how the platform works end-to-end.' },
-  { id: 'p1_w6', num: 2, path: '/week-1/worksheet/p1_w6', title: 'Structured Observation — Recorded Lectures', icon: Eye, desc: '3 recorded lectures with TLAC-lens observation sheet.' },
-  { id: 'p1_w3', num: 3, path: '/week-1/worksheet/p1_w3', title: 'Culture-in-Delivery Opening', icon: BookText, desc: 'What NST believes about teaching — no student left behind.' },
-  { id: 'w1_o1', num: 4, path: '/week-1/worksheet/w1_o1', title: 'Day 1 Logistics & Access', icon: ClipboardList, desc: 'Access verification, buddy contact, comms channels.' },
-  { id: 'w1_e1', num: 5, path: '/week-1/worksheet/w1_e1', title: 'Contest Guidelines V3 Pre-read', icon: BookText, desc: 'Read Contest Guidelines V3 for W2-E1 receptivity build.' },
-  { id: 'w1_o2', num: 6, path: '/week-1/worksheet/w1_o2', title: 'Playbook Scavenger Exercise', icon: Search, desc: 'Find-the-answer sheet across Playbook §1 to §5.' },
-  { id: 'w1_g1', num: 7, path: '/week-1/worksheet/w1_g1', title: 'Gate 1 — Anchor Artifacts', icon: Shield, desc: 'Operational check, observation logs, scavenger sheet, reflection #0.' },
-];
 
 export default function Week1() {
   const { user } = useAuth();
@@ -29,18 +19,19 @@ export default function Week1() {
   useEffect(() => { if (user) loadStatuses(); }, [user]);
 
   async function loadStatuses() {
-    const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id);
-    if (data) {
-      const map: Record<string, StatusInfo> = {};
-      data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-      setStatuses(map);
+    try {
+      const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id);
+      if (data) {
+        const map: Record<string, StatusInfo> = {};
+        data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+        setStatuses(map);
+      }
+    } catch (err) {
+      console.error('Failed to load Week 1 statuses:', err);
     }
   }
 
-  const completed = worksheets.filter(w => {
-    const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-  }).length;
+  const completed = countCompleted(worksheets.map(w => w.id), statuses);
 
   return (
     <div className="lux-section">

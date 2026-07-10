@@ -1,10 +1,13 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('Missing Supabase credentials in .env');
+  console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY');
+  console.error('Optional for full access: VITE_SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 

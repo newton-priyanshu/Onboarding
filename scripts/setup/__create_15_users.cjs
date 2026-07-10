@@ -9,7 +9,11 @@
 const { createClient } = require('@supabase/supabase-js');
 const ws = require('ws');
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://fuoqoryqndtdooujslee.supabase.co';
+if (!process.env.VITE_SUPABASE_URL) {
+  console.error('❌ Missing VITE_SUPABASE_URL in environment');
+  process.exit(1);
+}
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_KEY;
 
 if (!SUPABASE_KEY) {

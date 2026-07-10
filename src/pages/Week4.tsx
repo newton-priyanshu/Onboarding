@@ -1,37 +1,16 @@
-import { BookOpen, Users, ClipboardCheck, BarChart, Heart, Shield, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { BookOpen, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
 import { WEEK_LABELS, ENGINE_TAG_INFO, ENGINE_TAG_COLORS } from '../config/worksheetConfigData';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
-
-interface WorksheetMeta {
-  id: string;
-  num: number;
-  path: string;
-  title: string;
-  icon: LucideIcon;
-  desc: string;
-}
-
-interface StatusInfo {
-  status: string | null;
-  review_status: string | null;
-}
+import { countCompleted } from '../utils/worksheetHelpers';
+import type { StatusInfo } from '../utils/worksheetHelpers';
+import { week4Worksheets as worksheets } from '../config/weeklyWorksheets';
 
 const weekNum = 4;
 const weekLabel = WEEK_LABELS[weekNum]!;
-
-const worksheets: WorksheetMeta[] = [
-  { id: 'p3_w1', num: 1, path: '/week-4/worksheet/p3_w1', title: 'Demo Final', icon: Users, desc: 'Feedback incorporated, Course Lead sign-off per A.7.' },
-  { id: 'w4_d2', num: 2, path: '/week-4/worksheet/w4_d2', title: 'Co-Teach / Mock Classroom', icon: Users, desc: 'Live co-teach or mock classroom with edge-case scenarios.' },
-  { id: 'p3_w5', num: 3, path: '/week-4/worksheet/p3_w5', title: 'Lecture Package v2 — Final Approval', icon: ClipboardCheck, desc: '20% rule: if reviewer edits >20%, fix the checklist.' },
-  { id: 'w4_e1', num: 4, path: '/week-4/worksheet/w4_e1', title: 'Post-Contest Analysis & Calibration', icon: BarChart, desc: 'Predict solve rates, compare to actuals, write calibration note.' },
-  { id: 'w4_o1', num: 5, path: '/week-4/worksheet/w4_o1', title: 'Pre-Semester Checklist', icon: ClipboardCheck, desc: 'Complete T-2-week checklist for your first teaching week.' },
-  { id: 'w4_b1', num: 6, path: '/week-4/worksheet/w4_b1', title: 'Why We Reflect', icon: Heart, desc: 'Reflection cycle #1 — ownership & commitment ceremony.' },
-  { id: 'w4_g1', num: 7, path: '/week-4/worksheet/w4_g1', title: 'Gate 4 — Independence Readiness', icon: Shield, desc: 'Final artifact review and independence sign-off.' },
-];
 
 export default function Week4() {
   const { user } = useAuth();
@@ -42,21 +21,22 @@ export default function Week4() {
   }, [user]);
 
   async function loadStatuses() {
-    const { data } = await supabase
-      .from('worksheet_submissions')
-      .select('worksheet_id, status, review_status')
-      .eq('user_id', user?.id);
-    if (data) {
-      const map: Record<string, StatusInfo> = {};
-      data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-      setStatuses(map);
+    try {
+      const { data } = await supabase
+        .from('worksheet_submissions')
+        .select('worksheet_id, status, review_status')
+        .eq('user_id', user?.id);
+      if (data) {
+        const map: Record<string, StatusInfo> = {};
+        data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+        setStatuses(map);
+      }
+    } catch (err) {
+      console.error('Failed to load Week 4 statuses:', err);
     }
   }
 
-  const completed = worksheets.filter(w => {
-    const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-  }).length;
+  const completed = countCompleted(worksheets.map(w => w.id), statuses);
 
   return (
     <div className="lux-section">

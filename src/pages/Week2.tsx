@@ -1,28 +1,16 @@
-import { BookOpen, Layers, FileEdit, Mic, Shield, ClipboardCheck, Eye, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { BookOpen, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
 import { WEEK_LABELS, ENGINE_TAG_INFO, ENGINE_TAG_COLORS } from '../config/worksheetConfigData';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
-
-interface WorksheetMeta { id: string; num: number; path: string; title: string; icon: LucideIcon; desc: string; }
-interface StatusInfo { status: string | null; review_status: string | null; }
+import { countCompleted } from '../utils/worksheetHelpers';
+import type { StatusInfo } from '../utils/worksheetHelpers';
+import { week2Worksheets as worksheets } from '../config/weeklyWorksheets';
 
 const weekNum = 2;
 const weekLabel = WEEK_LABELS[weekNum]!;
-
-const worksheets: WorksheetMeta[] = [
-  { id: 'p2_w3', num: 1, path: '/week-2/worksheet/p2_w3', title: 'Question Creation Mechanics', icon: FileEdit, desc: 'MCQ, coding, components, playgrounds — how to build them.' },
-  { id: 'p1_w7', num: 2, path: '/week-2/worksheet/p1_w7', title: 'The Quality Standard', icon: ClipboardCheck, desc: 'Solved-by-creator, peer review, silent vs loud errors.' },
-  { id: 'p1_w6', num: 3, path: '/week-2/worksheet/p1_w6', title: 'Recorded Lectures — TLAC Lens', icon: Eye, desc: '2 more recorded lectures, technique-spotting with TLAC 3.0.' },
-  { id: 'w2_e1', num: 4, path: '/week-2/worksheet/w2_e1', title: "Bloom's Two-Pens Session", icon: Layers, desc: 'Tag real past questions using Bloom\'s Taxonomy v4.' },
-  { id: 'w2_c3', num: 5, path: '/week-2/worksheet/w2_c3', title: 'Create & Peer Review', icon: FileEdit, desc: '3 MCQs + 2 coding questions; review a peer\'s set.' },
-  { id: 'w2_d2', num: 6, path: '/week-2/worksheet/w2_d2', title: 'Micro-Teach #1', icon: Mic, desc: '10-minute segment to 3 peers — rubric-lite feedback.' },
-  { id: 'w2_b1', num: 7, path: '/week-2/worksheet/w2_b1', title: 'Discipline Consistency', icon: Shield, desc: 'Customise your classroom discipline approach.' },
-  { id: 'w2_o1', num: 8, path: '/week-2/worksheet/w2_o1', title: 'Invigilation & Exam Formalities', icon: ClipboardCheck, desc: 'Policy walkthrough plus scenario sheet.' },
-  { id: 'w2_g1', num: 9, path: '/week-2/worksheet/w2_g1', title: 'Gate 2 — Co-create Artifacts', icon: Shield, desc: 'Q set, peer reviews, Bloom\'s tagging, discipline sheet.' },
-];
 
 export default function Week2() {
   const { user } = useAuth();
@@ -31,18 +19,19 @@ export default function Week2() {
   useEffect(() => { if (user) loadStatuses(); }, [user]);
 
   async function loadStatuses() {
-    const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id);
-    if (data) {
-      const map: Record<string, StatusInfo> = {};
-      data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-      setStatuses(map);
+    try {
+      const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id);
+      if (data) {
+        const map: Record<string, StatusInfo> = {};
+        data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+        setStatuses(map);
+      }
+    } catch (err) {
+      console.error('Failed to load Week 2 statuses:', err);
     }
   }
 
-  const completed = worksheets.filter(w => {
-    const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-  }).length;
+  const completed = countCompleted(worksheets.map(w => w.id), statuses);
 
   return (
     <div className="lux-section">

@@ -24,7 +24,7 @@ export default function Phase2Worksheet2() {
       buddyApproveMsg="Your Lab Scorecard has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uS = (i: number, f: string, v: any) => setData(p => { const arr = [...p.sessions]; arr[i] = { ...arr[i], [f]: v }; return { ...p, sessions: arr }; });
+        const uS = (i: number, f: string, v: string) => setData(p => { const arr = [...p.sessions]; arr[i] = { ...arr[i], [f]: v }; return { ...p, sessions: arr }; });
         const uScore = (dimIdx: number, sessionIdx: number, v: number) => setData(p => { const arr = [...p.dimScores]; arr[dimIdx] = [...arr[dimIdx]]; arr[dimIdx][sessionIdx] = v; return { ...p, dimScores: arr }; });
         return (
           <>
@@ -33,7 +33,7 @@ export default function Phase2Worksheet2() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 2.5fr', gap: '8px', padding: '6px 0', borderBottom: '1px solid var(--color-charcoal)' }}>
                 {['Date', 'Subject / Topic', 'Observer', 'Observer Notes'].map(h => <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>)}
               </div>
-              {data.sessions.map((s: any, i: number) => (
+              {(data.sessions as Array<Record<string, string>>).map((s, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 2.5fr', gap: '8px' }}>
                   <input className="lux-input" type="date" value={s.date} onChange={e => uS(i, 'date', e.target.value)} />
                   <input className="lux-input" placeholder="Subject" value={s.subject} onChange={e => uS(i, 'subject', e.target.value)} />

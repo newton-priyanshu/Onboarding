@@ -129,9 +129,10 @@ export default function Navbar({ progress }: NavbarProps) {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Notification Bell - rendered once, visible on all screen sizes */}
+            <NotificationBell />
             {/* Desktop nav */}
             <nav className="desktop-nav-lux" style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-              <NotificationBell />
               {allLinks.map((item) => {
                 const active = isActive(item.path);
                 const Icon = item.icon;
@@ -315,10 +316,7 @@ export default function Navbar({ progress }: NavbarProps) {
           maxHeight: 'calc(100vh - 64px)',
           overflowY: 'auto',
         }}>
-          {/* Notification Bell in mobile */}
-          <div style={{ padding: '8px 24px', borderBottom: '1px solid rgba(26, 26, 26, 0.06)' }}>
-            <NotificationBell />
-          </div>
+          {/* Notification bell is rendered once in the header above and visible on all screen sizes */}
           {allLinks.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;

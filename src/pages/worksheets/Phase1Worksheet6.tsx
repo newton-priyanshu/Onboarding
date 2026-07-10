@@ -22,7 +22,7 @@ export default function Phase1Worksheet6() {
       buddyApproveMsg="Your Observation Journal has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uObs = (i: number, f: string, v: any) => setData(p => { const arr = [...p.observations]; arr[i] = { ...arr[i], [f]: v }; return { ...p, observations: arr }; });
+        const uObs = (i: number, f: string, v: string) => setData(p => { const arr = [...p.observations]; arr[i] = { ...arr[i], [f]: v }; return { ...p, observations: arr }; });
         return (
           <>
             <WorksheetSection title="About You"><FieldGroup label="Full Name" required><input className="lux-input" value={data.employeeName} onChange={e => updateField('employeeName', e.target.value)} /></FieldGroup></WorksheetSection>
@@ -32,7 +32,7 @@ export default function Phase1Worksheet6() {
                   <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
                 ))}
               </div>
-              {data.observations.map((o: any, i: number) => (
+              {(data.observations as Array<Record<string, string>>).map((o, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr 1fr 2.5fr', gap: '8px' }}>
                   <input className="lux-input" type="date" value={o.date} onChange={e => uObs(i, 'date', e.target.value)} />
                   <input className="lux-input" placeholder="Subject" value={o.subject} onChange={e => uObs(i, 'subject', e.target.value)} />

@@ -13,7 +13,14 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
-  let fp = path.join(dist, req.url.split('?')[0] === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]));
+  // Resolve the requested path and verify it stays within the dist directory
+  // Use path.join first (keeps dist as prefix even when request path starts with /),
+  // then path.resolve to normalize any .. traversal segments.
+  let fp = path.resolve(path.join(dist, req.url.split('?')[0] === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0])));
+  if (!fp.startsWith(dist + path.sep) && fp !== dist) {
+    // Path traversal attempt — serve index.html safely instead
+    fp = path.join(dist, 'index.html');
+  }
   if (!fs.existsSync(fp) || !fs.statSync(fp).isFile()) fp = path.join(dist, 'index.html');
   const ext = path.extname(fp);
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'text/plain' });

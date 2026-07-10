@@ -1,28 +1,16 @@
-import { BookOpen, Monitor, Clock, MessageSquare, ClipboardCheck, Sword, MessageCircle, FileEdit, Shield, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { BookOpen, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
 import { WEEK_LABELS, ENGINE_TAG_INFO, ENGINE_TAG_COLORS } from '../config/worksheetConfigData';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
-
-interface WorksheetMeta { id: string; num: number; path: string; title: string; icon: LucideIcon; desc: string; }
-interface StatusInfo { status: string | null; review_status: string | null; }
+import { countCompleted } from '../utils/worksheetHelpers';
+import type { StatusInfo } from '../utils/worksheetHelpers';
+import { week3Worksheets as worksheets } from '../config/weeklyWorksheets';
 
 const weekNum = 3;
 const weekLabel = WEEK_LABELS[weekNum]!;
-
-const worksheets: WorksheetMeta[] = [
-  { id: 'p2_w1', num: 1, path: '/week-3/worksheet/p2_w1', title: 'Engagement & Active Learning', icon: MessageSquare, desc: 'The "did you understand" anti-pattern — mirror moments inside K sessions.' },
-  { id: 'p2_w2', num: 2, path: '/week-3/worksheet/p2_w2', title: 'Demo Dry-Run', icon: ClipboardCheck, desc: '30–40 min to peer classroom, observed on TLAC-based rubric.' },
-  { id: 'p2_w4', num: 3, path: '/week-3/worksheet/p2_w4', title: 'Slot Creation & Attendance Flow', icon: FileEdit, desc: 'Hands-on with scheduling and attendance systems.' },
-  { id: 'p3_w5', num: 4, path: '/week-3/worksheet/p3_w5', title: 'Build Full Lecture Package', icon: FileEdit, desc: 'Slides, quiz, assignment, notes for first real week.' },
-  { id: 'w3_d1', num: 5, path: '/week-3/worksheet/w3_d1', title: 'Classroom Tech Hands-on', icon: Monitor, desc: 'Projectors, pentabs, portal joining, recording.' },
-  { id: 'w3_d2', num: 6, path: '/week-3/worksheet/w3_d2', title: 'Planning & Time Management', icon: Clock, desc: '10-minute window planning, pacing, transitions.' },
-  { id: 'w3_e1', num: 7, path: '/week-3/worksheet/w3_e1', title: 'Design Mini-Contest', icon: Sword, desc: '12-question contest against V3 + Bloom distribution.' },
-  { id: 'w3_b1', num: 8, path: '/week-3/worksheet/w3_b1', title: 'Student Dialoguing Rehearsal', icon: MessageCircle, desc: 'At-risk 1:1s, rule challenges, "this is basic" moments.' },
-  { id: 'w3_g1', num: 9, path: '/week-3/worksheet/w3_g1', title: 'Gate 3 — Co-deliver Artifacts', icon: Shield, desc: 'Demo rubric, lecture package v1, mini-contest L1 pass.' },
-];
 
 export default function Week3() {
   const { user } = useAuth();
@@ -31,18 +19,19 @@ export default function Week3() {
   useEffect(() => { if (user) loadStatuses(); }, [user]);
 
   async function loadStatuses() {
-    const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id);
-    if (data) {
-      const map: Record<string, StatusInfo> = {};
-      data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-      setStatuses(map);
+    try {
+      const { data } = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id);
+      if (data) {
+        const map: Record<string, StatusInfo> = {};
+        data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+        setStatuses(map);
+      }
+    } catch (err) {
+      console.error('Failed to load Week 3 statuses:', err);
     }
   }
 
-  const completed = worksheets.filter(w => {
-    const s = statuses[w.id];
-    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-  }).length;
+  const completed = countCompleted(worksheets.map(w => w.id), statuses);
 
   return (
     <div className="lux-section">

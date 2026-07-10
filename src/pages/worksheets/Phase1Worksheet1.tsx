@@ -47,7 +47,7 @@ export default function Phase1Worksheet1() {
                   <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
                 ))}
               </div>
-              {data.stakeholders.map((s: any, i: number) => (
+              {(data.stakeholders as Array<Record<string, string>>).map((s, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.5fr', gap: '8px' }}>
                   <input className="lux-input" placeholder="Name" value={s.name} onChange={updateArrayItemEvent('stakeholders', i, 'name')} />
                   <input className="lux-input" placeholder="Role" value={s.role} onChange={updateArrayItemEvent('stakeholders', i, 'role')} />
@@ -65,7 +65,7 @@ export default function Phase1Worksheet1() {
                   <span key={h} style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-warm-grey)' }}>{h}</span>
                 ))}
               </div>
-              {data.conversations.map((c: any, i: number) => (
+              {(data.conversations as Array<Record<string, string>>).map((c, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 3fr', gap: '8px' }}>
                   <input className="lux-input" placeholder="Instructor name" value={c.instructorName} onChange={updateArrayItemEvent('conversations', i, 'instructorName')} />
                   <input className="lux-input" type="date" value={c.date} onChange={updateArrayItemEvent('conversations', i, 'date')} />

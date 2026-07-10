@@ -38,7 +38,10 @@ export default function OnboardingLeadDashboard() {
 
   const isOnboardingLead = profile?.role === 'onboarding_lead';
 
-  useEffect(() => { if (isOnboardingLead) loadData(); }, [isOnboardingLead]);
+  useEffect(() => { if (isOnboardingLead) loadData();
+    // loadData intentionally omitted: closes over fresh isOnboardingLead each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnboardingLead]);
 
   async function loadData() {
     setLoading(true);

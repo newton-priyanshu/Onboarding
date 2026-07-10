@@ -24,7 +24,7 @@ export default function Phase1Worksheet5() {
       buddyApproveMsg="Your Portal Walkthrough has been approved by your buddy."
     >
       {({ data, updateField, setData }) => {
-        const uStudent = (i: number, f: string, v: any) => setData(p => { const arr = [...p.studentLog]; arr[i] = { ...arr[i], [f]: v }; return { ...p, studentLog: arr }; });
+        const uStudent = (i: number, f: string, v: string) => setData(p => { const arr = [...p.studentLog]; arr[i] = { ...arr[i], [f]: v }; return { ...p, studentLog: arr }; });
         const uTask = (i: number, f: string) => setData(p => { const arr = [...p.instructorTasks]; arr[i] = { ...arr[i], [f]: !arr[i][f] }; return { ...p, instructorTasks: arr }; });
         return (
           <>

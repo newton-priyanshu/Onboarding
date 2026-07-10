@@ -1,4 +1,4 @@
-import { BookOpen, Users, MessageSquare, BookText, Eye, Monitor, MessageCircle, Shield, CheckCircle2, Anchor, Layers, Flag, ClipboardList, Search, FileEdit, ClipboardCheck, Mic, Clock, Sword, Heart, BarChart, type LucideIcon } from 'lucide-react';
+import { BookOpen, Users, MessageSquare, MessageCircle, Shield, CheckCircle2, Anchor, Layers, Flag, type LucideIcon } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -6,22 +6,10 @@ import { t } from '../config/theme';
 import { REVIEWER_LABELS, REVIEWER_STYLES } from '../config/worksheetConfig';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
 import Skeleton, { SkeletonBlock } from '../components/Skeleton';
+import { countCompleted, buildStatusMap, type StatusInfo } from '../utils/worksheetHelpers';
+import { week1Worksheets, week2Worksheets, week3Worksheets, week4Worksheets, type WorksheetMeta } from '../config/weeklyWorksheets';
 
 // ─── Types ──────────────────────────────────────────────
-
-interface WorksheetMeta {
-  id: string;
-  num: number;
-  path: string;
-  title: string;
-  icon: LucideIcon;
-  desc: string;
-}
-
-interface StatusInfo {
-  status: string | null;
-  review_status: string | null;
-}
 
 interface WeekSection {
   num: number;
@@ -32,57 +20,7 @@ interface WeekSection {
   worksheets: WorksheetMeta[];
 }
 
-// ─── Week 1 — Anchor ────────────────────────────────────
-
-const week1Worksheets: WorksheetMeta[] = [
-  { id: 'p1_w5', num: 1, path: '/week-1/worksheet/p1_w5', title: 'Systems & Platform Walkthrough', icon: Monitor, desc: 'Product orientation — how the platform works end-to-end.' },
-  { id: 'p1_w6', num: 2, path: '/week-1/worksheet/p1_w6', title: 'Structured Observation — Recorded Lectures', icon: Eye, desc: '3 recorded lectures with TLAC-lens observation sheet.' },
-  { id: 'p1_w3', num: 3, path: '/week-1/worksheet/p1_w3', title: 'Culture-in-Delivery Opening', icon: BookText, desc: 'What NST believes about teaching — no student left behind.' },
-  { id: 'w1_o1', num: 4, path: '/week-1/worksheet/w1_o1', title: 'Day 1 Logistics & Access', icon: ClipboardList, desc: 'Access verification, buddy contact, comms channels.' },
-  { id: 'w1_e1', num: 5, path: '/week-1/worksheet/w1_e1', title: 'Contest Guidelines V3 Pre-read', icon: BookText, desc: 'Read Contest Guidelines V3 for W2-E1 receptivity build.' },
-  { id: 'w1_o2', num: 6, path: '/week-1/worksheet/w1_o2', title: 'Playbook Scavenger Exercise', icon: Search, desc: 'Find-the-answer sheet across Playbook §1 to §5.' },
-  { id: 'w1_g1', num: 7, path: '/week-1/worksheet/w1_g1', title: 'Gate 1 — Anchor Artifacts', icon: Shield, desc: 'Operational check, observation logs, scavenger sheet, reflection #0.' },
-];
-
-// ─── Week 2 — Co-create ─────────────────────────────────
-
-const week2Worksheets: WorksheetMeta[] = [
-  { id: 'p2_w3', num: 1, path: '/week-2/worksheet/p2_w3', title: 'Question Creation Mechanics', icon: FileEdit, desc: 'MCQ, coding, components, playgrounds — how to build them.' },
-  { id: 'p1_w7', num: 2, path: '/week-2/worksheet/p1_w7', title: 'The Quality Standard', icon: ClipboardCheck, desc: 'Solved-by-creator, peer review, silent vs loud errors.' },
-
-  { id: 'w2_e1', num: 3, path: '/week-2/worksheet/w2_e1', title: "Bloom's Two-Pens Session", icon: Layers, desc: 'Tag real past questions using Bloom\'s Taxonomy v4.' },
-  { id: 'w2_c3', num: 5, path: '/week-2/worksheet/w2_c3', title: 'Create & Peer Review', icon: FileEdit, desc: '3 MCQs + 2 coding questions; review a peer\'s set.' },
-  { id: 'w2_d2', num: 6, path: '/week-2/worksheet/w2_d2', title: 'Micro-Teach #1', icon: Mic, desc: '10-minute segment to 3 peers — rubric-lite feedback.' },
-  { id: 'w2_b1', num: 7, path: '/week-2/worksheet/w2_b1', title: 'Discipline Consistency', icon: Shield, desc: 'Customise your classroom discipline approach.' },
-  { id: 'w2_o1', num: 8, path: '/week-2/worksheet/w2_o1', title: 'Invigilation & Exam Formalities', icon: ClipboardCheck, desc: 'Policy walkthrough plus scenario sheet.' },
-  { id: 'w2_g1', num: 9, path: '/week-2/worksheet/w2_g1', title: 'Gate 2 — Co-create Artifacts', icon: Shield, desc: 'Q set, peer reviews, Bloom\'s tagging, discipline sheet.' },
-];
-
-// ─── Week 3 — Co-deliver ────────────────────────────────
-
-const week3Worksheets: WorksheetMeta[] = [
-  { id: 'p2_w1', num: 1, path: '/week-3/worksheet/p2_w1', title: 'Engagement & Active Learning', icon: MessageSquare, desc: 'The "did you understand" anti-pattern — mirror moments inside K sessions.' },
-  { id: 'p2_w2', num: 2, path: '/week-3/worksheet/p2_w2', title: 'Demo Dry-Run', icon: ClipboardCheck, desc: '30–40 min to peer classroom, observed on TLAC-based rubric.' },
-  { id: 'p2_w4', num: 3, path: '/week-3/worksheet/p2_w4', title: 'Slot Creation & Attendance Flow', icon: FileEdit, desc: 'Hands-on with scheduling and attendance systems.' },
-  { id: 'p3_w5', num: 4, path: '/week-3/worksheet/p3_w5', title: 'Build Full Lecture Package', icon: FileEdit, desc: 'Slides, quiz, assignment, notes for first real week.' },
-  { id: 'w3_d1', num: 5, path: '/week-3/worksheet/w3_d1', title: 'Classroom Tech Hands-on', icon: Monitor, desc: 'Projectors, pentabs, portal joining, recording.' },
-  { id: 'w3_d2', num: 6, path: '/week-3/worksheet/w3_d2', title: 'Planning & Time Management', icon: Clock, desc: '10-minute window planning, pacing, transitions.' },
-  { id: 'w3_e1', num: 7, path: '/week-3/worksheet/w3_e1', title: 'Design Mini-Contest', icon: Sword, desc: '12-question contest against V3 + Bloom distribution.' },
-  { id: 'w3_b1', num: 8, path: '/week-3/worksheet/w3_b1', title: 'Student Dialoguing Rehearsal', icon: MessageCircle, desc: 'At-risk 1:1s, rule challenges, "this is basic" moments.' },
-  { id: 'w3_g1', num: 9, path: '/week-3/worksheet/w3_g1', title: 'Gate 3 — Co-deliver Artifacts', icon: Shield, desc: 'Demo rubric, lecture package v1, mini-contest L1 pass.' },
-];
-
-// ─── Week 4 — Independence Review ───────────────────────
-
-const week4Worksheets: WorksheetMeta[] = [
-  { id: 'p3_w1', num: 1, path: '/week-4/worksheet/p3_w1', title: 'Demo Final', icon: Users, desc: 'Feedback incorporated, Course Lead sign-off per A.7.' },
-  { id: 'w4_d2', num: 2, path: '/week-4/worksheet/w4_d2', title: 'Co-Teach / Mock Classroom', icon: Users, desc: 'Live co-teach or mock classroom with edge-case scenarios.' },
-
-  { id: 'w4_e1', num: 3, path: '/week-4/worksheet/w4_e1', title: 'Post-Contest Analysis & Calibration', icon: BarChart, desc: 'Predict solve rates, compare to actuals, write calibration note.' },
-  { id: 'w4_o1', num: 5, path: '/week-4/worksheet/w4_o1', title: 'Pre-Semester Checklist', icon: ClipboardCheck, desc: 'Complete T-2-week checklist for your first teaching week.' },
-  { id: 'w4_b1', num: 6, path: '/week-4/worksheet/w4_b1', title: 'Why We Reflect', icon: Heart, desc: 'Reflection cycle #1 — ownership & commitment ceremony.' },
-  { id: 'w4_g1', num: 7, path: '/week-4/worksheet/w4_g1', title: 'Gate 4 — Independence Readiness', icon: Shield, desc: 'Final artifact review and independence sign-off.' },
-];
+// Week 1-4 worksheet data imported from src/config/weeklyWorksheets.ts
 
 // ─── Additional Phase 1 Worksheets ──────────────────────
 
@@ -121,6 +59,8 @@ export default function Phase1() {
   useEffect(() => {
     if (user) loadStatuses();
     else setLoading(false);
+    // loadStatuses intentionally omitted: closes over fresh user each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   async function loadStatuses() {
@@ -131,9 +71,7 @@ export default function Phase1() {
         .select('worksheet_id, status, review_status')
         .eq('user_id', user?.id);
       if (data) {
-        const map: Record<string, StatusInfo> = {};
-        data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
-        setStatuses(map);
+        setStatuses(buildStatusMap(data));
       }
     } catch (err) {
       console.error('Failed to load Phase 1 statuses:', err);
@@ -142,19 +80,9 @@ export default function Phase1() {
     }
   }
 
-  function getCompleted(worksheets: WorksheetMeta[]): number {
-    return worksheets.filter(w => {
-      const s = statuses[w.id];
-      return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-    }).length;
-  }
-
   const allIds = getAllWeekWorksheetIds();
   const totalAll = allIds.length;
-  const completedAll = allIds.filter(id => {
-    const s = statuses[id];
-    return s?.status === 'submitted' || s?.review_status === 'approved' || s?.review_status === 'buddy_approved';
-  }).length;
+  const completedAll = countCompleted(allIds, statuses);
 
   // ─── Loading Skeleton ─────────────────────────────────
 
@@ -282,9 +210,8 @@ export default function Phase1() {
           </div>
         </div>
 
-        {/* Week Sections */}
-        {weekSections.map((week, weekIdx) => {
-          const weekCompleted = getCompleted(week.worksheets);
+        {/* Week Sections */}          {weekSections.map((week, weekIdx) => {
+          const weekCompleted = countCompleted(week.worksheets.map(w => w.id), statuses);
           const WeekIcon = week.icon;
           return (
             <div key={week.num} style={{ marginBottom: '3rem' }}>

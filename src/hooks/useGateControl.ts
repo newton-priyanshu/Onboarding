@@ -50,7 +50,8 @@ async function checkPhaseWorksheetsComplete(
 
   if (error) {
     console.error('[GateControl] Failed to check phase worksheets:', error);
-    return { complete: true, missing: [] }; // Allow submit on error
+    // Fail CLOSED on query error — deny submission if we can't verify prerequisites
+    return { complete: false, missing: worksheetIds };
   }
 
   const completeIds = new Set(

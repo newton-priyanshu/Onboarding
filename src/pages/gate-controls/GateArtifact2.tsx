@@ -42,8 +42,17 @@ function GateSubmittedView({ title, path }: { title: string; path: string }) {
   );
 }
 
-function GateArtifactForm({ navigate, gateMeta, artifacts, data, submitting, updateField, handleSubmit, backPath }: any) {
-  const allRequiredMet = artifacts.every((a: any, i: number) => !a.required || (data.artifacts as boolean[])?.[i]);
+function GateArtifactForm({ navigate, gateMeta, artifacts, data, submitting, updateField, handleSubmit, backPath }: {
+  navigate: ReturnType<typeof useNavigate>;
+  gateMeta: { title: string; subtitle: string };
+  artifacts: { label: string; required: boolean; fromSession: string }[];
+  data: Record<string, unknown>;
+  submitting: boolean;
+  updateField: (field: string, value: unknown) => void;
+  handleSubmit: () => void;
+  backPath: string;
+}) {
+  const allRequiredMet = artifacts.every((a, i: number) => !a.required || (data.artifacts as boolean[])?.[i]);
   return (
     <div className="lux-section">
       <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -65,7 +74,7 @@ function GateArtifactForm({ navigate, gateMeta, artifacts, data, submitting, upd
         <ReviewFeedback data={data} />
         <form onSubmit={e => e.preventDefault()}>
           <Section title="Required Artifacts" subtitle="Confirm each artifact has been completed and filed">
-            {artifacts.map((a: any, i: number) => {
+            {artifacts.map((a, i: number) => {
               const checked = (data.artifacts as boolean[])?.[i];
               return (
                 <div key={i} onClick={() => { const arr = [...((data.artifacts as boolean[]) || [])]; arr[i] = !arr[i]; updateField('artifacts', arr); }}
