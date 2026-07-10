@@ -6,7 +6,7 @@ export default function Phase1Worksheet3() {
     <WorksheetPage
       worksheetId="p1_w3" phase="phase-1" icon={BookText}
       title="Organisational Culture & Teaching Philosophy Reflection"
-      subtitle="Days 1-14 · Demonstrate understanding of Newton School's teaching philosophy."
+      subtitle="Days 1-14 · Demonstrate understanding of NST BLR's teaching philosophy."
       backTo="/phase-1"
       defaultData={{
         employeeName: '',
@@ -31,7 +31,7 @@ export default function Phase1Worksheet3() {
             </FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Section A: Culture Understanding" subtitle="The shift from industry to teaching requires a deliberate mindset change.">
-            <FieldGroup label="Describe Newton School's teaching philosophy in your own words (min. 50 words):" required>
+            <FieldGroup label="Describe NST BLR's teaching philosophy in your own words (min. 50 words):" required>
               <textarea className="lux-textarea" rows={3} value={data.culturePhilosophy} onChange={e => updateField('culturePhilosophy', e.target.value)} />
             </FieldGroup>
             <FieldGroup label="How does classroom communication differ from communication in your previous industry role?">
@@ -42,7 +42,7 @@ export default function Phase1Worksheet3() {
             </FieldGroup>
           </WorksheetSection>
           <WorksheetSection title="Section B: University Partnership Model">
-            <FieldGroup label="Describe the partnership structure between Newton School and its affiliated universities.">
+            <FieldGroup label="Describe the partnership structure between NST BLR and its affiliated universities.">
               <textarea className="lux-textarea" rows={2} value={data.partnerStructure} onChange={e => updateField('partnerStructure', e.target.value)} />
             </FieldGroup>
             <FieldGroup label="How is the academic semester structured — key dates, milestones, and exam windows?">

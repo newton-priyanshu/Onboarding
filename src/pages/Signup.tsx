@@ -61,7 +61,7 @@ export default function Signup() {
           <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
             <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
             <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>Create Account</h1>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)' }}>Join the faculty onboarding portal</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)' }}>Begin your journey with NST BLR - AARAMBH</p>
           </div>
 
           <form onSubmit={handleSubmit}>

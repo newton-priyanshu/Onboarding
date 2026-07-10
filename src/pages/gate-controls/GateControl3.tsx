@@ -59,7 +59,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
           <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
           <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.success, marginBottom: '0.5rem' }}>✓ Onboarding Complete — Approved</h1>
           <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem' }}>
-            Your 90-day readiness assessment has been reviewed and approved. Congratulations on completing the faculty onboarding program!
+            Your 90-day readiness assessment has been reviewed and approved. Congratulations on completing the NST BLR - AARAMBH programme!
           </p>
           <button onClick={() => navigate('/')} className="lux-btn lux-btn-primary">
             <span className="gold-overlay" /><span className="btn-content">Go to Dashboard</span>
@@ -75,7 +75,7 @@ export default function GateControl3({ targetUserId }: GateControlProps) {
           <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
           <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>Onboarding Complete</h1>
           <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem' }}>
-            Your 90-day readiness assessment has been submitted. Congratulations on completing the faculty onboarding program!
+            Your 90-day readiness assessment has been submitted. Congratulations on completing the NST BLR - AARAMBH programme!
           </p>
           <button onClick={() => navigate('/')} className="lux-btn lux-btn-primary">
             <span className="gold-overlay" /><span className="btn-content">Go to Dashboard</span>

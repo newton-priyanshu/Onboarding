@@ -190,8 +190,9 @@ export default function App() {
               color: 'var(--color-warm-grey)',
             }}>
               <span className="lux-line" style={{ margin: '0 auto 1rem' }} />
-              <p>Newton School of Technology <span style={{ opacity: 0.3 }}>·</span> Bengaluru</p>
-              <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Portal</p>
+              <p><span style={{ fontWeight: 600, color: '#D4A853' }}>NST</span> BLR <span style={{ opacity: 0.3 }}>-</span> AARAMBH</p>
+              <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Programme</p>
+              <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Programme</p>
             </footer>
           </AppLayout>
         </ToastProvider>

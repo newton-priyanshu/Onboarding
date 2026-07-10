@@ -67,7 +67,7 @@ export default function Login() {
               letterSpacing: '-0.02em', marginBottom: '0.75rem',
             }}>Welcome Back</h1>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)', lineHeight: 1.6 }}>
-              Sign in to continue your onboarding journey
+              Sign in to NST BLR - AARAMBH
             </p>
           </div>
 

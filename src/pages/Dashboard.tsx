@@ -177,7 +177,7 @@ export default function Dashboard() {
             letterSpacing: '0.25em', textTransform: 'uppercase',
             color: t.wg, display: 'block', marginBottom: '1rem',
           }}>
-            Newton School of Technology · Bengaluru
+            NST BLR · AARAMBH
           </span>
           <h1 style={{
             fontFamily: t.heading,
@@ -251,7 +251,7 @@ export default function Dashboard() {
               Onboarding <em style={{ fontStyle: 'italic', color: t.gd }}>Roadmap</em>
             </h2>
             <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
-              Three phases to build your teaching practice at Newton School
+              Three phases to build your teaching practice at NST BLR
             </p>
           </div>
 
@@ -405,7 +405,7 @@ export default function Dashboard() {
 
               { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
               { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
-              { to: 'https://newton.school/academy', label: 'Help & Guide', desc: 'Faculty onboarding resources' },
+              { to: 'https://newton.school/academy', label: 'Help & Guide', desc: 'NST BLR resources' },
             ] as { to: string; label: string; desc: string }[]).map((link, i) => (
               <Link key={i} to={link.to} style={{
                 textDecoration: 'none', padding: '1rem 0',

@@ -16,8 +16,8 @@ interface ProjectContext {
 }
 
 export const PROJECT_CONTEXT: ProjectContext = {
-  name: "Newton School of Technology - Faculty Onboarding Portal",
-  purpose: "Manage faculty onboarding (Lab Instructors).",
+  name: "NST BLR - AARAMBH Faculty Onboarding Programme",
+  purpose: "Manage faculty onboarding at NST Bengaluru.",
   architecture: "React SPA (Vite) + Supabase (Auth/Postgres/RLS)",
   keyPattern: "Declarative security (RLS) + Frontend-driven state management.",
   dependencies: {

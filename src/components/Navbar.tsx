@@ -112,9 +112,10 @@ export default function Navbar({ progress }: NavbarProps) {
               background: 'var(--color-charcoal)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F8F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                <path d="M6 12v5c3 3 9 3 12 0v-5" />
+              <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="10" width="28" height="14" rx="2" stroke="#F9F8F6" strokeWidth="1.5" fill="none"/>
+                <path d="M10 17 L14 21 L22 11" stroke="#D4A853" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <line x1="4" y1="6" x2="28" y2="6" stroke="#F9F8F6" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </div>
             <span style={{
@@ -124,7 +125,7 @@ export default function Navbar({ progress }: NavbarProps) {
               color: 'var(--color-charcoal)',
               letterSpacing: '-0.01em',
             }}>
-              Newton Onboarding
+              <span style={{ fontWeight: 600, color: '#D4A853' }}>NST</span> BLR - AARAMBH
             </span>
           </Link>
 
