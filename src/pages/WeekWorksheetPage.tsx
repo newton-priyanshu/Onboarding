@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { WORKSHEET_COMPONENTS, WK_WORKSHEETS_MAP } from '../config/worksheetConfig';
 import { WORKSHEET_NAMES } from '../config/worksheetConfigData';
@@ -76,7 +77,23 @@ export default function WeekWorksheetPage({ weekNum }: WeekWorksheetPageProps) {
     );
   }
 
-  return <Component />;
+  return (
+    <Suspense fallback={<WorksheetLoading />}>
+      <Component />
+    </Suspense>
+  );
+}
+
+/** Minimal loading state for lazy-loaded worksheets */
+function WorksheetLoading() {
+  return (
+    <div className="lux-section">
+      <div className="lux-container" style={{ maxWidth: '720px', margin: '0 auto', paddingTop: '4rem', textAlign: 'center' }}>
+        <div className="lux-line" style={{ margin: '0 auto 1.5rem', width: '60px' }} />
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-warm-grey)' }}>Loading worksheet…</div>
+      </div>
+    </div>
+  );
 }
 
 /**

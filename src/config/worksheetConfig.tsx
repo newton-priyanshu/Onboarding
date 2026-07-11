@@ -7,9 +7,13 @@
 // This file re-exports everything from worksheetConfigData.ts
 // and adds React-dependent components (ReviewerBadge,
 // WORKSHEET_COMPONENTS).
+//
+// All worksheet components are lazy-loaded (React.lazy) for
+// automatic code-splitting. Each worksheet becomes its own
+// chunk, loaded on demand.
 // =====================================================
 
-import type { FC } from 'react';
+import { lazy, type ComponentType } from 'react';
 
 export {
   WORKSHEET_REVIEWER,
@@ -36,58 +40,71 @@ export {
 
 export type { WorksheetSubmission, UserProfile } from '../types/supabase';
 
-import Phase1Worksheet1 from '../pages/worksheets/Phase1Worksheet1';
-import Phase1Worksheet2 from '../pages/worksheets/Phase1Worksheet2';
-import Phase1Worksheet3 from '../pages/worksheets/Phase1Worksheet3';
-import Phase1Worksheet4 from '../pages/worksheets/Phase1Worksheet4';
-import Phase1Worksheet5 from '../pages/worksheets/Phase1Worksheet5';
-import Phase1Worksheet6 from '../pages/worksheets/Phase1Worksheet6';
-import Phase1Worksheet7 from '../pages/worksheets/Phase1Worksheet7';
-import Phase1Worksheet8 from '../pages/worksheets/Phase1Worksheet8';
-import Phase2Worksheet1 from '../pages/worksheets/Phase2Worksheet1';
-import Phase2Worksheet2 from '../pages/worksheets/Phase2Worksheet2';
-import Phase2Worksheet3 from '../pages/worksheets/Phase2Worksheet3';
-import Phase2Worksheet4 from '../pages/worksheets/Phase2Worksheet4';
-import Phase3Worksheet1 from '../pages/worksheets/Phase3Worksheet1';
-import Phase3Worksheet2 from '../pages/worksheets/Phase3Worksheet2';
-import Phase3Worksheet3 from '../pages/worksheets/Phase3Worksheet3';
-import Phase3Worksheet4 from '../pages/worksheets/Phase3Worksheet4';
-import Phase3Worksheet5 from '../pages/worksheets/Phase3Worksheet5';
-import GateControl1 from '../pages/gate-controls/GateControl1';
-import GateControl2 from '../pages/gate-controls/GateControl2';
-import GateControl3 from '../pages/gate-controls/GateControl3';
-// FTP New Worksheet Templates
-import W1O1 from '../pages/worksheets/ftp/W1O1';
-import W1E1 from '../pages/worksheets/ftp/W1E1';
-import W1O2 from '../pages/worksheets/ftp/W1O2';
-import W2E1 from '../pages/worksheets/ftp/W2E1';
-import W2C3 from '../pages/worksheets/ftp/W2C3';
-import W2D2 from '../pages/worksheets/ftp/W2D2';
-import W2B1 from '../pages/worksheets/ftp/W2B1';
-import W2O1 from '../pages/worksheets/ftp/W2O1';
-import W3D1 from '../pages/worksheets/ftp/W3D1';
-import W3D2 from '../pages/worksheets/ftp/W3D2';
-import W3E1 from '../pages/worksheets/ftp/W3E1';
-import W3B1 from '../pages/worksheets/ftp/W3B1';
-import W4D2 from '../pages/worksheets/ftp/W4D2';
-import W4E1 from '../pages/worksheets/ftp/W4E1';
-import W4O1 from '../pages/worksheets/ftp/W4O1';
-import W4B1 from '../pages/worksheets/ftp/W4B1';
-// FTP Artifact Gate Controls
-import GateArtifact1 from '../pages/gate-controls/GateArtifact1';
-import GateArtifact2 from '../pages/gate-controls/GateArtifact2';
-import GateArtifact3 from '../pages/gate-controls/GateArtifact3';
-import GateArtifact4 from '../pages/gate-controls/GateArtifact4';
-
 import { getReviewerType, REVIEWER_LABELS, REVIEWER_STYLES } from './worksheetConfigData';
 
 /**
- * Map of worksheet ID → React component for dynamic worksheet routing.
+ * Lazy-loaded worksheet components — each becomes its own chunk.
+ *
+ * Vite/Rollup uses the static import() paths to create separate output
+ * chunks at build time. The modules are only fetched when the user
+ * navigates to a worksheet for the first time.
  */
-// GateControl components need targetUserId prop, worksheets don't.
-// Using a loose prop type since these are runtime-mapped components
-// that receive props dynamically from the routing system.
-export const WORKSHEET_COMPONENTS: Record<string, FC<Record<string, unknown>>> = {
+const Phase1Worksheet1 = lazy(() => import('../pages/worksheets/Phase1Worksheet1'));
+const Phase1Worksheet2 = lazy(() => import('../pages/worksheets/Phase1Worksheet2'));
+const Phase1Worksheet3 = lazy(() => import('../pages/worksheets/Phase1Worksheet3'));
+const Phase1Worksheet4 = lazy(() => import('../pages/worksheets/Phase1Worksheet4'));
+const Phase1Worksheet5 = lazy(() => import('../pages/worksheets/Phase1Worksheet5'));
+const Phase1Worksheet6 = lazy(() => import('../pages/worksheets/Phase1Worksheet6'));
+const Phase1Worksheet7 = lazy(() => import('../pages/worksheets/Phase1Worksheet7'));
+const Phase1Worksheet8 = lazy(() => import('../pages/worksheets/Phase1Worksheet8'));
+const Phase2Worksheet1 = lazy(() => import('../pages/worksheets/Phase2Worksheet1'));
+const Phase2Worksheet2 = lazy(() => import('../pages/worksheets/Phase2Worksheet2'));
+const Phase2Worksheet3 = lazy(() => import('../pages/worksheets/Phase2Worksheet3'));
+const Phase2Worksheet4 = lazy(() => import('../pages/worksheets/Phase2Worksheet4'));
+const Phase3Worksheet1 = lazy(() => import('../pages/worksheets/Phase3Worksheet1'));
+const Phase3Worksheet2 = lazy(() => import('../pages/worksheets/Phase3Worksheet2'));
+const Phase3Worksheet3 = lazy(() => import('../pages/worksheets/Phase3Worksheet3'));
+const Phase3Worksheet4 = lazy(() => import('../pages/worksheets/Phase3Worksheet4'));
+const Phase3Worksheet5 = lazy(() => import('../pages/worksheets/Phase3Worksheet5'));
+const GateControl1 = lazy(() => import('../pages/gate-controls/GateControl1'));
+const GateControl2 = lazy(() => import('../pages/gate-controls/GateControl2'));
+const GateControl3 = lazy(() => import('../pages/gate-controls/GateControl3'));
+
+// FTP New Worksheet Templates
+const W1O1 = lazy(() => import('../pages/worksheets/ftp/W1O1'));
+const W1E1 = lazy(() => import('../pages/worksheets/ftp/W1E1'));
+const W1O2 = lazy(() => import('../pages/worksheets/ftp/W1O2'));
+const W2E1 = lazy(() => import('../pages/worksheets/ftp/W2E1'));
+const W2C3 = lazy(() => import('../pages/worksheets/ftp/W2C3'));
+const W2D2 = lazy(() => import('../pages/worksheets/ftp/W2D2'));
+const W2B1 = lazy(() => import('../pages/worksheets/ftp/W2B1'));
+const W2O1 = lazy(() => import('../pages/worksheets/ftp/W2O1'));
+const W3D1 = lazy(() => import('../pages/worksheets/ftp/W3D1'));
+const W3D2 = lazy(() => import('../pages/worksheets/ftp/W3D2'));
+const W3E1 = lazy(() => import('../pages/worksheets/ftp/W3E1'));
+const W3B1 = lazy(() => import('../pages/worksheets/ftp/W3B1'));
+const W4D2 = lazy(() => import('../pages/worksheets/ftp/W4D2'));
+const W4E1 = lazy(() => import('../pages/worksheets/ftp/W4E1'));
+const W4O1 = lazy(() => import('../pages/worksheets/ftp/W4O1'));
+const W4B1 = lazy(() => import('../pages/worksheets/ftp/W4B1'));
+
+// FTP Artifact Gate Controls
+const GateArtifact1 = lazy(() => import('../pages/gate-controls/GateArtifact1'));
+const GateArtifact2 = lazy(() => import('../pages/gate-controls/GateArtifact2'));
+const GateArtifact3 = lazy(() => import('../pages/gate-controls/GateArtifact3'));
+const GateArtifact4 = lazy(() => import('../pages/gate-controls/GateArtifact4'));
+
+/**
+ * Map of worksheet ID → React component for dynamic worksheet routing.
+ *
+ * Components are lazy-loaded — each maps to a separate chunk
+ * that is fetched when the worksheet is first visited.
+ *
+ * GateControl components need targetUserId prop, worksheets don't.
+ * Using a loose prop type since these are runtime-mapped components
+ * that receive props dynamically from the routing system.
+ */
+export const WORKSHEET_COMPONENTS: Record<string, ComponentType<Record<string, unknown>>> = {
   p1_w1: Phase1Worksheet1, p1_w2: Phase1Worksheet2, p1_w3: Phase1Worksheet3,
   p1_w4: Phase1Worksheet4, p1_w5: Phase1Worksheet5, p1_w6: Phase1Worksheet6,
   p1_w7: Phase1Worksheet7, p1_w8: Phase1Worksheet8, gc1: GateControl1,

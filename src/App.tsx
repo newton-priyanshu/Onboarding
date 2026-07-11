@@ -104,8 +104,8 @@ function AppRoutes() {
         const routePath = `/${phasePath}/worksheet-${wsNum}`;
         const phaseNum = data.num;
         const wrapped = phaseNum > 1
-          ? <PhaseAccessGuard phaseNum={phaseNum}><Component /></PhaseAccessGuard>
-          : <Component />;
+          ? <PhaseAccessGuard phaseNum={phaseNum}><Suspense fallback={<PageFallback />}><Component /></Suspense></PhaseAccessGuard>
+          : <Suspense fallback={<PageFallback />}><Component /></Suspense>;
         return (
           <Route key={sheet.id} path={routePath} element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>{wrapped}</ProtectedRoute>} />
         );
