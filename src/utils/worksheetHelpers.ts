@@ -1,4 +1,4 @@
-import { SUBMISSION_STATUS } from '../constants/status';
+import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -16,8 +16,8 @@ export interface StatusInfo {
 export function isWorksheetComplete(status: StatusInfo | undefined): boolean {
   if (!status) return false;
   return status.status === SUBMISSION_STATUS.SUBMITTED
-    || status.review_status === 'approved'
-    || status.review_status === 'buddy_approved';
+    || status.review_status === REVIEW_STATUS.APPROVED
+    || status.review_status === REVIEW_STATUS.BUDDY_APPROVED;
 }
 
 /**

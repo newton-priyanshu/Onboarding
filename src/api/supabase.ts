@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey: string = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-let supabaseClient: SupabaseClient | null = null;
+let supabaseClient: SupabaseClient;
 export let supabaseInitialized = true;
 
 // ── Recursive Proxy for uninitialized client ────────────────

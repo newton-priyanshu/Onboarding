@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, Eye, AlertCircle, LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import { SkeletonCard } from '../components/Skeleton';
@@ -44,6 +45,7 @@ export default function OnboardingLeadDashboard() {
     // loadData intentionally omitted: closes over fresh isOnboardingLead each render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnboardingLead]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   async function loadData() {
     setLoading(true);
@@ -114,9 +116,9 @@ export default function OnboardingLeadDashboard() {
   }
 
   // Stats
-  const totalPending = allWorksheets.filter(w => w.review_status === 'pending_review' || w.review_status === 'revision_submitted').length;
-  const totalBuddyApproved = allWorksheets.filter(w => w.review_status === 'buddy_approved').length;
-  const totalApproved = allWorksheets.filter(w => w.review_status === 'approved').length;
+  const totalPending = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.PENDING_REVIEW || w.review_status === REVIEW_STATUS.REVISION_SUBMITTED).length;
+  const totalBuddyApproved = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.BUDDY_APPROVED).length;
+  const totalApproved = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.APPROVED).length;
   const totalSheets = allWorksheets.length;
 
   // Filter by phase
@@ -150,7 +152,7 @@ export default function OnboardingLeadDashboard() {
     return [1, 2, 3].map(p => {
       const wsIds = PHASE_WORKSHEETS_MAP[p] || [];
       const userSubs = allWorksheets.filter(w => w.user_id === userId && wsIds.includes(w.worksheet_id));
-      const buddyApproved = userSubs.filter(s => s.review_status === 'buddy_approved' || s.review_status === 'approved').length;
+      const buddyApproved = userSubs.filter(s => s.review_status === REVIEW_STATUS.BUDDY_APPROVED || s.review_status === REVIEW_STATUS.APPROVED).length;
       return { phase: p, total: wsIds.length, done: buddyApproved, ready: getPhaseReviewStatus(p, allWorksheets, userId).ready };
     });
   };

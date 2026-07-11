@@ -8,6 +8,7 @@ import ReviewContent from '../components/ReviewContent';
 import { checkAndPromote } from '../hooks/useAutoPromote';
 import { useToast } from '../components/Toast';
 import { t } from '../config/theme';
+import { REVIEW_STATUS } from '../constants/status';
 
 interface ReviewParams {
   userId: string;
@@ -106,7 +107,7 @@ export default function PhaseReview() {
     setActionMessage('');
 
     // Get all buddy_approved sheets that need upgrading
-    const toApprove = submissions.filter(s => s.review_status === 'buddy_approved');
+    const toApprove = submissions.filter(s => s.review_status === REVIEW_STATUS.BUDDY_APPROVED);
     if (toApprove.length === 0) {
       setActionMessage('No worksheets to approve in this phase.');
       setActionLoading(false);
@@ -120,21 +121,21 @@ export default function PhaseReview() {
     // ── Atomic bulk approve ──
     // A single UPDATE across all matching row ids replaces the old per-row loop:
     // Postgres applies it as one statement (all-or-nothing on error), and the
-    // extra .eq('review_status', 'buddy_approved') re-checks each row's state at
+    // extra .eq('review_status', REVIEW_STATUS.BUDDY_APPROVED) re-checks each row's state at
     // write time so a worksheet that changed concurrently is simply excluded
     // rather than silently overwritten. review_history is appended server-side
     // by the BEFORE UPDATE trigger for each affected row.
     const { data: rows, error } = await supabase
       .from('worksheet_submissions')
       .update({
-        review_status: 'approved',
+        review_status: REVIEW_STATUS.APPROVED,
         reviewed_by: profile?.id,
         reviewed_at: nowIso,
         reviewer_name: reviewerName,
         review_comment: `Phase ${phaseNumber} approved by manager`,
       })
       .in('id', ids)
-      .eq('review_status', 'buddy_approved')
+      .eq('review_status', REVIEW_STATUS.BUDDY_APPROVED)
       .select();
 
     if (error) {
@@ -190,14 +191,14 @@ export default function PhaseReview() {
     const { data: rows, error } = await supabase
       .from('worksheet_submissions')
       .update({
-        review_status: 'needs_revision',
+        review_status: REVIEW_STATUS.NEEDS_REVISION,
         reviewed_by: profile?.id,
         reviewed_at: nowIso,
         reviewer_name: reviewerName,
         review_comment: commentText,
       })
       .eq('id', sub.id)
-      .eq('review_status', 'buddy_approved')
+      .eq('review_status', REVIEW_STATUS.BUDDY_APPROVED)
       .select();
 
     if (error) {
@@ -220,10 +221,10 @@ export default function PhaseReview() {
     await loadData();
   }
 
-  const buddyApproved = submissions.filter(s => s.review_status === 'buddy_approved');
-  const alreadyApproved = submissions.filter(s => s.review_status === 'approved');
-  const pending = submissions.filter(s => s.review_status === 'pending_review' || s.review_status === 'revision_submitted');
-  const needsRevision = submissions.filter(s => s.review_status === 'needs_revision');
+  const buddyApproved = submissions.filter(s => s.review_status === REVIEW_STATUS.BUDDY_APPROVED);
+  const alreadyApproved = submissions.filter(s => s.review_status === REVIEW_STATUS.APPROVED);
+  const pending = submissions.filter(s => s.review_status === REVIEW_STATUS.PENDING_REVIEW || s.review_status === REVIEW_STATUS.REVISION_SUBMITTED);
+  const needsRevision = submissions.filter(s => s.review_status === REVIEW_STATUS.NEEDS_REVISION);
   const notSubmitted = wsList.filter(id => !submissions.find(s => s.worksheet_id === id));
   const isAllBuddyApproved = buddyApproved.length > 0 && pending.length === 0;
   const canApprove = isManager && isAllBuddyApproved;
@@ -367,21 +368,21 @@ export default function PhaseReview() {
             const data = sub?.worksheet_data || {};
             const info = WORKSHEET_INFO[wsId] || { title: wsId, phase: '' };
             const isExpanded = expandedSheet === wsId;
-            const canRequestRevision = isManager && status === 'buddy_approved' && !!sub;
+            const canRequestRevision = isManager && status === REVIEW_STATUS.BUDDY_APPROVED && !!sub;
 
             const statusColors: Record<string, string> = {
-              approved: t.success,
-              buddy_approved: t.purple,
-              pending_review: t.gd,
-              revision_submitted: t.pending,
-              needs_revision: t.error,
+              [REVIEW_STATUS.APPROVED]: t.success,
+              [REVIEW_STATUS.BUDDY_APPROVED]: t.purple,
+              [REVIEW_STATUS.PENDING_REVIEW]: t.gd,
+              [REVIEW_STATUS.REVISION_SUBMITTED]: t.pending,
+              [REVIEW_STATUS.NEEDS_REVISION]: t.error,
             };
             const statusLabels: Record<string, string> = {
-              approved: 'Approved (Manager)',
-              buddy_approved: 'Buddy Approved',
-              pending_review: 'Pending Buddy Review',
-              revision_submitted: 'Re-submitted',
-              needs_revision: 'Needs Revision',
+              [REVIEW_STATUS.APPROVED]: 'Approved (Manager)',
+              [REVIEW_STATUS.BUDDY_APPROVED]: 'Buddy Approved',
+              [REVIEW_STATUS.PENDING_REVIEW]: 'Pending Buddy Review',
+              [REVIEW_STATUS.REVISION_SUBMITTED]: 'Re-submitted',
+              [REVIEW_STATUS.NEEDS_REVISION]: 'Needs Revision',
               not_started: 'Not Started',
             };
 

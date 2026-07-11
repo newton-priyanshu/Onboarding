@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { t } from '../config/theme';
 import { CheckCircle2, XCircle, Star, Calendar, FileText, ClipboardCheck, Signature, Shield } from 'lucide-react';
 
@@ -796,15 +797,17 @@ function getScoreLabels(key: string): string[] | null {
 // ─── Main Exported Component ────────────────────────────────────────────
 
 export default function ReviewContent({ data, worksheetId }: ReviewContentProps) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>).__reviewWorksheetId = worksheetId;
+    }
+  }, [worksheetId]);
+
   if (!data || Object.keys(data).length === 0) {
     return <p className="body-medium text-muted" style={{ textAlign: 'center', padding: '2rem 0' }}>No content submitted yet.</p>;
   }
 
   const layout = getSectionLayout(worksheetId);
-
-  if (typeof window !== 'undefined') {
-    (window as unknown as Record<string, unknown>).__reviewWorksheetId = worksheetId;
-  }
 
   if (import.meta.env.DEV && layout) {
     const allLayoutFields = new Set(Object.values(layout.sectionMap).flat());

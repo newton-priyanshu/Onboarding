@@ -96,8 +96,8 @@ export function getDueDateInfo(worksheetId: string, startDate: Date | null = nul
   const isOverdue = daysRemaining < 0;
   const isDueSoon = daysRemaining >= 0 && daysRemaining <= 2;
 
-  let statusLabel = '';
-  let statusColor = 'var(--color-charcoal)';
+  let statusLabel: string;
+  let statusColor: string;
 
   if (isOverdue) {
     const overdueDays = Math.abs(daysRemaining);

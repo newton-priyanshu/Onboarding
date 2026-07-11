@@ -83,7 +83,9 @@ export default function PhaseAccessGuard({ phaseNum, children }: PhaseAccessGuar
     if (!user) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChecking(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadError(false);
     supabase
       .from('worksheet_submissions')

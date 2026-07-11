@@ -80,7 +80,7 @@ export default defineConfig([
       // state when a file mixes component and non-component exports), not a
       // functional bug. Downgrading avoids blocking the lint gate on
       // file-splitting refactors that are out of scope here.
-      'react-refresh/only-export-components': 'warn',
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 
       // Dead-store detection is useful, but the 3 current hits are
       // initializer values that are always overwritten before use inside
@@ -88,6 +88,14 @@ export default defineConfig([
       // branch) — a style nit, not a correctness issue. Keep visible as a
       // warning instead of failing the lint gate.
       'no-useless-assignment': 'warn',
+
+      // ── React Compiler readiness: all set to warn level ──────
+      // These rules are from eslint-plugin-react-hooks v7 and flag patterns
+      // that are not bugs in React 18 but could cause issues with the
+      // upcoming React Compiler. They're kept as warnings for visibility;
+      // individual instances can be suppressed with eslint-disable when
+      // they are known-safe patterns (e.g. setState in useEffect for
+      // prop-to-state synchronization).
     },
   },
   {

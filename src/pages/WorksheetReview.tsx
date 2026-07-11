@@ -23,6 +23,16 @@ interface ReviewHistoryEntry {
   timestamp: string;
 }
 
+function StatusBadge({ status, submissionStatus }: { status: string; submissionStatus: string }) {
+  if (status === REVIEW_STATUS.APPROVED) return <span className="lux-badge" style={{ borderColor: t.success, color: t.success, fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
+  if (status === REVIEW_STATUS.BUDDY_APPROVED) return <span className="lux-badge" style={{ borderColor: t.purple, color: t.purple, fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
+  // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
+  if (status === REVIEW_STATUS.PENDING_REVIEW || (status === REVIEW_STATUS.EMPTY && (submissionStatus === SUBMISSION_STATUS.SUBMITTED || submissionStatus === 'Submitted'))) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
+  if (status === REVIEW_STATUS.NEEDS_REVISION) return <span className="lux-badge" style={{ borderColor: t.error, color: t.error, fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
+  if (status === REVIEW_STATUS.REVISION_SUBMITTED) return <span className="lux-badge" style={{ borderColor: t.pending, color: t.pending, fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
+  return null;
+}
+
 export default function WorksheetReview() {
   const params = useParams<ReviewParams>();
   const userId = params.userId;
@@ -85,7 +95,7 @@ export default function WorksheetReview() {
   // and request revision on a buddy-approved worksheet directly from this page.
   // Onboarding Lead can only VIEW (read-only)
   const canApprove = isBuddy && isAssignedBuddy !== false;
-  const isReadOnly = isOnboardingLead || (isManager && submission?.review_status !== 'buddy_approved') || (isBuddy && isAssignedBuddy === false);
+  const isReadOnly = isOnboardingLead || (isManager && submission?.review_status !== REVIEW_STATUS.BUDDY_APPROVED) || (isBuddy && isAssignedBuddy === false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -371,25 +381,13 @@ export default function WorksheetReview() {
   }
 
   const reviewStatus = submission.review_status;
-  const isBuddyApproved = reviewStatus === 'buddy_approved';
-  const isApproved = reviewStatus === 'approved';
-  const isPending = reviewStatus === 'pending_review' || reviewStatus === 'revision_submitted';
-  const isNeedsRevision = reviewStatus === 'needs_revision';
+  const isBuddyApproved = reviewStatus === REVIEW_STATUS.BUDDY_APPROVED;
+  const isApproved = reviewStatus === REVIEW_STATUS.APPROVED;
+  const isPending = reviewStatus === REVIEW_STATUS.PENDING_REVIEW || reviewStatus === REVIEW_STATUS.REVISION_SUBMITTED;
+  const isNeedsRevision = reviewStatus === REVIEW_STATUS.NEEDS_REVISION;
 
   const canBuddyAct = canApprove && isPending && isAssignedBuddy !== null;
   const canManagerRequestRevision = isManager && isBuddyApproved;
-
-  function StatusBadge({ status }: { status: string }) {
-    if (status === 'approved') return <span className="lux-badge" style={{ borderColor: t.success, color: t.success, fontSize: '0.6rem' }}><CheckCircle2 size={10} strokeWidth={2} /> Approved (Manager)</span>;
-    if (status === 'buddy_approved') return <span className="lux-badge" style={{ borderColor: t.purple, color: t.purple, fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
-    // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
-    const subStatus = (submission!.status as string) || '';
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (status === REVIEW_STATUS.PENDING_REVIEW || (status === REVIEW_STATUS.EMPTY && (subStatus === SUBMISSION_STATUS.SUBMITTED || subStatus === 'Submitted'))) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
-    if (status === 'needs_revision') return <span className="lux-badge" style={{ borderColor: t.error, color: t.error, fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
-    if (status === 'revision_submitted') return <span className="lux-badge" style={{ borderColor: t.pending, color: t.pending, fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
-    return null;
-  }
 
   return (
     <div className="lux-section">
@@ -410,7 +408,7 @@ export default function WorksheetReview() {
                 <h1 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, margin: 0 }}>
                   {wsInfo.title}
                 </h1>
-                <StatusBadge status={reviewStatus} />
+                <StatusBadge status={reviewStatus} submissionStatus={(submission?.status as string) || ''} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -445,7 +443,7 @@ export default function WorksheetReview() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
               <div style={{ position: 'absolute', left: '11px', top: '8px', bottom: '8px', width: '1px', background: 'rgba(26, 26, 26, 0.15)' }} />
               {reviewHistory.map((entry, idx) => {
-                const isApprove = entry.action === 'approved' || entry.action === 'buddy_approved' || entry.action === 'phase_approved';
+                const isApprove = entry.action === REVIEW_STATUS.APPROVED || entry.action === REVIEW_STATUS.BUDDY_APPROVED || entry.action === 'phase_approved';
                 const date = entry.timestamp ? new Date(entry.timestamp) : null;
                 return (
                   <div key={idx} style={{ display: 'flex', gap: '12px', position: 'relative' }}>

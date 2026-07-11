@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { t } from '../config/theme';
 import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
-import { SUBMISSION_STATUS } from '../constants/status';
+import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 
 /** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
@@ -47,21 +47,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user?.id) loadSubmissions();
-    else setLoading(false);
-    // loadSubmissions intentionally omitted: closes over fresh user.id each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  async function loadSubmissions() {
+  const loadSubmissions = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
     setLoadError(null);
     try {
       const data = await supabase
         .from('worksheet_submissions')
         .select('worksheet_id, review_status, status, updated_at')
-        .eq('user_id', user!.id)
+        .eq('user_id', user.id)
         .limit(50)
         .then(unwrap);
       setSubmissions(data as unknown as WorksheetSubmission[]);
@@ -71,15 +65,20 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id) loadSubmissions();
+    else setLoading(false);
+  }, [user?.id, loadSubmissions]);
 
   function getWorksheetStatus(wsId: string): StatusInfo {
     const sub = submissions.find((s: WorksheetSubmission) => s.worksheet_id === wsId);
     if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
-    if (sub.review_status === 'approved') return { status: 'approved', label: 'Reviewed', color: t.success, icon: CheckCircle2 };
-    if (sub.review_status === 'buddy_approved') return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
-    if (sub.review_status === 'needs_revision') return { status: 'needs_revision', label: 'Needs Revision', color: t.error, icon: AlertCircle };
-    if (sub.review_status === 'revision_submitted' || sub.review_status === 'pending_review') return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
+    if (sub.review_status === REVIEW_STATUS.APPROVED) return { status: 'approved', label: 'Reviewed', color: t.success, icon: CheckCircle2 };
+    if (sub.review_status === REVIEW_STATUS.BUDDY_APPROVED) return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
+    if (sub.review_status === REVIEW_STATUS.NEEDS_REVISION) return { status: 'needs_revision', label: 'Needs Revision', color: t.error, icon: AlertCircle };
+    if (sub.review_status === REVIEW_STATUS.REVISION_SUBMITTED || sub.review_status === REVIEW_STATUS.PENDING_REVIEW) return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
     // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
     const rawStatus = (sub.status as string) || '';
     if (rawStatus === SUBMISSION_STATUS.SUBMITTED || rawStatus === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };

@@ -14,6 +14,10 @@ export default function AuthCallback() {
     const params = new URLSearchParams(window.location.search);
     const errorDesc = params.get('error_description') || params.get('error');
     if (errorDesc) {
+      // The initial setStatus is synchronous and intentional: we must display
+      // the error immediately before scheduling a redirect. This is a
+      // known-safe pattern (on-mount side-effect, not cascading).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus(`Sign in failed: ${errorDesc}`);
       timers.push(setTimeout(() => { if (!cancelled) navigate('/login', { replace: true }); }, 4000));
       return () => { cancelled = true; timers.forEach(clearTimeout); };

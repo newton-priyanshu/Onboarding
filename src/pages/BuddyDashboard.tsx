@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle } from 'lucide-react';
 import { WORKSHEET_NAMES, type WorksheetSubmission } from '../config/worksheetConfig';
+import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 
@@ -96,14 +97,14 @@ export default function BuddyDashboard() {
 
   // ALL worksheets that need buddy attention (pending_review or revision_submitted)
   const pendingWorksheets = allWorksheets.filter(w =>
-    (w.review_status === 'pending_review' || w.review_status === 'revision_submitted')
+    (w.review_status === REVIEW_STATUS.PENDING_REVIEW || w.review_status === REVIEW_STATUS.REVISION_SUBMITTED)
   );
   // Buddy-approved worksheets (awaiting manager)
-  const buddyApprovedWorksheets = allWorksheets.filter(w => w.review_status === 'buddy_approved');
+  const buddyApprovedWorksheets = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.BUDDY_APPROVED);
   // Fully approved
-  const approvedWorksheets = allWorksheets.filter(w => w.review_status === 'approved');
+  const approvedWorksheets = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.APPROVED);
   // Needs revision (waiting for joinee)
-  const revisionNeeded = allWorksheets.filter(w => w.review_status === 'needs_revision');
+  const revisionNeeded = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.NEEDS_REVISION);
 
   const stats: StatsData = {
     pending: pendingWorksheets.length,
@@ -278,7 +279,7 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab 
       ) : (
         worksheets.map((ws, idx) => {
           const instr = instructors.find(i => i.id === ws.user_id);
-          const isBuddyApproved = ws.review_status === 'buddy_approved';
+          const isBuddyApproved = ws.review_status === REVIEW_STATUS.BUDDY_APPROVED;
           return (
             <div key={ws.id}
               onClick={() => navigate(getLink(ws.user_id, ws.worksheet_id))}
@@ -298,7 +299,7 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab 
               </div>
               {isBuddyApproved ? (
                 <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.purple, color: t.purple }}>Buddy Approved</span>
-              ) : ws.review_status === 'revision_submitted' ? (
+              ) : ws.review_status === REVIEW_STATUS.REVISION_SUBMITTED ? (
                 <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.pending, color: t.pending }}>Revised</span>
               ) : (
                 <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid ' + t.gd, color: t.gd }}>Pending</span>
@@ -325,14 +326,14 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
     const userSheets = allWorksheets.filter(w => w.user_id === userId);
     return info.regularSheets.every(wsId => {
       const sub = userSheets.find(s => s.worksheet_id === wsId);
-      return sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved';
+      return sub?.review_status === REVIEW_STATUS.BUDDY_APPROVED || sub?.review_status === REVIEW_STATUS.APPROVED;
     });
   }
 
   /** Check if the gate pass has already been filled (= buddy_approved) */
   function isGateFilled(userId: string, gateId: string): boolean {
     const sub = allWorksheets.find(w => w.user_id === userId && w.worksheet_id === gateId);
-    return sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved';
+    return sub?.review_status === REVIEW_STATUS.BUDDY_APPROVED || sub?.review_status === REVIEW_STATUS.APPROVED;
   }
 
   return (
@@ -349,9 +350,9 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
       ) : (
         myInstructors.map((instr, idx) => {
           const instrWorksheets = allWorksheets.filter(w => w.user_id === instr.id);
-          const pending = instrWorksheets.filter(w => w.review_status === 'pending_review' || w.review_status === 'revision_submitted');
-          const buddyApproved = instrWorksheets.filter(w => w.review_status === 'buddy_approved');
-          const totalApproved = instrWorksheets.filter(w => w.review_status === 'approved').length;
+          const pending = instrWorksheets.filter(w => w.review_status === REVIEW_STATUS.PENDING_REVIEW || w.review_status === REVIEW_STATUS.REVISION_SUBMITTED);
+          const buddyApproved = instrWorksheets.filter(w => w.review_status === REVIEW_STATUS.BUDDY_APPROVED);
+          const totalApproved = instrWorksheets.filter(w => w.review_status === REVIEW_STATUS.APPROVED).length;
 
           // Check which phases/weeks need a gate pass filled
           const gatePassNeeded = Object.keys(GATE_INFO).map(Number).filter(phaseNum =>

@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, AlertCircle, type LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import PhasesReadyTab from '../components/admin/PhasesReadyTab';
@@ -71,6 +72,7 @@ export default function AdminDashboard() {
     // loadData intentionally omitted: closes over fresh canAssign each render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAssign]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   async function loadData() {
     savedScrollY.current = window.scrollY;
@@ -158,18 +160,18 @@ export default function AdminDashboard() {
 
   const getInstrStats = (userId: string): InstrStats => {
     const userWs = allWorksheets.filter(w => w.user_id === userId);
-    const pending = userWs.filter(w => w.review_status === 'pending_review' || w.review_status === 'revision_submitted').length;
-    const buddyApproved = userWs.filter(w => w.review_status === 'buddy_approved').length;
-    const approved = userWs.filter(w => w.review_status === 'approved').length;
-    const revision = userWs.filter(w => w.review_status === 'needs_revision').length;
+    const pending = userWs.filter(w => w.review_status === REVIEW_STATUS.PENDING_REVIEW || w.review_status === REVIEW_STATUS.REVISION_SUBMITTED).length;
+    const buddyApproved = userWs.filter(w => w.review_status === REVIEW_STATUS.BUDDY_APPROVED).length;
+    const approved = userWs.filter(w => w.review_status === REVIEW_STATUS.APPROVED).length;
+    const revision = userWs.filter(w => w.review_status === REVIEW_STATUS.NEEDS_REVISION).length;
     return { total: userWs.length, pending, buddyApproved, approved, revision, notStarted: 20 - userWs.length };
   };
 
   const getPhaseProgress = (userId: string, phase: number): PhaseProgress => {
     const wsList = PHASE_WORKSHEETS_MAP[phase] || [];
     const userWs = allWorksheets.filter(w => w.user_id === userId && wsList.includes(w.worksheet_id));
-    const completed = userWs.filter(w => w.review_status === 'approved').length;
-    const buddyApproved = userWs.filter(w => w.review_status === 'buddy_approved').length;
+    const completed = userWs.filter(w => w.review_status === REVIEW_STATUS.APPROVED).length;
+    const buddyApproved = userWs.filter(w => w.review_status === REVIEW_STATUS.BUDDY_APPROVED).length;
     return { total: wsList.length, completed, buddyApproved, pct: wsList.length ? Math.round(((completed + buddyApproved) / wsList.length) * 100) : 0 };
   };
 
@@ -188,10 +190,10 @@ export default function AdminDashboard() {
       filtered = filtered.filter(instr => {
         const s = getInstrStats(instr.id);
         if (statusFilter === 'pending') return s.pending > 0;
-        if (statusFilter === 'buddy_approved') {
+        if (statusFilter === REVIEW_STATUS.BUDDY_APPROVED) {
           return getReadyPhases(instr.id).length > 0;
         }
-        if (statusFilter === 'approved') return s.approved > 0;
+        if (statusFilter === REVIEW_STATUS.APPROVED) return s.approved > 0;
         if (statusFilter === 'revision') return s.revision > 0;
         if (statusFilter === 'not_started') return s.total === 0;
         return true;
@@ -207,10 +209,10 @@ export default function AdminDashboard() {
     return filtered;
   };
 
-  const totalPending = allWorksheets.filter(w => w.review_status === 'pending_review' || w.review_status === 'revision_submitted').length;
-  const totalBuddyApproved = allWorksheets.filter(w => w.review_status === 'buddy_approved').length;
-  const totalApproved = allWorksheets.filter(w => w.review_status === 'approved').length;
-  const totalRevision = allWorksheets.filter(w => w.review_status === 'needs_revision').length;
+  const totalPending = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.PENDING_REVIEW || w.review_status === REVIEW_STATUS.REVISION_SUBMITTED).length;
+  const totalBuddyApproved = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.BUDDY_APPROVED).length;
+  const totalApproved = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.APPROVED).length;
+  const totalRevision = allWorksheets.filter(w => w.review_status === REVIEW_STATUS.NEEDS_REVISION).length;
 
   // Count actual phases ready (across all instructors)
   const totalReadyPhases = instructors.reduce((count, instr) => {
@@ -226,7 +228,7 @@ export default function AdminDashboard() {
     ...(canAssign ? [{ id: 'assignments' as const, label: 'Assignments' }] : []),
   ];
 
-  const statusFilters = ['all', 'pending', 'buddy_approved', 'approved', 'revision', 'not_started'];
+  const statusFilters = ['all', 'pending', REVIEW_STATUS.BUDDY_APPROVED, REVIEW_STATUS.APPROVED, 'revision', 'not_started'];
 
   const statItems: StatItem[] = [
     { label: 'Joinees', value: instructors.length, icon: Users, color: t.ch },
@@ -296,7 +298,7 @@ export default function AdminDashboard() {
                   padding: '6px 16px', cursor: 'pointer',
                   transition: 'all 200ms ' + t.ease,
                 }}>
-                  {f === 'all' ? 'All' : f === 'buddy_approved' ? 'Buddy Approved' : f === 'not_started' ? 'Not Started' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  {f === 'all' ? 'All' : f === REVIEW_STATUS.BUDDY_APPROVED ? 'Buddy Approved' : f === 'not_started' ? 'Not Started' : f === REVIEW_STATUS.APPROVED ? 'Approved' : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>

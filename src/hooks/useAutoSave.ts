@@ -197,7 +197,7 @@ export function useAutoSave(
       upsertPayload.reviewer_name = (data._savedReviewerName as string | null | undefined) || null;
     }
 
-    let lastError: unknown = null;
+    let lastError: unknown;
     for (let attempt = 1; attempt <= MAX_SAVE_ATTEMPTS; attempt++) {
       let error: unknown = null;
       try {

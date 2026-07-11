@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { BookOpen, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
@@ -18,9 +19,7 @@ export default function Week1() {
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => { if (user) loadStatuses(); }, [user]);
-
-  async function loadStatuses() {
+  const loadStatuses = useCallback(async () => {
     setLoadError(null);
     try {
       const data = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id).then(unwrap);
@@ -31,7 +30,9 @@ export default function Week1() {
       console.error('Failed to load Week 1 statuses:', err);
       setLoadError('We could not load your Week 1 progress. Please check your connection and try again.');
     }
-  }
+  }, [user]);
+
+  useEffect(() => { if (user) loadStatuses(); }, [user, loadStatuses]);
 
   const completed = countCompleted(worksheets.map(w => w.id), statuses);
 

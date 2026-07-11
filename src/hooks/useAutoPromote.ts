@@ -1,5 +1,6 @@
 import { supabase } from '../api/supabase';
 import { PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { REVIEW_STATUS } from '../constants/status';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -51,14 +52,14 @@ export async function checkAndPromote(userId: string | null): Promise<PromoteRes
     if (!allApproved) {
       const approved = allWsIds.filter(wsId => {
         const sub = typedSubmissions.find(s => s.worksheet_id === wsId);
-        return sub?.review_status === 'approved';
-      }).length;
+      return sub?.review_status === REVIEW_STATUS.APPROVED;
+    }).length;
       return { promoted: false, message: `${approved}/${allWsIds.length} worksheets approved — not yet complete` };
     }
 
     // All approved locally — ask the server to verify eligibility and promote.
     // SECURITY: role changes happen ONLY through this SECURITY DEFINER RPC. It
-    // re-validates that every required worksheet is 'approved' and then updates
+    // re-validates that every required worksheet is REVIEW_STATUS.APPROVED and then updates
     // user_profiles.role AND auth app_metadata for the CALLING user (auth.uid()).
     // Clients never write role directly (no table .update({role}) and no
     // supabase.auth.updateUser({ data: { role } })).

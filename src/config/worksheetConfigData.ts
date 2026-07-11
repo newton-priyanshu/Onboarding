@@ -43,6 +43,7 @@
 // =====================================================
 
 import { t } from './theme';
+import { REVIEW_STATUS } from '../constants/status';
 import type { WorksheetId, ReviewerType, WorksheetSubmission, EngineTag, FtpWeek, FtpSession } from '../types/supabase';
 
 // ─── FTP 4-Week Curriculum Structure ─────────────────────
@@ -596,12 +597,12 @@ export function getPhaseReviewStatus(
 
   wsList.forEach(wsId => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
-    if (!sub || (sub.review_status !== 'buddy_approved' && sub.review_status !== 'approved')) {
-      if (!sub || sub.review_status === '' || sub.review_status === 'needs_revision') {
+    if (!sub || (sub.review_status !== REVIEW_STATUS.BUDDY_APPROVED && sub.review_status !== REVIEW_STATUS.APPROVED)) {
+      if (!sub || sub.review_status === REVIEW_STATUS.EMPTY || sub.review_status === REVIEW_STATUS.NEEDS_REVISION) {
         notSubmitted++;
       }
     }
-    if (sub?.review_status === 'buddy_approved' || sub?.review_status === 'approved') {
+    if (sub?.review_status === REVIEW_STATUS.BUDDY_APPROVED || sub?.review_status === REVIEW_STATUS.APPROVED) {
       buddyApproved++;
     }
   });
@@ -626,7 +627,7 @@ export function getBuddyApprovedSheets(
   const userSubs = submissions.filter(s => s.user_id === userId);
   return wsList.filter((wsId: string) => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
-    return sub?.review_status === 'buddy_approved';
+    return sub?.review_status === REVIEW_STATUS.BUDDY_APPROVED;
   });
 }
 
@@ -673,7 +674,7 @@ export function isPhaseApproved(
   const userSubs = submissions.filter(s => s.user_id === userId);
   return wsIds.every((wsId: string) => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
-    return sub?.review_status === 'approved';
+    return sub?.review_status === REVIEW_STATUS.APPROVED;
   });
 }
 

@@ -56,6 +56,7 @@ export function useNotifications(
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
+  const userId = (user as { id?: string } | null)?.id;
 
   const fetchNotifications = useCallback(async () => {
     const u = user as { id?: string } | null;
@@ -82,13 +83,12 @@ export function useNotifications(
     }
     if (mountedRef.current) setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [(user as { id?: string } | null)?.id]);
+  }, [userId]);
 
   // Initial fetch + polling
   useEffect(() => {
     mountedRef.current = true;
-    const u = user as { id?: string } | null;
-    if (!u?.id) {
+    if (!userId) {
       setNotifications([]);
       setUnreadCount(0);
       setError(null);
@@ -105,11 +105,10 @@ export function useNotifications(
       mountedRef.current = false;
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [(user as { id?: string } | null)?.id, fetchNotifications, pollInterval]);
+  }, [userId, fetchNotifications, pollInterval]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
-    const u = user as { id?: string } | null;
-    if (!u?.id) return;
+    if (!userId) return;
     try {
       const { error: updateError } = await supabase
         .from('notifications')
@@ -126,11 +125,10 @@ export function useNotifications(
       console.error('Error marking notification as read:', err);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [(user as { id?: string } | null)?.id]);
+  }, [userId]);
 
   const markAllAsRead = useCallback(async () => {
-    const u = user as { id?: string } | null;
-    if (!u?.id) return;
+    if (!userId) return;
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
     try {
@@ -144,7 +142,7 @@ export function useNotifications(
     } catch (err) {
       console.error('Error marking all as read:', err);
     }
-  }, [(user as { id?: string } | null)?.id, notifications]);
+  }, [userId, notifications]);
 
   return {
     notifications,

@@ -2,7 +2,7 @@ import { BookOpen, Users, MessageSquare, MessageCircle, Shield, CheckCircle2, Al
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { t } from '../config/theme';
 import { REVIEWER_LABELS, REVIEWER_STYLES } from '../config/worksheetConfig';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
@@ -58,21 +58,15 @@ export default function Phase1() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) loadStatuses();
-    else setLoading(false);
-    // loadStatuses intentionally omitted: closes over fresh user each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  async function loadStatuses() {
+  const loadStatuses = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     setLoadError(null);
     try {
       const data = await supabase
         .from('worksheet_submissions')
         .select('worksheet_id, status, review_status')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .then(unwrap);
       setStatuses(buildStatusMap(data as unknown as Array<{ worksheet_id: string; status: string | null; review_status: string | null }>));
     } catch (err) {
@@ -81,7 +75,12 @@ export default function Phase1() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadStatuses();
+    else setLoading(false);
+  }, [user, loadStatuses]);
 
   const allIds = getAllWeekWorksheetIds();
   const totalAll = allIds.length;
