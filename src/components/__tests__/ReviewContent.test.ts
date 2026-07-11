@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FIELD_SECTIONS } from '../ReviewContent';
+import { FIELD_SECTIONS } from '../../config/reviewContentConfig';
 import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO } from '../../config/worksheetConfigData';
 
 describe('FIELD_SECTIONS configuration', () => {

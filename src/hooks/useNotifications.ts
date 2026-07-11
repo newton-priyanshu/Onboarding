@@ -45,17 +45,19 @@ const ROLE_MAP: Record<string, string> = {
 
 /**
  * useNotifications — Fetches and manages notifications for a user.
+ *
+ * Uses Supabase Realtime (postgres_changes) for instant notification delivery
+ * instead of polling, reducing unnecessary network requests and battery drain.
  */
  
 export function useNotifications(
-  user: object | null,
-  pollInterval: number = 15000
+  user: object | null
 ): NotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const mountedRef = useRef(true);
   const userId = (user as { id?: string } | null)?.id;
 
@@ -86,7 +88,7 @@ export function useNotifications(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // Initial fetch + polling
+  // Initial fetch + Realtime subscription
   useEffect(() => {
     mountedRef.current = true;
     if (!userId) {
@@ -97,16 +99,41 @@ export function useNotifications(
       return;
     }
 
+    // Initial fetch
     fetchNotifications();
 
-    // Poll for new notifications
-    pollRef.current = setInterval(fetchNotifications, pollInterval);
+    // Subscribe to new INSERTs on the notifications table for this user
+    const channel = supabase
+      .channel('notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (!mountedRef.current) return;
+          const newNotification = payload.new as NotificationItem;
+          setNotifications(prev => [newNotification, ...prev]);
+          if (!newNotification.read) {
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
       mountedRef.current = false;
-      if (pollRef.current) clearInterval(pollRef.current);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [userId, fetchNotifications, pollInterval]);
+  }, [userId, fetchNotifications]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!userId) return;
