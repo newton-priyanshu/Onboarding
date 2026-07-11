@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { FileEdit } from 'lucide-react';
 import WorksheetPage, { WorksheetSection, FieldGroup, FieldGrid } from '../../../components/WorksheetPage';
 

@@ -11,10 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Phase1 from './pages/Phase1';
 import Phase2 from './pages/Phase2';
 import Phase3 from './pages/Phase3';
-import Week1 from './pages/Week1';
-import Week2 from './pages/Week2';
-import Week3 from './pages/Week3';
-import Week4 from './pages/Week4';
+import WeekPage from './pages/WeekPage';
 import Assessment from './pages/Assessment';
 import Stakeholders from './pages/Stakeholders';
 import Login from './pages/Login';
@@ -149,10 +146,10 @@ function AppRoutes() {
         <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
 
         {/* FTP Week Routes — Week 1 always open, weeks 2+ gated behind prior week completion */}
-        <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Week1 /></ProtectedRoute>} />
-        <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><Week2 /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><Week3 /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><Week4 /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekPage weekNum={1} /></ProtectedRoute>} />
+        <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekPage weekNum={3} /></WeekAccessGuard></ProtectedRoute>} />
+        <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekPage weekNum={4} /></WeekAccessGuard></ProtectedRoute>} />
         {/* FTP Week Worksheet Routes — also gated by week access */}
         <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage weekNum={1} /></ProtectedRoute>} />
         <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekWorksheetPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />

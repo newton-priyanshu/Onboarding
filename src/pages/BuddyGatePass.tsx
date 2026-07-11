@@ -48,11 +48,11 @@ export default function BuddyGatePass() {
         .eq('id', userId)
         .single();
       if (error) throw error;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setJoinee(data as JoineeInfo);
     } catch (err) {
       console.error('Failed to load joinee profile:', err);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setLoadError('We could not load this joinee’s profile. Please check your connection and try again.');
     } finally {
       setLoading(false);

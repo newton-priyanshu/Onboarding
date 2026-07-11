@@ -46,6 +46,7 @@ const ROLE_MAP: Record<string, string> = {
 /**
  * useNotifications — Fetches and manages notifications for a user.
  */
+ 
 export function useNotifications(
   user: object | null,
   pollInterval: number = 15000
@@ -124,7 +125,7 @@ export function useNotifications(
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [userId]);
 
   const markAllAsRead = useCallback(async () => {

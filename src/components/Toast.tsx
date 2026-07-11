@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { t } from '../config/theme';
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle, type LucideIcon } from 'lucide-react';

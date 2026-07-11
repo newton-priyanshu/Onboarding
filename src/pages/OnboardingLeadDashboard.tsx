@@ -43,9 +43,9 @@ export default function OnboardingLeadDashboard() {
 
   useEffect(() => { if (isOnboardingLead) loadData();
     // loadData intentionally omitted: closes over fresh isOnboardingLead each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isOnboardingLead]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
 
   async function loadData() {
     setLoading(true);

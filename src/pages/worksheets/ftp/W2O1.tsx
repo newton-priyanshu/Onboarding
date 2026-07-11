@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ClipboardCheck } from 'lucide-react';
 import WorksheetPage, { WorksheetSection, FieldGroup } from '../../../components/WorksheetPage';
 

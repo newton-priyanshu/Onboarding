@@ -70,9 +70,9 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (canAssign) loadData();
     // loadData intentionally omitted: closes over fresh canAssign each render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [canAssign]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
 
   async function loadData() {
     savedScrollY.current = window.scrollY;

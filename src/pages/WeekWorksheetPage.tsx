@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useParams } from 'react-router-dom';
 import { WORKSHEET_COMPONENTS, WK_WORKSHEETS_MAP } from '../config/worksheetConfig';
 import { WORKSHEET_NAMES } from '../config/worksheetConfigData';

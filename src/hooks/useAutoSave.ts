@@ -201,7 +201,7 @@ export function useAutoSave(
 
     let lastError: unknown;
     for (let attempt = 1; attempt <= MAX_SAVE_ATTEMPTS; attempt++) {
-      let error: unknown = null;
+      let error: unknown;
       try {
         const res = await supabase
           .from('worksheet_submissions')

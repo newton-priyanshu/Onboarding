@@ -9,28 +9,40 @@ import { WEEK_LABELS, ENGINE_TAG_INFO, ENGINE_TAG_COLORS } from '../config/works
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
 import { countCompleted } from '../utils/worksheetHelpers';
 import type { StatusInfo } from '../utils/worksheetHelpers';
-import { week3Worksheets as worksheets } from '../config/weeklyWorksheets';
+import { week1Worksheets, week2Worksheets, week3Worksheets, week4Worksheets } from '../config/weeklyWorksheets';
+import type { WorksheetMeta } from '../config/weeklyWorksheets';
 
-const weekNum = 3;
-const weekLabel = WEEK_LABELS[weekNum]!;
+const WEEK_WORKSHEETS: Record<number, WorksheetMeta[]> = {
+  1: week1Worksheets,
+  2: week2Worksheets,
+  3: week3Worksheets,
+  4: week4Worksheets,
+};
 
-export default function Week3() {
+interface WeekPageProps {
+  weekNum: 1 | 2 | 3 | 4;
+}
+
+export default function WeekPage({ weekNum }: WeekPageProps) {
   const { user } = useAuth();
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const weekLabel = WEEK_LABELS[weekNum]!;
+  const worksheets = WEEK_WORKSHEETS[weekNum] || [];
 
   const loadStatuses = useCallback(async () => {
     setLoadError(null);
     try {
       const data = await supabase.from('worksheet_submissions').select('worksheet_id, status, review_status').eq('user_id', user?.id).then(unwrap);
       const map: Record<string, StatusInfo> = {};
-      data.forEach(s => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
+      data.forEach((s: { worksheet_id: string; status: string; review_status: string }) => { map[s.worksheet_id] = { status: s.status, review_status: s.review_status }; });
       setStatuses(map);
     } catch (err) {
-      console.error('Failed to load Week 3 statuses:', err);
-      setLoadError('We could not load your Week 3 progress. Please check your connection and try again.');
+      console.error(`Failed to load Week ${weekNum} statuses:`, err);
+      setLoadError(`We could not load your Week ${weekNum} progress. Please check your connection and try again.`);
     }
-  }, [user]);
+  }, [user, weekNum]);
 
   useEffect(() => { if (user) loadStatuses(); }, [user, loadStatuses]);
 
@@ -43,7 +55,7 @@ export default function Week3() {
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
           <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
-            Couldn&apos;t Load Week 3
+            Couldn&apos;t Load Week {weekNum}
           </h2>
           <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
           <button onClick={() => loadStatuses()} className="lux-btn lux-btn-primary">
@@ -65,12 +77,16 @@ export default function Week3() {
             </div>
             <div style={{ flex: 1 }}>
               <h1 style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>
-                Week 3: <em style={{ fontStyle: 'italic', color: t.gd }}>{weekLabel.title}</em>
+                Week {weekNum}: <em style={{ fontStyle: 'italic', color: t.gd }}>{weekLabel.title}</em>
               </h1>
-              <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>{weekLabel.subtitle} — 9 worksheets</span>
+              <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>
+                {weekLabel.subtitle} — {worksheets.length} worksheet{worksheets.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>{weekLabel.theme}</p>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>
+            {weekLabel.theme}
+          </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '1.25rem' }}>
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
               <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${(completed / worksheets.length) * 100}%` }} />
