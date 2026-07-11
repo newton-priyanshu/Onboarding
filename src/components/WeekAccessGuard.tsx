@@ -110,41 +110,51 @@ export default function WeekAccessGuard({ weekNum, children }: WeekAccessGuardPr
 
     setChecking(true);
     setLoadError(false);
+
     supabase
       .from('worksheet_submissions')
       .select('worksheet_id, status, review_status')
       .eq('user_id', user.id)
       .in('worksheet_id', previousWeekWorksheets)
-      .then(({ data, error }) => {
-        if (error || !data) {
-          console.error('WeekAccessGuard: failed to load submissions:', error);
-          // Fail closed: a failed access check must never be treated as "unlocked".
+      .then(
+        ({ data, error }: { data: { worksheet_id: string; status: string; review_status: string }[] | null; error: unknown }) => {
+          if (error || !data) {
+            console.error('WeekAccessGuard: failed to load submissions:', error);
+            // Fail closed: a failed access check must never be treated as "unlocked".
+            setCanAccess(false);
+            setLoadError(true);
+            setChecking(false);
+            return;
+          }
+
+          // Check ALL worksheets in the previous week are at least "submitted"
+          const submissionMap = new Map<string, { status: string; review_status: string }>();
+          data.forEach((row: { worksheet_id: string; status: string; review_status: string }) => {
+            submissionMap.set(row.worksheet_id, row);
+          });
+          const allComplete = previousWeekWorksheets.every((wsId: string) => {
+            const sub = submissionMap.get(wsId);
+            if (!sub) return false;
+            // Consider "submitted", "buddy_approved", or "approved" as complete
+            return (
+              sub.status === SUBMISSION_STATUS.SUBMITTED ||
+              sub.review_status === REVIEW_STATUS.BUDDY_APPROVED ||
+              sub.review_status === REVIEW_STATUS.APPROVED
+            );
+          });
+
+          setCanAccess(allComplete);
+          setLoadError(false);
+          setChecking(false);
+        },
+        (err: unknown) => {
+          console.error('WeekAccessGuard: query rejected (network error):', err);
+          // Fail closed: a rejected promise must also transition out of loading.
           setCanAccess(false);
           setLoadError(true);
           setChecking(false);
-          return;
         }
-
-        // Check ALL worksheets in the previous week are at least "submitted"
-        const submissionMap = new Map<string, { status: string; review_status: string }>();
-        data.forEach((row: { worksheet_id: string; status: string; review_status: string }) => {
-          submissionMap.set(row.worksheet_id, row);
-        });
-        const allComplete = previousWeekWorksheets.every((wsId: string) => {
-          const sub = submissionMap.get(wsId);
-          if (!sub) return false;
-          // Consider "submitted", "buddy_approved", or "approved" as complete
-          return (
-            sub.status === SUBMISSION_STATUS.SUBMITTED ||
-            sub.review_status === REVIEW_STATUS.BUDDY_APPROVED ||
-            sub.review_status === REVIEW_STATUS.APPROVED
-          );
-        });
-
-        setCanAccess(allComplete);
-        setLoadError(false);
-        setChecking(false);
-      });
+      );
   }, [user?.id, weekNum]);
 
   useEffect(() => {

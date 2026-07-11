@@ -108,14 +108,15 @@ export function useAutoSave(
           .maybeSingle();
         if (cancelled) return;
         if (error) {
-          console.error('[AutoSave] Failed to load start date for due-date calc:', error);
+          console.error('[AutoSave] Failed to load start date:', error?.message || error);
           return;
         }
         const p = profile as UserProfileStartDate | null;
         const raw = p?.start_date || p?.created_at || null;
         startDateRef.current = raw ? new Date(raw) : null;
       } catch (err) {
-        if (!cancelled) console.error('[AutoSave] Failed to load start date for due-date calc:', err);
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        if (!cancelled) console.error('[AutoSave] Failed to load start date:', errorMsg);
       }
     })();
     return () => { cancelled = true; };
@@ -138,7 +139,7 @@ export function useAutoSave(
           .eq('worksheet_id', worksheetId)
           .maybeSingle();
         if (conflictError) {
-          console.error('[AutoSave] Conflict check failed:', conflictError);
+          console.error('[AutoSave] Conflict check failed:', conflictError?.message || conflictError);
         } else if (current && current.updated_at !== savedAt) {
           console.warn(
             `[AutoSave] Conflict detected for ${worksheetId}: ` +
@@ -147,7 +148,8 @@ export function useAutoSave(
           );
         }
       } catch (err) {
-        console.error('[AutoSave] Conflict check threw:', err);
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error('[AutoSave] Conflict check threw:', errorMsg);
       }
     }
 
