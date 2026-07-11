@@ -301,6 +301,22 @@ export function useWorksheet({
     data.dateSubmitted,
   ]);
 
+  // ── beforeunload guard for unsaved edits ──────────────────────
+  // Shows a browser confirmation dialog when the user tries to close
+  // the tab or refresh while there are unsaved edits.
+  useEffect(() => {
+    if (!loaded) return;
+    if (!dirty) return;
+    if (isApproved || isBuddyApproved) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [loaded, dirty, isApproved, isBuddyApproved]);
+
   return {
     data,
     setData,
