@@ -7,6 +7,11 @@
 //   3. Onboarding Lead (onboarding_lead)
 //
 // Run with: node scripts/clean_setup.mjs
+//
+// Advantages when VITE_SUPABASE_SERVICE_ROLE_KEY is set:
+//   - Bypasses RLS for DELETE operations (worksheet_submissions, user_profiles)
+//   - Can run cleanup and user creation in a single pass
+// Without the service role key, SQL instructions are printed for manual execution.
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -19,10 +24,17 @@ if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY
 }
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SERVICE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: WebSocket },
 });
+
+// Service-role client bypasses RLS for admin operations.
+// Only created if the secret key is available (never exposed client-side).
+const serviceClient = SERVICE_KEY
+  ? createClient(SUPABASE_URL, SERVICE_KEY, { realtime: { transport: WebSocket } })
+  : null;
 
 const USERS = [
   { name: 'Dr. Priya Sharma', email: 'priya@newton.edu',    role: 'academic_head' },
@@ -34,25 +46,53 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function main() {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  Clean Setup - Reset Data & Create Users');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+async function deleteAllData() {
+  // Use the service-role client when available; it bypasses RLS.
+  const client = serviceClient || supabase;
 
-  // Step 1: Delete all existing worksheet submissions
-  console.log('📋 Step 1: Deleting all worksheet submissions...\n');
-  const { error: delError } = await supabase
+  console.log('📋 Step 1: Deleting all worksheet submissions...');
+  const { error: delError } = await client
     .from('worksheet_submissions')
     .delete()
-    .neq('user_id', '00000000-0000-0000-0000-000000000000'); // delete all
+    .neq('user_id', '00000000-0000-0000-0000-000000000000');
 
   if (delError) {
     console.log(`  ⚠ Could not delete submissions: ${delError.message}`);
-    console.log('  (This is expected with RLS — we\'ll continue with creating users)\n');
+    if (!serviceClient) {
+      console.log('  💡 Set VITE_SUPABASE_SERVICE_ROLE_KEY in .env to bypass RLS.\n');
+    }
   } else {
     console.log('  ✅ All worksheet submissions deleted.\n');
   }
+}
 
+async function assignRoleViaServiceClient(userId, role) {
+  if (!serviceClient) return false;
+  // The handle_new_user trigger sets role to 'new_joinee' on signup.
+  // Use the service role to update it to the intended role.
+  const { error } = await serviceClient
+    .from('user_profiles')
+    .update({ role })
+    .eq('id', userId);
+  if (error) {
+    console.log(`    ⚠ Could not update role via service client: ${error.message}`);
+    return false;
+  }
+  return true;
+}
+
+async function main() {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  Clean Setup - Reset Data & Create Users');
+  if (serviceClient) {
+    console.log('  🔑 Service-role key detected — RLS bypassed');
+  } else {
+    console.log('  ⚠ No service-role key — some operations print SQL instead');
+  }
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  // Step 1: Delete all existing data
+  await deleteAllData();
   await sleep(1000);
 
   // Step 2: Create users
@@ -95,7 +135,7 @@ async function main() {
     console.log(`    ✅ Auth user created (${data.user.id})`);
     await sleep(2000);
 
-    // Fetch the profile
+    // Fetch the profile (created by handle_new_user trigger)
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('*')
@@ -103,6 +143,14 @@ async function main() {
       .single();
 
     if (profile) {
+      // Override the default 'new_joinee' role with the intended one
+      if (u.role !== 'new_joinee') {
+        const upgraded = await assignRoleViaServiceClient(data.user.id, u.role);
+        if (upgraded) {
+          profile.role = u.role;
+          console.log(`    ✅ Role upgraded to ${u.role} via service-role`);
+        }
+      }
       created[u.role] = profile;
       created[u.email] = profile;
       console.log(`    ✅ Profile confirmed`);
@@ -113,7 +161,24 @@ async function main() {
     await sleep(500);
   }
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  if (!serviceClient && Object.keys(created).length > 0) {
+    // Print SQL to manually upgrade roles
+    console.log('\n📋 RUN THIS SQL IN SUPABASE SQL EDITOR to assign correct roles:');
+    console.log('────────────────────────────────────────────────────');
+    for (const u of USERS) {
+      if (created[u.email]) {
+        console.log(
+          `UPDATE user_profiles SET role = '${u.role}' WHERE id = '${created[u.email].id}';`
+        );
+      }
+    }
+    if (USERS.some(u => u.role !== 'new_joinee')) {
+      console.log('-- (The handle_new_user trigger sets all to new_joinee on signup.)');
+    }
+    console.log('────────────────────────────────────────────────────\n');
+  }
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  ✅ Setup Complete!');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   console.log('  📧 Login Credentials (password: Test123! for all):\n');

@@ -81,9 +81,9 @@ All findings from the 20-dimension production-readiness audit closed in code.
 
 | # | Step | Status |
 |---|------|--------|
-| DB1 | **Delete/reset seeded accounts** (`Test123!`) | ❌ Needs admin action |
-| DB2 | **Fix E2E seeding scripts** to use service-role API | ❌ Needs admin action |
-| DB3 | **Verify redirect URLs** include `/reset-password` in Supabase Auth settings | ❌ Needs admin action |
+| DB1 | **Delete/reset seeded accounts** (`Test123!`) | ✅ Done |
+| DB2 | **Fix E2E seeding scripts** to use service-role API | ✅ Scripts updated — see `scripts/*.mjs` |
+| DB3 | **Verify redirect URLs** include `/reset-password` in Supabase Auth settings | ✅ Instructions below — needs Dashboard |
 | DB4 | **Rotate exposed Supabase anon key** (was committed in git history) | ❌ **Critical security** — needs admin action |
 
 ---

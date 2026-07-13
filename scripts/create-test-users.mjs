@@ -2,7 +2,12 @@
 // Create 1 Test User Per Role
 // =============================================================================
 // Usage:  node scripts/create-test-users.mjs
-// After running, copy the SQL output into Supabase SQL Editor to confirm emails.
+//
+// When VITE_SUPABASE_SERVICE_ROLE_KEY is set in .env:
+//   - Automatically creates/updates user_profiles (bypasses RLS)
+//   - Prints SQL to confirm emails (cannot be done via JS client)
+// Without the service role key, outputs SQL for manual execution in Supabase
+// SQL Editor (same as before).
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -30,11 +35,21 @@ if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY
   process.exit(1);
 }
 
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SERVICE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   { realtime: { transport: WebSocket } }
 );
+
+// Service-role client bypasses RLS for admin operations on public schema.
+// NOTE: auth.users (email confirmation) still requires raw SQL in the SQL Editor —
+//       the JS client cannot write to auth.users even with the service role key.
+const serviceClient = SERVICE_KEY
+  ? createClient(SUPABASE_URL, SERVICE_KEY, { realtime: { transport: WebSocket } })
+  : null;
 
 // ─── Test user config ───────────────────────────────────
 const PASSWORD = 'Test123!';
@@ -53,6 +68,11 @@ const ROLES = [
 async function main() {
   console.log('╔══════════════════════════════════════════════╗');
   console.log('║     CREATE 1 TEST USER PER ROLE (×6)        ║');
+  if (serviceClient) {
+    console.log('║     🔑 Service-role key detected            ║');
+  } else {
+    console.log('║     ⚠ No service-role — SQL fallback        ║');
+  }
   console.log('╚══════════════════════════════════════════════╝\n');
 
   const createdUsers = [];
@@ -97,8 +117,53 @@ async function main() {
     }
   }
 
+  // ─── If service client is available, upsert profiles (bypass RLS) ──
+  if (serviceClient && createdUsers.length > 0) {
+    console.log('\n📋 Service-role: upserting user profiles...\n');
+    for (const u of createdUsers) {
+      const { error: upsertErr } = await serviceClient
+        .from('user_profiles')
+        .upsert({
+          id: u.id,
+          email: u.email,
+          full_name: u.name,
+          role: u.role,
+        }, { onConflict: 'id' });
+
+      if (upsertErr) {
+        console.log(`   ⚠ ${u.name}: profile upsert failed — ${upsertErr.message}`);
+      } else {
+        console.log(`   ✅ ${u.name}: profile upserted`);
+      }
+    }
+    console.log('');
+  }
+
+  // ─── Print SQL to confirm emails (always needed — JS client can't write auth.users) ──
+  if (createdUsers.length > 0) {
+    console.log('📋 RUN THIS SQL IN SUPABASE SQL EDITOR to confirm emails:');
+    console.log('────────────────────────────────────────────────────');
+    const emails = createdUsers.map(u => `'${u.email}'`).join(',');
+    console.log(`UPDATE auth.users SET email_confirmed_at = NOW()`);
+    console.log(`  WHERE email IN (${emails});`);
+    console.log('');
+    // Also insert profiles if the auto-trigger and service role both failed
+    if (!serviceClient) {
+      console.log('-- (Optional) Insert profiles if the auto-trigger failed:');
+      console.log('INSERT INTO user_profiles (id, email, full_name, role) VALUES');
+      createdUsers.forEach((u, i) => {
+        const comma = i < createdUsers.length - 1 ? ',' : ';';
+        console.log(`  ('${u.id}', '${u.email}', '${u.name}', '${u.role}')${comma}`);
+      });
+      console.log('ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;');
+    }
+    console.log('────────────────────────────────────────────────────\n');
+  } else {
+    console.log('\n-- No users were created. Check errors above.\n');
+  }
+
   // ─── Print credentials ──────────────────────────────
-  console.log('\n═══════════════════════════════════════════════');
+  console.log('═══════════════════════════════════════════════');
   console.log('            TEST USER CREDENTIALS');
   console.log('═══════════════════════════════════════════════');
   console.log(`Password for all users: ${PASSWORD}\n`);
@@ -110,29 +175,7 @@ async function main() {
     console.log(` ${roleLabel}│ ${emailLabel}│ ${u.name}`);
   }
 
-  // ─── SQL to confirm emails ─────────────────────────
-  console.log('\n\n📋 RUN THIS SQL IN SUPABASE SQL EDITOR to confirm emails:');
-  console.log('────────────────────────────────────────────────────');
-  if (createdUsers.length > 0) {
-    const emails = createdUsers.map(u => `'${u.email}'`).join(',');
-    console.log(`UPDATE auth.users SET email_confirmed_at = NOW()`);
-    console.log(`  WHERE email IN (${emails});`);
-    console.log('');
-
-    // Also insert profiles if the handle_new_user trigger didn't fire
-    console.log('-- (Optional) Insert profiles if the auto-trigger failed:');
-    console.log('INSERT INTO user_profiles (id, email, full_name, role) VALUES');
-    createdUsers.forEach((u, i) => {
-      const comma = i < createdUsers.length - 1 ? ',' : ';';
-      console.log(`  ('${u.id}', '${u.email}', '${u.name}', '${u.role}')${comma}`);
-    });
-    console.log('ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;');
-  } else {
-    console.log('-- No users were created. Check errors above.');
-  }
-  console.log('────────────────────────────────────────────────────\n');
-
-  console.log(`✅ Created ${createdUsers.length}/${ROLES.length} users`);
+  console.log(`\n✅ Created ${createdUsers.length}/${ROLES.length} users`);
   console.log('(Sign in at your deployed app or localhost)');
 }
 
