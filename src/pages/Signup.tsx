@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { User, Mail, Lock, AlertCircle, Eye, EyeOff, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+
+const ALLOWED_DOMAIN = 'newtonschool.co';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -24,6 +26,11 @@ export default function Signup() {
     }
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
+      return;
+    }
+    // Domain check
+    if (!email.trim().toLowerCase().endsWith('@' + ALLOWED_DOMAIN)) {
+      setError(`Only @${ALLOWED_DOMAIN} email addresses are allowed. Please use your NST company email.`);
       return;
     }
     setLoading(true);
@@ -78,7 +85,7 @@ export default function Signup() {
               <div style={{ position: 'relative' }}>
                 <Mail size={16} strokeWidth={1.5} style={{ position: 'absolute', left: '0', top: '14px', color: 'var(--color-warm-grey)' }} />
                 <input id="signup-email" className="lux-input" type="email" value={email}
-                  onChange={(e) => setEmail(e.target.value)} placeholder="jane@newton.edu" style={{ paddingLeft: '28px' }} required autoComplete="email" />
+                  onChange={(e) => setEmail(e.target.value)} placeholder="name@newtonschool.co" style={{ paddingLeft: '28px' }} required autoComplete="email" />
               </div>
             </div>
             <div className="lux-form-group">
@@ -97,6 +104,16 @@ export default function Signup() {
             {error && <div className="lux-alert lux-alert-error" style={{ marginBottom: '1.5rem' }}>
               <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} /><span>{error}</span>
             </div>}
+
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem',
+              padding: '0.5rem 0.75rem', borderRadius: '8px',
+              background: 'rgba(0, 100, 148, 0.06)', border: '1px solid rgba(0, 100, 148, 0.15)',
+              fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-warm-grey)',
+            }}>
+              <Building size={14} strokeWidth={1.5} style={{ flexShrink: 0, color: '#006494' }} />
+              <span>Only <strong>@newtonschool.co</strong> emails can register</span>
+            </div>
 
             <button type="submit" className="lux-btn lux-btn-primary" disabled={loading} style={{ width: '100%' }}>
               <span className="gold-overlay" /><span className="btn-content">{loading ? 'Creating account…' : 'Create Account'}</span>

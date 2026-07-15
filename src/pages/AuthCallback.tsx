@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { GraduationCap } from 'lucide-react';
 
+const ALLOWED_DOMAIN = 'newtonschool.co';
+
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('Completing sign in…');
@@ -24,9 +26,20 @@ export default function AuthCallback() {
     }
 
     const timer = setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (cancelled) return;
-        if (session) {
+        if (session?.user) {
+          // Enforce company email domain for OAuth sign-ins
+          const userEmail = session.user.email || '';
+          if (!userEmail.toLowerCase().endsWith('@' + ALLOWED_DOMAIN)) {
+            // Domain not allowed — sign out and redirect
+            await supabase.auth.signOut();
+            if (!cancelled) {
+              setStatus(`Only @${ALLOWED_DOMAIN} email addresses are allowed. Please sign in with your NST company email.`);
+              timers.push(setTimeout(() => { if (!cancelled) navigate('/login', { replace: true }); }, 4000));
+            }
+            return;
+          }
           navigate('/', { replace: true });
         } else {
           setStatus('Sign in failed. Redirecting…');
