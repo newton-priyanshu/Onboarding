@@ -22,6 +22,8 @@ type DueDateMap = Record<string, string>;
  * Phase 1 starts at Day 1, Phase 2 at Day 31, Phase 3 at Day 61.
  */
 const DEFAULT_DUE_OFFSETS: Record<string, number> = {
+  // Phase 1 — offsets IGNORED; all Phase 1 worksheets use a hardcoded
+  // test deadline (July 20, 2026) — see calculateDueDate below.
   p1_w1: 7,    p1_w2: 30,   p1_w3: 14,   p1_w4: 14,
   p1_w5: 14,   p1_w6: 28,   p1_w7: 28,   p1_w8: 28,
   gc1: 30,
@@ -42,6 +44,17 @@ const DEFAULT_DUE_OFFSETS: Record<string, number> = {
   w4_d2: 24,   w4_e1: 25,   w4_o1: 27,   w4_b1: 28,
   w4_g1: 28,
 };
+
+// ─── Temporary Hardcoded Phase 1 Deadline (July 15–20 test window) ───────
+// All Phase 1 worksheets share a single deadline of July 20, 2026.
+// This is a TEST override — revert this block and the early-return in
+// calculateDueDate when the real phase-based offset logic is needed again.
+const PHASE1_DEADLINE = new Date('2026-07-20');
+const PHASE1_WS_IDS = new Set([
+  'p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8',
+  'gc1',
+  'w1_o1', 'w1_e1', 'w1_o2', 'w1_g1',
+]);
 
 // ─── Helpers ────────────────────────────────────────────
 
@@ -69,8 +82,17 @@ function getToday(): Date {
 
 /**
  * Calculate the due date for a worksheet based on a reference start date.
+ *
+ * TEMP (July 2026): All Phase 1 worksheets return July 20, 2026 —
+ * a hardcoded test deadline for the 20-person pilot. Revert as soon
+ * as real phase-based offset logic is needed.
  */
 export function calculateDueDate(worksheetId: string, startDate: Date | null = null): Date | null {
+  // TEMP: Phase 1 hardcoded deadline (July 20, 2026)
+  if (PHASE1_WS_IDS.has(worksheetId)) {
+    return new Date(PHASE1_DEADLINE);
+  }
+
   const offset = DEFAULT_DUE_OFFSETS[worksheetId];
   if (!offset) return null;
 

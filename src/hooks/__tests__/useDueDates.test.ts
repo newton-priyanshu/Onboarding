@@ -16,17 +16,17 @@ describe('calculateDueDate', () => {
     expect(result).toBeNull();
   });
 
-  it('calculates due date 7 days from start for p1_w1', () => {
+  it('returns hardcoded Phase 1 deadline (2026-07-20) for p1_w1', () => {
     const start = new Date('2025-01-01');
     const due = calculateDueDate('p1_w1', start)!;
     expect(due).toBeInstanceOf(Date);
-    expect(due.toISOString().split('T')[0]).toBe('2025-01-08');
+    expect(due.toISOString().split('T')[0]).toBe('2026-07-20');
   });
 
-  it('calculates due date 30 days from start for gc1', () => {
+  it('returns hardcoded Phase 1 deadline (2026-07-20) for gc1', () => {
     const start = new Date('2025-01-01');
     const due = calculateDueDate('gc1', start)!;
-    expect(due.toISOString().split('T')[0]).toBe('2025-01-31');
+    expect(due.toISOString().split('T')[0]).toBe('2026-07-20');
   });
 
   it('calculates due date 90 days from start for gc3', () => {
@@ -58,31 +58,30 @@ describe('getDueDateInfo', () => {
     expect(info.isDueSoon).toBe(false);
   });
 
-  it('marks worksheet as overdue when past due date', () => {
+  it('marks worksheet as overdue when past due date (using Phase 3 worksheet)', () => {
     const pastDate = new Date('2020-01-01');
-    const info = getDueDateInfo('p1_w1', pastDate);
+    // gc3 has 90-day offset from start → due 2020-03-31 (in the past)
+    const info = getDueDateInfo('gc3', pastDate);
     expect(info.isOverdue).toBe(true);
     expect(info.statusLabel).toContain('Overdue');
     expect(info.statusColor).toBe('var(--color-error)');
   });
 
-  it('marks worksheet as due soon within 2 days', () => {
-    // Set start date so that due date is tomorrow
+  it('marks worksheet as due soon within 2 days (using Phase 2 worksheet)', () => {
     const today = new Date();
-    // p1_w1 is 7 days from start
-    // So start date should be 6 days ago
-    const sixDaysAgo = new Date(today);
-    sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+    // p2_w1 has 45-day offset — start 44 days ago → due tomorrow
+    const fortyFourDaysAgo = new Date(today);
+    fortyFourDaysAgo.setDate(fortyFourDaysAgo.getDate() - 44);
 
-    const info = getDueDateInfo('p1_w1', sixDaysAgo);
+    const info = getDueDateInfo('p2_w1', fortyFourDaysAgo);
     expect(info.isOverdue).toBe(false);
     expect(info.isDueSoon).toBe(true);
     expect(info.statusLabel).toMatch(/Due in \d+d|Due today/);
   });
 
-  it('shows remaining days for future due dates', () => {
-    // Set start date to today — p1_w1 due in 7 days
-    const info = getDueDateInfo('p1_w1', new Date());
+  it('shows remaining days for future due dates (using Phase 2 worksheet)', () => {
+    // p2_w1 has 45-day offset from today
+    const info = getDueDateInfo('p2_w1', new Date());
     if (!info.isOverdue && !info.isDueSoon) {
       expect(info.daysRemaining).toBeGreaterThan(2);
       expect(info.statusLabel).toMatch(/Due in \d+d/);
