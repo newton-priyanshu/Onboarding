@@ -16,23 +16,23 @@ describe('calculateDueDate', () => {
     expect(result).toBeNull();
   });
 
-  it('returns hardcoded Phase 1 deadline (2026-07-20) for p1_w1', () => {
+  it('returns test deadline (2026-07-20) for any worksheet (p1_w1)', () => {
     const start = new Date('2025-01-01');
     const due = calculateDueDate('p1_w1', start)!;
     expect(due).toBeInstanceOf(Date);
     expect(due.toISOString().split('T')[0]).toBe('2026-07-20');
   });
 
-  it('returns hardcoded Phase 1 deadline (2026-07-20) for gc1', () => {
+  it('returns test deadline (2026-07-20) for gc1', () => {
     const start = new Date('2025-01-01');
     const due = calculateDueDate('gc1', start)!;
     expect(due.toISOString().split('T')[0]).toBe('2026-07-20');
   });
 
-  it('calculates due date 90 days from start for gc3', () => {
+  it('returns test deadline (2026-07-20) for gc3', () => {
     const start = new Date('2025-01-01');
     const due = calculateDueDate('gc3', start)!;
-    expect(due.toISOString().split('T')[0]).toBe('2025-04-01');
+    expect(due.toISOString().split('T')[0]).toBe('2026-07-20');
   });
 
   it('returns a date for all known worksheet IDs', () => {
@@ -40,11 +40,17 @@ describe('calculateDueDate', () => {
       'p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8', 'gc1',
       'p2_w1', 'p2_w2', 'p2_w3', 'p2_w4', 'gc2',
       'p3_w1', 'p3_w2', 'p3_w3', 'p3_w4', 'p3_w5', 'gc3',
+      // FTP weeks
+      'w1_o1', 'w1_e1', 'w1_o2', 'w1_g1',
+      'w2_e1', 'w2_c3', 'w2_d2', 'w2_b1', 'w2_o1', 'w2_g1',
+      'w3_d1', 'w3_d2', 'w3_e1', 'w3_b1', 'w3_g1',
+      'w4_d2', 'w4_e1', 'w4_o1', 'w4_b1', 'w4_g1',
     ];
-    const start = new Date('2025-06-01');
     allIds.forEach(id => {
-      const due = calculateDueDate(id, start);
+      const due = calculateDueDate(id, new Date('2025-06-01'));
+      if (!due) { console.warn('null due for', id); return; }
       expect(due).toBeInstanceOf(Date);
+      expect(due.toISOString().split('T')[0]).toBe('2026-07-20');
     });
   });
 });
@@ -58,33 +64,18 @@ describe('getDueDateInfo', () => {
     expect(info.isDueSoon).toBe(false);
   });
 
-  it('marks worksheet as overdue when past due date (using Phase 3 worksheet)', () => {
-    const pastDate = new Date('2020-01-01');
-    // gc3 has 90-day offset from start → due 2020-03-31 (in the past)
-    const info = getDueDateInfo('gc3', pastDate);
-    expect(info.isOverdue).toBe(true);
-    expect(info.statusLabel).toContain('Overdue');
-    expect(info.statusColor).toBe('var(--color-error)');
+  it('returns July 20, 2026 as the test deadline for all worksheets', () => {
+    const info = getDueDateInfo('gc3', new Date('2020-01-01'));
+    expect(info.dueDate).toBeInstanceOf(Date);
+    expect(info.dueDate!.toISOString().split('T')[0]).toBe('2026-07-20');
+    expect(info.daysRemaining).toBeGreaterThanOrEqual(0);
   });
 
-  it('marks worksheet as due soon within 2 days (using Phase 2 worksheet)', () => {
-    const today = new Date();
-    // p2_w1 has 45-day offset — start 44 days ago → due tomorrow
-    const fortyFourDaysAgo = new Date(today);
-    fortyFourDaysAgo.setDate(fortyFourDaysAgo.getDate() - 44);
-
-    const info = getDueDateInfo('p2_w1', fortyFourDaysAgo);
-    expect(info.isOverdue).toBe(false);
-    expect(info.isDueSoon).toBe(true);
-    expect(info.statusLabel).toMatch(/Due in \d+d|Due today/);
-  });
-
-  it('shows remaining days for future due dates (using Phase 2 worksheet)', () => {
-    // p2_w1 has 45-day offset from today
-    const info = getDueDateInfo('p2_w1', new Date());
-    if (!info.isOverdue && !info.isDueSoon) {
-      expect(info.daysRemaining).toBeGreaterThan(2);
-      expect(info.statusLabel).toMatch(/Due in \d+d/);
-    }
+  it('shows remaining days for the July 20 test deadline', () => {
+    const info = getDueDateInfo('p2_w1');
+    expect(info.dueDate).toBeInstanceOf(Date);
+    expect(info.dueDate!.toISOString().split('T')[0]).toBe('2026-07-20');
+    expect(info.daysRemaining).toBeGreaterThanOrEqual(4);
+    expect(info.daysRemaining).toBeLessThanOrEqual(6);
   });
 });

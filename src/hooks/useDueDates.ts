@@ -19,11 +19,11 @@ type DueDateMap = Record<string, string>;
 
 /**
  * Default due date offsets (in days from phase start) for each worksheet.
- * Phase 1 starts at Day 1, Phase 2 at Day 31, Phase 3 at Day 61.
+ * NOTE (July 2026): These offsets are currently IGNORED — all worksheets
+ * use a hardcoded test deadline (see calculateDueDate). To revert: delete
+ * the TODO_TEST_DEADLINE early-return below.
  */
 const DEFAULT_DUE_OFFSETS: Record<string, number> = {
-  // Phase 1 — offsets IGNORED; all Phase 1 worksheets use a hardcoded
-  // test deadline (July 20, 2026) — see calculateDueDate below.
   p1_w1: 7,    p1_w2: 30,   p1_w3: 14,   p1_w4: 14,
   p1_w5: 14,   p1_w6: 28,   p1_w7: 28,   p1_w8: 28,
   gc1: 30,
@@ -31,30 +31,15 @@ const DEFAULT_DUE_OFFSETS: Record<string, number> = {
   gc2: 60,
   p3_w1: 75,   p3_w2: 75,   p3_w3: 80,   p3_w4: 80,   p3_w5: 85,
   gc3: 90,
-  // FTP Week 1 (due within Week 1 = days 1-7)
   w1_o1: 3,    w1_e1: 5,    w1_o2: 6,
   w1_g1: 7,
-  // FTP Week 2 (due within Week 2 = days 8-14)
   w2_e1: 10,   w2_c3: 12,   w2_d2: 13,   w2_b1: 13,   w2_o1: 14,
   w2_g1: 14,
-  // FTP Week 3 (due within Week 3 = days 15-21)
   w3_d1: 16,   w3_d2: 17,   w3_e1: 19,   w3_b1: 20,
   w3_g1: 21,
-  // FTP Week 4 (due within Week 4 = days 22-28)
   w4_d2: 24,   w4_e1: 25,   w4_o1: 27,   w4_b1: 28,
   w4_g1: 28,
 };
-
-// ─── Temporary Hardcoded Phase 1 Deadline (July 15–20 test window) ───────
-// All Phase 1 worksheets share a single deadline of July 20, 2026.
-// This is a TEST override — revert this block and the early-return in
-// calculateDueDate when the real phase-based offset logic is needed again.
-const PHASE1_DEADLINE = new Date('2026-07-20');
-const PHASE1_WS_IDS = new Set([
-  'p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8',
-  'gc1',
-  'w1_o1', 'w1_e1', 'w1_o2', 'w1_g1',
-]);
 
 // ─── Helpers ────────────────────────────────────────────
 
@@ -83,23 +68,26 @@ function getToday(): Date {
 /**
  * Calculate the due date for a worksheet based on a reference start date.
  *
- * TEMP (July 2026): All Phase 1 worksheets return July 20, 2026 —
- * a hardcoded test deadline for the 20-person pilot. Revert as soon
- * as real phase-based offset logic is needed.
+ * === TEMP (July 2026): ALL worksheets due July 20 — pilot test override ===
+ * To revert: delete the 4-line block below marked "TEMP OVERRIDE" and
+ * uncomment the "Original offset logic" block.
  */
 export function calculateDueDate(worksheetId: string, startDate: Date | null = null): Date | null {
-  // TEMP: Phase 1 hardcoded deadline (July 20, 2026)
-  if (PHASE1_WS_IDS.has(worksheetId)) {
-    return new Date(PHASE1_DEADLINE);
-  }
+  void startDate; void getDefaultStartDate; // keep refs alive for original logic
 
+  // ── TEMP OVERRIDE – delete these 5 lines when pilot ends (then uncomment below) ──
+  if (DEFAULT_DUE_OFFSETS[worksheetId]) return new Date('2026-07-20');
+  return null;
+
+  // ── Original offset logic (uncomment & remove the 5 lines above) ──
+  /*
   const offset = DEFAULT_DUE_OFFSETS[worksheetId];
   if (!offset) return null;
-
   const base = startDate || getDefaultStartDate();
   const dueDate = new Date(base);
   dueDate.setDate(dueDate.getDate() + offset);
   return dueDate;
+  */
 }
 
 /**
