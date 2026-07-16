@@ -6,10 +6,12 @@ import { unwrap } from '../api/db';
 import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
   CheckCircle2, Clock, AlertCircle, FileText, RefreshCw, LucideIcon,
+  UserCheck, Shield,
 } from 'lucide-react';
 import { t } from '../config/theme';
 import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
 import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
+import type { UserProfile } from '../types/supabase';
 import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 
 /** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
@@ -41,11 +43,14 @@ interface StatusInfo {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [buddyProfile, setBuddyProfile] = useState<UserProfile | null>(null);
+  const [managerProfile, setManagerProfile] = useState<UserProfile | null>(null);
+  const [supportLoading, setSupportLoading] = useState(true);
 
   const loadSubmissions = useCallback(async () => {
     if (!user?.id) return;
@@ -66,6 +71,40 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, [user?.id]);
+
+  // ── Fetch buddy & manager profiles ────────────────────────────
+  useEffect(() => {
+    if (!profile) return;
+    const ids: string[] = [];
+    if (profile.assigned_buddy_id) ids.push(profile.assigned_buddy_id);
+    if (profile.assigned_lead_id) ids.push(profile.assigned_lead_id);
+
+    if (ids.length === 0) {
+      setSupportLoading(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const data = await supabase
+          .from('user_profiles')
+          .select('id, full_name, email, role')
+          .in('id', ids)
+          .then(unwrap);
+        const profiles = data as UserProfile[];
+        if (profile.assigned_buddy_id) {
+          setBuddyProfile(profiles.find(p => p.id === profile.assigned_buddy_id) ?? null);
+        }
+        if (profile.assigned_lead_id) {
+          setManagerProfile(profiles.find(p => p.id === profile.assigned_lead_id) ?? null);
+        }
+      } catch (err) {
+        console.error('Failed to load support profiles:', err);
+      } finally {
+        setSupportLoading(false);
+      }
+    })();
+  }, [profile]);
 
   useEffect(() => {
     if (user?.id) loadSubmissions();
@@ -242,6 +281,102 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+
+        {/* Your Support Team — Buddy & Manager */}
+        {(buddyProfile || managerProfile) && !supportLoading && (
+          <div style={{
+            marginBottom: '2.5rem',
+            padding: '1.5rem 0',
+            borderTop: '1px solid rgba(26, 26, 26, 0.12)',
+            borderBottom: '1px solid rgba(26, 26, 26, 0.12)',
+          }}>
+            <span style={{
+              fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
+              letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
+              display: 'block', marginBottom: '1rem',
+            }}>
+              Your Support Team
+            </span>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+              {buddyProfile && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '1rem 1.25rem',
+                  border: '1px solid rgba(26, 26, 26, 0.12)',
+                  flex: '1 1 200px',
+                  animation: 'luxFadeIn 0.5s forwards',
+                }}>
+                  <div style={{
+                    width: '40px', height: '40px',
+                    border: '1px solid var(--color-charcoal)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <UserCheck size={18} strokeWidth={1.5} style={{ color: t.info }} />
+                  </div>
+                  <div>
+                    <span style={{
+                      fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                      color: t.info, display: 'block', marginBottom: '2px',
+                    }}>
+                      Buddy / Mentor
+                    </span>
+                    <span style={{
+                      fontFamily: t.heading, fontSize: '0.95rem',
+                      fontWeight: 400, color: t.ch, display: 'block',
+                    }}>
+                      {buddyProfile.full_name || 'Buddy'}
+                    </span>
+                    <span style={{
+                      fontFamily: t.body, fontSize: '0.65rem',
+                      color: t.wg, display: 'block', marginTop: '2px',
+                    }}>
+                      {buddyProfile.email || ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {managerProfile && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '1rem 1.25rem',
+                  border: '1px solid rgba(26, 26, 26, 0.12)',
+                  flex: '1 1 200px',
+                  animation: 'luxFadeIn 0.5s 0.15s forwards', opacity: 0,
+                }}>
+                  <div style={{
+                    width: '40px', height: '40px',
+                    border: '1px solid var(--color-charcoal)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Shield size={18} strokeWidth={1.5} style={{ color: t.purple }} />
+                  </div>
+                  <div>
+                    <span style={{
+                      fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                      color: t.purple, display: 'block', marginBottom: '2px',
+                    }}>
+                      Manager
+                    </span>
+                    <span style={{
+                      fontFamily: t.heading, fontSize: '0.95rem',
+                      fontWeight: 400, color: t.ch, display: 'block',
+                    }}>
+                      {managerProfile.full_name || 'Manager'}
+                    </span>
+                    <span style={{
+                      fontFamily: t.body, fontSize: '0.65rem',
+                      color: t.wg, display: 'block', marginTop: '2px',
+                    }}>
+                      {managerProfile.email || ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Overall Progress */}
         {submissions.length > 0 && (
