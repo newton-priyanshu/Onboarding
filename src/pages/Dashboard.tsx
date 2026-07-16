@@ -86,12 +86,11 @@ export default function Dashboard() {
 
     (async () => {
       try {
-        const data = await supabase
-          .from('user_profiles')
-          .select('id, full_name, email, role')
-          .in('id', ids)
-          .then(unwrap);
-        const profiles = data as UserProfile[];
+        const { data, error } = await supabase.rpc('get_buddy_manager_names', {
+          p_user_ids: ids,
+        });
+        if (error) throw error;
+        const profiles = (data || []) as UserProfile[];
         if (profile.assigned_buddy_id) {
           setBuddyProfile(profiles.find(p => p.id === profile.assigned_buddy_id) ?? null);
         }
