@@ -10,6 +10,7 @@ import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import PhasesReadyTab from '../components/admin/PhasesReadyTab';
 import AssignmentsTab from '../components/admin/AssignmentsTab';
+import RosterTab from '../components/admin/RosterTab';
 import { SkeletonCard } from '../components/Skeleton';
 
 
@@ -224,6 +225,7 @@ export default function AdminDashboard() {
 
   const tabs: TabItem[] = [
     { id: 'overview', label: `Overview` },
+    { id: 'roster', label: `Roster (${instructors.length})` },
     { id: 'pending_review', label: `Phases Ready (${totalReadyPhases > 0 ? totalReadyPhases : '0'})` },
     ...(canAssign ? [{ id: 'assignments' as const, label: 'Assignments' }] : []),
   ];
@@ -391,6 +393,9 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+
+        {/* Roster Tab — Joinee list with buddy/manager assignments */}
+        {activeTab === 'roster' && <RosterTab instructors={instructors} buddyProfiles={allBuddyProfiles} />}
 
         {/* Pending Review Tab — Phases Ready for Manager */}
         {activeTab === 'pending_review' && <PhasesReadyTab allWorksheets={allWorksheets} instructors={instructors} isManager={isManager} />}
