@@ -345,6 +345,8 @@ export default function AdminDashboard() {
                             {[1, 2, 3].map(phaseNum => {
                               const p = getPhaseProgress(instr.id, phaseNum);
                               const phaseReady = readyPhases.includes(phaseNum);
+                              const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+                              const hasSubmissions = allWorksheets.some(w => w.user_id === instr.id && wsList.includes(w.worksheet_id));
                               return (
                                 <div key={phaseNum} style={{ minWidth: '80px' }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -357,14 +359,19 @@ export default function AdminDashboard() {
                                   <div className="lux-progress" style={{ height: '2px' }}>
                                     <div className="lux-progress-fill" style={{ width: `${p.pct}%`, background: phaseReady ? t.purple : p.pct === 100 ? t.success : t.ch }} />
                                   </div>
-                                  {phaseReady && isManager && (
+                                  {/* Academic head: always show navigation when phase has submissions */}
+                                  {isManager && hasSubmissions && (
                                     <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/review-phase/${instr.id}/${phaseNum}`); }}
                                       style={{
                                         fontFamily: t.body, fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.1em',
-                                        marginTop: '4px', padding: '2px 6px', background: t.purple, color: '#FFF',
-                                        border: 'none', cursor: 'pointer', width: '100%',
+                                        marginTop: '4px', padding: '2px 6px',
+                                        background: phaseReady ? t.purple : 'transparent',
+                                        color: phaseReady ? '#FFF' : t.ch,
+                                        border: `1px solid ${phaseReady ? t.purple : t.ch}`,
+                                        cursor: 'pointer', width: '100%',
+                                        transition: 'all 200ms ' + t.ease,
                                       }}>
-                                      Review Phase
+                                      {phaseReady ? 'Approve Phase' : 'View Phase'}
                                     </button>
                                   )}
                                   {phaseReady && isOnboardingLead && (
