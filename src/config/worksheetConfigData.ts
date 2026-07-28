@@ -691,9 +691,12 @@ interface PhaseReviewResult {
 export function getPhaseReviewStatus(
   phaseNum: number,
   submissions: WorksheetSubmission[],
-  userId: string
+  userId: string,
+  template?: OnboardingTemplate | null
 ): PhaseReviewResult {
-  const wsList = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+  const wsList = template
+    ? getPhaseWorksheetIds(phaseNum, template)
+    : (PHASE_WORKSHEETS_MAP[phaseNum] || []);
   const userSubs = submissions.filter(s => s.user_id === userId);
   const total = wsList.length;
   let buddyApproved = 0;
@@ -772,9 +775,12 @@ export function getReviewerLabel(worksheetId: string, template?: OnboardingTempl
 export function isPhaseApproved(
   userId: string,
   phaseNum: number,
-  submissions: WorksheetSubmission[]
+  submissions: WorksheetSubmission[],
+  template?: OnboardingTemplate | null
 ): boolean {
-  const wsIds = PHASE_WORKSHEETS_MAP[phaseNum] || [];
+  const wsIds = template
+    ? getPhaseWorksheetIds(phaseNum, template)
+    : (PHASE_WORKSHEETS_MAP[phaseNum] || []);
   const userSubs = submissions.filter(s => s.user_id === userId);
   return wsIds.every((wsId: string) => {
     const sub = userSubs.find(s => s.worksheet_id === wsId);
@@ -785,8 +791,12 @@ export function isPhaseApproved(
 /**
  * For a given user, get all phases that are fully manager-approved.
  */
-export function getApprovedPhases(userId: string, submissions: WorksheetSubmission[]): number[] {
-  return [1, 2, 3].filter(p => isPhaseApproved(userId, p, submissions));
+export function getApprovedPhases(
+  userId: string,
+  submissions: WorksheetSubmission[],
+  template?: OnboardingTemplate | null
+): number[] {
+  return [1, 2, 3].filter(p => isPhaseApproved(userId, p, submissions, template));
 }
 
 /**
@@ -795,8 +805,12 @@ export function getApprovedPhases(userId: string, submissions: WorksheetSubmissi
  * - Phase 2 requires Phase 1 to be manager-approved.
  * - Phase 3 requires Phase 1 AND Phase 2 to be manager-approved.
  */
-export function getMaxAccessiblePhase(userId: string, submissions: WorksheetSubmission[]): number {
-  const approved = getApprovedPhases(userId, submissions);
+export function getMaxAccessiblePhase(
+  userId: string,
+  submissions: WorksheetSubmission[],
+  template?: OnboardingTemplate | null
+): number {
+  const approved = getApprovedPhases(userId, submissions, template);
   if (approved.includes(1) && approved.includes(2)) return 3;
   if (approved.includes(1)) return 2;
   return 1;
@@ -808,11 +822,12 @@ export function getMaxAccessiblePhase(userId: string, submissions: WorksheetSubm
 export function canAccessPhase(
   userId: string,
   phaseNum: number,
-  submissions: WorksheetSubmission[]
+  submissions: WorksheetSubmission[],
+  template?: OnboardingTemplate | null
 ): boolean {
   if (phaseNum === 1) return true; // Phase 1 always accessible
-  if (phaseNum === 2) return isPhaseApproved(userId, 1, submissions);
-  if (phaseNum === 3) return isPhaseApproved(userId, 1, submissions) && isPhaseApproved(userId, 2, submissions);
+  if (phaseNum === 2) return isPhaseApproved(userId, 1, submissions, template);
+  if (phaseNum === 3) return isPhaseApproved(userId, 1, submissions, template) && isPhaseApproved(userId, 2, submissions, template);
   return false;
 }
 

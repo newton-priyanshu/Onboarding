@@ -8,7 +8,8 @@ import {
   Clock, AlertCircle, FileText, RefreshCw, LucideIcon, Lock,
 } from 'lucide-react';
 import { t } from '../config/theme';
-import { WORKSHEET_NAMES, getDeptPhaseMap, getReviewerType, getDeptApprovedPhases } from '../config/worksheetConfigData';
+import { getWorksheetName, getDeptPhaseMap, getReviewerType, getDeptApprovedPhases } from '../config/worksheetConfigData';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import { REVIEWER_STYLES, type WorksheetSubmission } from '../config/worksheetConfig';
 import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import type { Department } from '../types/supabase';
@@ -60,6 +61,7 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const { template } = useWorksheetTemplate();
 
   const phaseMap = getDeptPhaseMap(dept);
   const phases: PhaseInfo[] = [1, 2, 3].filter((n): n is 1|2|3 => (phaseMap[n]?.length || 0) > 0).map(n => {
@@ -365,7 +367,7 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
                       {wsIds.map((wsId, i) => {
                         const ws = getWorksheetStatus(wsId);
                         const StatusIcon = ws.icon;
-                        const reviewerType = getReviewerType(wsId);
+                        const reviewerType = getReviewerType(wsId, template);
                         const reviewerStyle = REVIEWER_STYLES[reviewerType as keyof typeof REVIEWER_STYLES];
                         return (
                           <div
@@ -392,7 +394,7 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
                             ) : (
                               <div style={{ width: '10px', height: '10px', border: '1px solid ' + ws.color, flexShrink: 0 }} />
                             )}
-                            <span style={{ flex: 1 }}>{WORKSHEET_NAMES[wsId] || wsId}</span>
+                            <span style={{ flex: 1 }}>{getWorksheetName(wsId, template)}</span>
                             {reviewerStyle && (
                               <span style={{
                                 fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.15em',

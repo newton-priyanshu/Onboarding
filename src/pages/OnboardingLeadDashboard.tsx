@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, Eye, AlertCircle, LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
@@ -32,6 +33,7 @@ interface StatItem {
 export default function OnboardingLeadDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { template } = useWorksheetTemplate();
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +142,7 @@ export default function OnboardingLeadDashboard() {
       if (viewMode === 'no_submissions') return userSubs.length === 0;
       if (viewMode === 'phase_ready') {
         for (const p of [1, 2, 3]) {
-          if (getPhaseReviewStatus(p, allWorksheets, instr.id).ready) return true;
+          if (getPhaseReviewStatus(p, allWorksheets, instr.id, template).ready) return true;
         }
         return false;
       }
@@ -153,7 +155,7 @@ export default function OnboardingLeadDashboard() {
       const wsIds = PHASE_WORKSHEETS_MAP[p] || [];
       const userSubs = allWorksheets.filter(w => w.user_id === userId && wsIds.includes(w.worksheet_id));
       const buddyApproved = userSubs.filter(s => s.review_status === REVIEW_STATUS.BUDDY_APPROVED || s.review_status === REVIEW_STATUS.APPROVED).length;
-      return { phase: p, total: wsIds.length, done: buddyApproved, ready: getPhaseReviewStatus(p, allWorksheets, userId).ready };
+      return { phase: p, total: wsIds.length, done: buddyApproved, ready: getPhaseReviewStatus(p, allWorksheets, userId, template).ready };
     });
   };
 

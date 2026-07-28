@@ -5,6 +5,7 @@ import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, AlertCircle, type LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
@@ -53,6 +54,7 @@ interface StatItem {
 export default function AdminDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { template } = useWorksheetTemplate();
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [, setLeadInstructors] = useState<BuddyProfile[]>([]);
   const [allBuddyProfiles, setAllBuddyProfiles] = useState<BuddyProfile[]>([]);
@@ -179,7 +181,7 @@ export default function AdminDashboard() {
   const getReadyPhases = (userId: string): number[] => {
     const ready: number[] = [];
     for (const phaseNum of [1, 2, 3]) {
-      const status = getPhaseReviewStatus(phaseNum, allWorksheets, userId);
+      const status = getPhaseReviewStatus(phaseNum, allWorksheets, userId, template);
       if (status.ready) ready.push(phaseNum);
     }
     return ready;
@@ -218,7 +220,7 @@ export default function AdminDashboard() {
   // Count actual phases ready (across all instructors)
   const totalReadyPhases = instructors.reduce((count, instr) => {
     for (const phaseNum of [1, 2, 3]) {
-      if (getPhaseReviewStatus(phaseNum, allWorksheets, instr.id).ready) count++;
+      if (getPhaseReviewStatus(phaseNum, allWorksheets, instr.id, template).ready) count++;
     }
     return count;
   }, 0);

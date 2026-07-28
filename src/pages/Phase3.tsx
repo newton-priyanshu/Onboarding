@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
 import { REVIEWER_LABELS, REVIEWER_STYLES, canAccessPhase, type WorksheetSubmission } from '../config/worksheetConfig';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
 import { countCompleted } from '../utils/worksheetHelpers';
 
@@ -67,6 +68,7 @@ function PhaseLockedView({ phaseNum, previousPhaseNum, navigate }: PhaseLockedVi
 export default function Phase3() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { template } = useWorksheetTemplate();
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
   const [allSubmissions, setAllSubmissions] = useState<WorksheetSubmission[]>([]);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -116,7 +118,7 @@ export default function Phase3() {
     );
   }
 
-  if (!checkingAccess && !canAccessPhase(user?.id || '', 3, allSubmissions)) {
+  if (!checkingAccess && !canAccessPhase(user?.id || '', 3, allSubmissions, template)) {
     return <PhaseLockedView phaseNum={3} previousPhaseNum={2} navigate={navigate} />;
   }
 

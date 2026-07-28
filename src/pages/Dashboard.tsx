@@ -9,7 +9,8 @@ import {
   UserCheck, Shield,
 } from 'lucide-react';
 import { t } from '../config/theme';
-import { WORKSHEET_NAMES, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { getWorksheetName, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import type { UserProfile } from '../types/supabase';
 import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
@@ -45,6 +46,7 @@ interface StatusInfo {
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const { template } = useWorksheetTemplate();
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -533,7 +535,7 @@ export default function Dashboard() {
                             ) : (
                               <div style={{ width: '10px', height: '10px', border: '1px solid ' + ws.color, flexShrink: 0 }} />
                             )}
-                            <span style={{ flex: 1 }}>{WORKSHEET_NAMES[wsId] || wsId}</span>
+                            <span style={{ flex: 1 }}>{getWorksheetName(wsId, template)}</span>
                             <ReviewerBadge worksheetId={wsId} />
                             <span style={{ fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: ws.color, whiteSpace: 'nowrap' }}>
                               {ws.label}

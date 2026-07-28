@@ -286,6 +286,16 @@ export default function Navbar({ progress }: NavbarProps) {
                             {currentCampus.name}
                           </span>
                         )}
+                        {profile?.department && (
+                          <span className="lux-badge" style={{
+                            fontSize: '0.6rem',
+                            color: profile.department === 'progression' ? '#2E7D32' : profile.department === 'operations' ? '#7B1FA2' : '#006494',
+                            border: '1px solid ' + (profile.department === 'progression' ? 'rgba(46,125,50,0.3)' : profile.department === 'operations' ? 'rgba(123,31,162,0.3)' : 'rgba(0,100,148,0.3)'),
+                            background: (profile.department === 'progression' ? 'rgba(46,125,50,0.08)' : profile.department === 'operations' ? 'rgba(123,31,162,0.08)' : 'rgba(0,100,148,0.08)'),
+                          }}>
+                            {profile.department}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {role === 'super_admin' && (

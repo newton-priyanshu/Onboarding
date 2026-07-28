@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { CheckCircle2, ArrowLeft, Shield, User, Clock, Eye, ThumbsUp, ThumbsDown, RefreshCw, AlertCircle, LucideIcon } from 'lucide-react';
-import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO, PHASE_LABELS, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO, getPhaseLabel, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import ReviewContent from '../components/ReviewContent';
 import { checkAndPromote } from '../hooks/useAutoPromote';
 import { useToast } from '../components/Toast';
@@ -39,6 +40,7 @@ export default function PhaseReview() {
   const phaseNum = params.phaseNum;
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { template } = useWorksheetTemplate();
   const { showToast } = useToast();
   const [instructor, setInstructor] = useState<UserProfile | null>(null);
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
@@ -63,7 +65,7 @@ export default function PhaseReview() {
   const isManager = profile?.role === 'academic_head';
   const isOnboardingLead = profile?.role === 'onboarding_lead';
   const wsList = PHASE_WORKSHEETS_MAP[phaseNumber] || [];
-  const phaseLabel = PHASE_LABELS[phaseNumber] || { title: `Phase ${phaseNumber}`, days: '' };
+  const phaseLabel = getPhaseLabel(phaseNumber, template);
 
   const loadData = useCallback(async () => {
     setLoading(true);
