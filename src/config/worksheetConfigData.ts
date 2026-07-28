@@ -476,6 +476,22 @@ export const WORKSHEET_REVIEWER: Record<string, ReviewerType> = {
   w4_o1: 'buddy',
   w4_b1: 'buddy',
   w4_g1: 'buddy',
+  // Progression Department — all reviewed by buddy
+  pr_p1_w1: 'buddy', pr_p1_w2: 'buddy', pr_p1_w3: 'buddy',
+  pr_p1_w4: 'buddy', pr_p1_w5: 'buddy', pr_p1_w6: 'buddy',
+  pr_gc1: 'buddy',
+  pr_p2_w1: 'buddy', pr_p2_w2: 'buddy', pr_p2_w3: 'buddy',
+  pr_gc2: 'buddy',
+  pr_p3_w1: 'buddy', pr_p3_w2: 'buddy', pr_p3_w3: 'buddy', pr_p3_w4: 'buddy',
+  pr_gc3: 'buddy',
+  // Operations Department — all reviewed by buddy
+  op_p1_w1: 'buddy', op_p1_w2: 'buddy', op_p1_w3: 'buddy',
+  op_p1_w4: 'buddy', op_p1_w5: 'buddy', op_p1_w6: 'buddy',
+  op_gc1: 'buddy',
+  op_p2_w1: 'buddy', op_p2_w2: 'buddy', op_p2_w3: 'buddy',
+  op_gc2: 'buddy',
+  op_p3_w1: 'buddy', op_p3_w2: 'buddy', op_p3_w3: 'buddy', op_p3_w4: 'buddy',
+  op_gc3: 'buddy',
 };
 
 /** Human-readable reviewer labels */
@@ -549,6 +565,70 @@ export const ALL_WORKSHEETS: Record<string, PhaseGroup> = {
       { id: 'gc3', title: 'Gate Control 3 — 90-Day Review', reviewer: 'buddy', color: t.pending, isGate: true },
     ],
   },
+  // Progression Department
+  'Progression Phase 1': {
+    num: 1,
+    sheets: [
+      { id: 'pr_p1_w1', title: 'Progress Tracking Systems Overview', reviewer: 'buddy', color: '#2E7D32' },
+      { id: 'pr_p1_w2', title: 'Assessment Types & Blueprints', reviewer: 'buddy', color: '#388E3C' },
+      { id: 'pr_p1_w3', title: 'Data Interpretation & Analysis', reviewer: 'buddy', color: '#43A047' },
+      { id: 'pr_p1_w4', title: 'Student Outcome Metrics & KPIs', reviewer: 'buddy', color: '#2E7D32' },
+      { id: 'pr_p1_w5', title: 'Weekly Progress Observation Log', reviewer: 'buddy', color: '#388E3C' },
+      { id: 'pr_p1_w6', title: 'Progression Tools Platform Walkthrough', reviewer: 'buddy', color: '#43A047' },
+      { id: 'pr_gc1', title: 'Gate Control 1 — Progression Phase 1 Review', reviewer: 'buddy', color: '#1B5E20', isGate: true },
+    ],
+  },
+  'Progression Phase 2': {
+    num: 2,
+    sheets: [
+      { id: 'pr_p2_w1', title: 'Advanced Assessment Design & Rubrics', reviewer: 'buddy', color: '#2E7D32' },
+      { id: 'pr_p2_w2', title: 'Progress Report Generation & Analysis', reviewer: 'buddy', color: '#388E3C' },
+      { id: 'pr_p2_w3', title: 'Intervention Strategy & Remediation', reviewer: 'buddy', color: '#43A047' },
+      { id: 'pr_gc2', title: 'Gate Control 2 — Progression Phase 2 Review', reviewer: 'buddy', color: '#1B5E20', isGate: true },
+    ],
+  },
+  'Progression Phase 3': {
+    num: 3,
+    sheets: [
+      { id: 'pr_p3_w1', title: 'End-to-End Assessment Cycle', reviewer: 'buddy', color: '#2E7D32' },
+      { id: 'pr_p3_w2', title: 'Cohort Analysis & Insights', reviewer: 'buddy', color: '#388E3C' },
+      { id: 'pr_p3_w3', title: 'Performance Prediction & Modeling', reviewer: 'buddy', color: '#43A047' },
+      { id: 'pr_p3_w4', title: 'QA & Continuous Improvement Plan', reviewer: 'buddy', color: '#2E7D32' },
+      { id: 'pr_gc3', title: 'Gate Control 3 — Progression Phase 3 Review', reviewer: 'buddy', color: '#1B5E20', isGate: true },
+    ],
+  },
+  // Operations Department
+  'Operations Phase 1': {
+    num: 1,
+    sheets: [
+      { id: 'op_p1_w1', title: 'Campus Operations Overview', reviewer: 'buddy', color: '#7B1FA2' },
+      { id: 'op_p1_w2', title: 'Scheduling Systems & Calendar Mgmt', reviewer: 'buddy', color: '#8E24AA' },
+      { id: 'op_p1_w3', title: 'Resource & Inventory Management', reviewer: 'buddy', color: '#9C27B0' },
+      { id: 'op_p1_w4', title: 'Compliance, Documentation & Audits', reviewer: 'buddy', color: '#7B1FA2' },
+      { id: 'op_p1_w5', title: 'Vendor & Stakeholder Mapping', reviewer: 'buddy', color: '#8E24AA' },
+      { id: 'op_p1_w6', title: 'Operations Tools Platform Walkthrough', reviewer: 'buddy', color: '#9C27B0' },
+      { id: 'op_gc1', title: 'Gate Control 1 — Operations Phase 1 Review', reviewer: 'buddy', color: '#4A148C', isGate: true },
+    ],
+  },
+  'Operations Phase 2': {
+    num: 2,
+    sheets: [
+      { id: 'op_p2_w1', title: 'Advanced Scheduling & Logistics', reviewer: 'buddy', color: '#7B1FA2' },
+      { id: 'op_p2_w2', title: 'Process Optimization & Workflows', reviewer: 'buddy', color: '#8E24AA' },
+      { id: 'op_p2_w3', title: 'Budget Planning & Resource Allocation', reviewer: 'buddy', color: '#9C27B0' },
+      { id: 'op_gc2', title: 'Gate Control 2 — Operations Phase 2 Review', reviewer: 'buddy', color: '#4A148C', isGate: true },
+    ],
+  },
+  'Operations Phase 3': {
+    num: 3,
+    sheets: [
+      { id: 'op_p3_w1', title: 'Operations Audit & Improvement', reviewer: 'buddy', color: '#7B1FA2' },
+      { id: 'op_p3_w2', title: 'Crisis Management & Contingency', reviewer: 'buddy', color: '#8E24AA' },
+      { id: 'op_p3_w3', title: 'Leadership & Delegation Frameworks', reviewer: 'buddy', color: '#9C27B0' },
+      { id: 'op_p3_w4', title: 'Strategic Operations Roadmap', reviewer: 'buddy', color: '#7B1FA2' },
+      { id: 'op_gc3', title: 'Gate Control 3 — Operations Phase 3 Review', reviewer: 'buddy', color: '#4A148C', isGate: true },
+    ],
+  },
 };
 
 
@@ -576,6 +656,27 @@ export const PHASE_WORKSHEETS_MAP: Record<number, WorksheetId[]> = {
   2: ['p2_w1', 'p2_w2', 'p2_w3', 'p2_w4', 'gc2'],
   3: ['p3_w1', 'p3_w2', 'p3_w3', 'p3_w4', 'p3_w5', 'gc3'],
 };
+
+/** Progression Department — Phase worksheet IDs */
+export const PR_PHASE_WORKSHEETS_MAP: Record<number, string[]> = {
+  1: ['pr_p1_w1', 'pr_p1_w2', 'pr_p1_w3', 'pr_p1_w4', 'pr_p1_w5', 'pr_p1_w6', 'pr_gc1'],
+  2: ['pr_p2_w1', 'pr_p2_w2', 'pr_p2_w3', 'pr_gc2'],
+  3: ['pr_p3_w1', 'pr_p3_w2', 'pr_p3_w3', 'pr_p3_w4', 'pr_gc3'],
+};
+
+/** Operations Department — Phase worksheet IDs */
+export const OP_PHASE_WORKSHEETS_MAP: Record<number, string[]> = {
+  1: ['op_p1_w1', 'op_p1_w2', 'op_p1_w3', 'op_p1_w4', 'op_p1_w5', 'op_p1_w6', 'op_gc1'],
+  2: ['op_p2_w1', 'op_p2_w2', 'op_p2_w3', 'op_gc2'],
+  3: ['op_p3_w1', 'op_p3_w2', 'op_p3_w3', 'op_p3_w4', 'op_gc3'],
+};
+
+/** Get department-specific phase worksheet map */
+export function getDeptPhaseMap(dept: string): Record<number, string[]> {
+  if (dept === 'progression') return PR_PHASE_WORKSHEETS_MAP;
+  if (dept === 'operations') return OP_PHASE_WORKSHEETS_MAP;
+  return PHASE_WORKSHEETS_MAP as unknown as Record<number, string[]>;
+}
 
 interface PhaseReviewResult {
   ready: boolean;
@@ -741,6 +842,26 @@ export const WORKSHEET_NAMES: Record<string, string> = {
   w4_d2: 'Co-Teach / Mock', w4_e1: 'Post-Contest Analysis',
   w4_o1: 'Pre-Semester Checklist', w4_b1: 'Why We Reflect',
   w4_g1: 'Gate 4 - Independence',
+  // Progression Department
+  pr_p1_w1: 'Progress Tracking Systems', pr_p1_w2: 'Assessment Blueprints',
+  pr_p1_w3: 'Data Analysis Basics', pr_p1_w4: 'Student Outcome Metrics',
+  pr_p1_w5: 'Progress Observation Log', pr_p1_w6: 'Progression Tools',
+  pr_gc1: 'Gate 1 - Progression',
+  pr_p2_w1: 'Advanced Assessment Design', pr_p2_w2: 'Progress Reports',
+  pr_p2_w3: 'Intervention Strategy', pr_gc2: 'Gate 2 - Progression',
+  pr_p3_w1: 'Assessment Cycle Management', pr_p3_w2: 'Cohort Analysis',
+  pr_p3_w3: 'Performance Prediction', pr_p3_w4: 'Quality Assurance Plan',
+  pr_gc3: 'Gate 3 - Progression',
+  // Operations Department
+  op_p1_w1: 'Campus Ops Overview', op_p1_w2: 'Scheduling Systems',
+  op_p1_w3: 'Resource Management', op_p1_w4: 'Compliance & Audit',
+  op_p1_w5: 'Vendor Mapping', op_p1_w6: 'Ops Tools',
+  op_gc1: 'Gate 1 - Operations',
+  op_p2_w1: 'Advanced Scheduling', op_p2_w2: 'Process Optimization',
+  op_p2_w3: 'Budget Planning', op_gc2: 'Gate 2 - Operations',
+  op_p3_w1: 'Ops Audit & Improvement', op_p3_w2: 'Crisis Management',
+  op_p3_w3: 'Leadership Frameworks', op_p3_w4: 'Strategic Ops Roadmap',
+  op_gc3: 'Gate 3 - Operations',
 };
 
 // ─── Template-Aware Lookup Helpers ────────────────────────
@@ -902,4 +1023,42 @@ export const WORKSHEET_INFO: Record<string, { title: string; phase: string }> = 
   w4_o1: { title: 'Pre-Semester Checklist & Sign-off', phase: 'Week 4 — Independence' },
   w4_b1: { title: 'Why We Reflect — Commitment Ceremony', phase: 'Week 4 — Independence' },
   w4_g1: { title: 'Gate 4 — Independence Readiness Assessment', phase: 'Week 4 — Independence' },
+  // Progression Department — Phase 1
+  pr_p1_w1: { title: 'Progress Tracking Systems Overview', phase: 'Progression Phase 1' },
+  pr_p1_w2: { title: 'Assessment Types & Blueprints', phase: 'Progression Phase 1' },
+  pr_p1_w3: { title: 'Data Interpretation & Analysis Basics', phase: 'Progression Phase 1' },
+  pr_p1_w4: { title: 'Student Outcome Metrics & KPIs', phase: 'Progression Phase 1' },
+  pr_p1_w5: { title: 'Weekly Progress Observation Log', phase: 'Progression Phase 1' },
+  pr_p1_w6: { title: 'Progression Tools Platform Walkthrough', phase: 'Progression Phase 1' },
+  pr_gc1: { title: 'Gate Control 1 — Progression Phase 1 Review', phase: 'Progression Phase 1' },
+  // Progression Department — Phase 2
+  pr_p2_w1: { title: 'Advanced Assessment Design & Rubrics', phase: 'Progression Phase 2' },
+  pr_p2_w2: { title: 'Progress Report Generation & Analysis', phase: 'Progression Phase 2' },
+  pr_p2_w3: { title: 'Intervention Strategy & Remediation Planning', phase: 'Progression Phase 2' },
+  pr_gc2: { title: 'Gate Control 2 — Progression Phase 2 Review', phase: 'Progression Phase 2' },
+  // Progression Department — Phase 3
+  pr_p3_w1: { title: 'End-to-End Assessment Cycle Management', phase: 'Progression Phase 3' },
+  pr_p3_w2: { title: 'Cohort Progress Analysis & Insights', phase: 'Progression Phase 3' },
+  pr_p3_w3: { title: 'Performance Trend Prediction & Modeling', phase: 'Progression Phase 3' },
+  pr_p3_w4: { title: 'Continuous Improvement & Quality Assurance Plan', phase: 'Progression Phase 3' },
+  pr_gc3: { title: 'Gate Control 3 — Progression Phase 3 Review', phase: 'Progression Phase 3' },
+  // Operations Department — Phase 1
+  op_p1_w1: { title: 'Campus Operations Overview & Structure', phase: 'Operations Phase 1' },
+  op_p1_w2: { title: 'Scheduling Systems & Calendar Management', phase: 'Operations Phase 1' },
+  op_p1_w3: { title: 'Resource & Inventory Management', phase: 'Operations Phase 1' },
+  op_p1_w4: { title: 'Compliance, Documentation & Audit Trails', phase: 'Operations Phase 1' },
+  op_p1_w5: { title: 'Vendor & Stakeholder Mapping', phase: 'Operations Phase 1' },
+  op_p1_w6: { title: 'Operations Tools & Platform Walkthrough', phase: 'Operations Phase 1' },
+  op_gc1: { title: 'Gate Control 1 — Operations Phase 1 Review', phase: 'Operations Phase 1' },
+  // Operations Department — Phase 2
+  op_p2_w1: { title: 'Advanced Scheduling & Logistics Coordination', phase: 'Operations Phase 2' },
+  op_p2_w2: { title: 'Process Optimization & Workflow Design', phase: 'Operations Phase 2' },
+  op_p2_w3: { title: 'Budget Planning & Resource Allocation', phase: 'Operations Phase 2' },
+  op_gc2: { title: 'Gate Control 2 — Operations Phase 2 Review', phase: 'Operations Phase 2' },
+  // Operations Department — Phase 3
+  op_p3_w1: { title: 'Operations Audit & Improvement Plan', phase: 'Operations Phase 3' },
+  op_p3_w2: { title: 'Crisis Management & Contingency Planning', phase: 'Operations Phase 3' },
+  op_p3_w3: { title: 'Team Leadership & Delegation Frameworks', phase: 'Operations Phase 3' },
+  op_p3_w4: { title: 'Strategic Operations Roadmap', phase: 'Operations Phase 3' },
+  op_gc3: { title: 'Gate Control 3 — Operations Phase 3 Review', phase: 'Operations Phase 3' },
 };

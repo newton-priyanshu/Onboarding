@@ -85,11 +85,21 @@ export default function Navbar({ progress }: NavbarProps) {
     { path: '/stakeholders', label: 'Stakeholders' },
   ] : [];
 
+  // Department-specific phase links for joinees
+  const dept = profile?.department;
   const joineeLinks: NavLink[] = (role === 'new_joinee' || role === 'lab_instructor') ? [
-    { path: '/phase-1', label: 'Phase 1' },
-    // Phase 2 and 3 are gated — the phase pages themselves handle the lock check.
-    { path: '/phase-2', label: 'Phase 2' },
-    { path: '/phase-3', label: 'Phase 3' },
+    ...(dept && dept !== 'academics'
+      ? [
+          { path: `/${dept}/phase-1`, label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 1` },
+          { path: `/${dept}/phase-2`, label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 2` },
+          { path: `/${dept}/phase-3`, label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 3` },
+        ]
+      : [
+          { path: '/phase-1', label: 'Phase 1' },
+          { path: '/phase-2', label: 'Phase 2' },
+          { path: '/phase-3', label: 'Phase 3' },
+        ]
+    ),
   ] : [];
 
   const allLinks: NavLink[] = [...superAdminLinks, ...roleLinks, ...baseLinks, ...joineeLinks];

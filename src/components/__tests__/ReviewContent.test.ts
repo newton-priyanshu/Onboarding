@@ -2,11 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { FIELD_SECTIONS } from '../../config/reviewContentConfig';
 import { PHASE_WORKSHEETS_MAP, WORKSHEET_INFO } from '../../config/worksheetConfigData';
 
+/**
+ * Department worksheets (Progression/Operations) use a generic
+ * DepartmentWorksheet component instead of FIELD_SECTIONS for
+ * review display, so they are excluded from these structural checks.
+ */
+const DEPT_WS_PREFIXES = ['pr_', 'op_'];
+const isDeptWs = (id: string) => DEPT_WS_PREFIXES.some(p => id.startsWith(p));
+
 describe('FIELD_SECTIONS configuration', () => {
   // ── Structural validation ──────────────────────────────
 
   it('has an entry for every worksheet in PHASE_WORKSHEETS_MAP', () => {
-    const allKnownIds = Object.keys(WORKSHEET_INFO);
+    const allKnownIds = Object.keys(WORKSHEET_INFO).filter(id => !isDeptWs(id));
     const configuredIds = Object.keys(FIELD_SECTIONS);
 
     // Every worksheet should have a FIELD_SECTIONS entry
@@ -21,6 +29,15 @@ describe('FIELD_SECTIONS configuration', () => {
 
     configuredIds.forEach(id => {
       expect(allKnownIds).toContain(id);
+    });
+  });
+
+  it('all department worksheets have WORKSHEET_INFO entries', () => {
+    const deptIds = Object.keys(WORKSHEET_INFO).filter(isDeptWs);
+    expect(deptIds.length).toBeGreaterThan(0);
+    // All dept worksheets should be in WORKSHEET_REVIEWER
+    deptIds.forEach(id => {
+      expect(WORKSHEET_INFO[id]).toBeDefined();
     });
   });
 

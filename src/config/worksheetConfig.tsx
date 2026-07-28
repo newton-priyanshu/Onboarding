@@ -101,6 +101,19 @@ const GateArtifact2 = lazy(() => import('../pages/gate-controls/GateArtifact2'))
 const GateArtifact3 = lazy(() => import('../pages/gate-controls/GateArtifact3'));
 const GateArtifact4 = lazy(() => import('../pages/gate-controls/GateArtifact4'));
 
+// Department worksheet components (shared generic component)
+import DepartmentWorksheet from '../pages/worksheets/DepartmentWorksheet';
+import type { Department } from '../types/supabase';
+
+/** Creates a DepartmentWorksheet wrapper with fixed props */
+function DeptWs(wsId: string, dept: Department, phaseNum: number) {
+  const Ws = function DeptWsInner() {
+    return <DepartmentWorksheet worksheetId={wsId} phase={`${dept}/phase-${phaseNum}`} backTo={`/${dept}/phase-${phaseNum}`} />;
+  };
+  Ws.displayName = `DeptWs_${wsId}`;
+  return Ws;
+}
+
 /**
  * Map of worksheet ID → React component for dynamic worksheet routing.
  *
@@ -127,6 +140,44 @@ export const WORKSHEET_COMPONENTS: Record<string, ComponentType<Record<string, u
   w3_d1: W3D1, w3_d2: W3D2, w3_e1: W3E1, w3_b1: W3B1, w3_g1: GateArtifact3,
   // FTP Week 4
   w4_d2: W4D2, w4_e1: W4E1, w4_o1: W4O1, w4_b1: W4B1, w4_g1: GateArtifact4,
+  // Progression Department — Phase 1
+  pr_p1_w1: DeptWs('pr_p1_w1', 'progression', 1),
+  pr_p1_w2: DeptWs('pr_p1_w2', 'progression', 1),
+  pr_p1_w3: DeptWs('pr_p1_w3', 'progression', 1),
+  pr_p1_w4: DeptWs('pr_p1_w4', 'progression', 1),
+  pr_p1_w5: DeptWs('pr_p1_w5', 'progression', 1),
+  pr_p1_w6: DeptWs('pr_p1_w6', 'progression', 1),
+  pr_gc1: DeptWs('pr_gc1', 'progression', 1),
+  // Progression — Phase 2
+  pr_p2_w1: DeptWs('pr_p2_w1', 'progression', 2),
+  pr_p2_w2: DeptWs('pr_p2_w2', 'progression', 2),
+  pr_p2_w3: DeptWs('pr_p2_w3', 'progression', 2),
+  pr_gc2: DeptWs('pr_gc2', 'progression', 2),
+  // Progression — Phase 3
+  pr_p3_w1: DeptWs('pr_p3_w1', 'progression', 3),
+  pr_p3_w2: DeptWs('pr_p3_w2', 'progression', 3),
+  pr_p3_w3: DeptWs('pr_p3_w3', 'progression', 3),
+  pr_p3_w4: DeptWs('pr_p3_w4', 'progression', 3),
+  pr_gc3: DeptWs('pr_gc3', 'progression', 3),
+  // Operations Department — Phase 1
+  op_p1_w1: DeptWs('op_p1_w1', 'operations', 1),
+  op_p1_w2: DeptWs('op_p1_w2', 'operations', 1),
+  op_p1_w3: DeptWs('op_p1_w3', 'operations', 1),
+  op_p1_w4: DeptWs('op_p1_w4', 'operations', 1),
+  op_p1_w5: DeptWs('op_p1_w5', 'operations', 1),
+  op_p1_w6: DeptWs('op_p1_w6', 'operations', 1),
+  op_gc1: DeptWs('op_gc1', 'operations', 1),
+  // Operations — Phase 2
+  op_p2_w1: DeptWs('op_p2_w1', 'operations', 2),
+  op_p2_w2: DeptWs('op_p2_w2', 'operations', 2),
+  op_p2_w3: DeptWs('op_p2_w3', 'operations', 2),
+  op_gc2: DeptWs('op_gc2', 'operations', 2),
+  // Operations — Phase 3
+  op_p3_w1: DeptWs('op_p3_w1', 'operations', 3),
+  op_p3_w2: DeptWs('op_p3_w2', 'operations', 3),
+  op_p3_w3: DeptWs('op_p3_w3', 'operations', 3),
+  op_p3_w4: DeptWs('op_p3_w4', 'operations', 3),
+  op_gc3: DeptWs('op_gc3', 'operations', 3),
 };
 
 interface ReviewerBadgeProps {

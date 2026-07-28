@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CampusProvider } from './context/CampusContext';
@@ -22,6 +22,7 @@ import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
 import SelectCampus from './pages/SelectCampus';
+import DepartmentPhasePage from './pages/DepartmentPhasePage';
 
 // Lazy-loaded heavy pages (admin/buddy/review routes)
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
@@ -41,6 +42,7 @@ const TemplateDetail = lazy(() => import('./pages/super-admin/TemplateDetail'));
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
 import WeekWorksheetPage from './pages/WeekWorksheetPage';
+import type { Department } from './types/supabase';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -109,15 +111,62 @@ function HomeRoute() {
   return <Dashboard />;
 }
 
+/** Department dashboard — shared for Progression and Operations */
+function DeptDashboard({ dept, label, desc }: { dept: Department; label: string; desc: string }) {
+  const navigate = useNavigate();
+  return (
+    <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
+        <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 400, marginBottom: '0.5rem' }}>{label}</h1>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)', marginBottom: '2rem' }}>{desc}</p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate(`/${dept}/phase-1`)} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content">Phase 1 — Orientation</span>
+          </button>
+          <button onClick={() => navigate(`/${dept}/phase-2`)} className="lux-btn lux-btn-secondary">
+            Phase 2 — Contribution
+          </button>
+          <button onClick={() => navigate(`/${dept}/phase-3`)} className="lux-btn lux-btn-secondary">
+            Phase 3 — Ownership
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Department worksheet wrapper — looks up the component from WORKSHEET_COMPONENTS */
+function DeptWorksheetWrapper(_props: { dept: Department }) {
+  const location = useLocation();
+  const wsId = location.pathname.split('/').pop() || '';
+  const Component = WORKSHEET_COMPONENTS[wsId];
+
+  if (!Component) {
+    return <NotFound />;
+  }
+
+  return (
+    <ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
+      <Suspense fallback={<PageFallback />}>
+        <Component />
+      </Suspense>
+    </ProtectedRoute>
+  );
+}
+
 /** Wraps the routed page content in an ErrorBoundary that resets on route change */
 function AppRoutes() {
   const location = useLocation();
-  // Generate dynamic worksheet routes
+  // Generate dynamic worksheet routes — exclude department-specific worksheets (they have their own routes)
+  const DEPT_PREFIXES = ['pr_', 'op_'];
   const worksheetRoutes = Object.entries(ALL_WORKSHEETS).flatMap(([phaseName, phaseData]) => {
+    // Skip department phase entries (they have explicit routes)
+    if (phaseName.startsWith('Progression') || phaseName.startsWith('Operations')) return [];
     const data = phaseData as PhaseData;
     const phasePath = phaseName.toLowerCase().replace(' ', '-');
     return data.sheets
-      .filter(sheet => !sheet.isGate)
+      .filter(sheet => !sheet.isGate && !DEPT_PREFIXES.some(p => sheet.id.startsWith(p)))
       .map(sheet => {
         const Component = WORKSHEET_COMPONENTS[sheet.id];
         if (!Component) return null;
@@ -166,6 +215,26 @@ function AppRoutes() {
         <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
         <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
         <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
+
+        {/* Department Routes — Progression & Operations */}
+        <Route path="/progression" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
+          <DeptDashboard dept="progression" label="Progression Department" desc="Progress tracking, assessment design, and student outcome analysis" />
+        </ProtectedRoute>} />
+        <Route path="/progression/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={1} /></ProtectedRoute>} />
+        <Route path="/progression/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={2} /></ProtectedRoute>} />
+        <Route path="/progression/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={3} /></ProtectedRoute>} />
+        <Route path="/progression/phase-1/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
+        <Route path="/progression/phase-2/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
+        <Route path="/progression/phase-3/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
+        <Route path="/operations" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
+          <DeptDashboard dept="operations" label="Operations Department" desc="Campus operations, scheduling, compliance, and resource management" />
+        </ProtectedRoute>} />
+        <Route path="/operations/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={1} /></ProtectedRoute>} />
+        <Route path="/operations/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={2} /></ProtectedRoute>} />
+        <Route path="/operations/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={3} /></ProtectedRoute>} />
+        <Route path="/operations/phase-1/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
+        <Route path="/operations/phase-2/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
+        <Route path="/operations/phase-3/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
 
         {/* FTP Week Routes — Week 1 always open, weeks 2+ gated behind prior week completion */}
         <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekPage weekNum={1} /></ProtectedRoute>} />

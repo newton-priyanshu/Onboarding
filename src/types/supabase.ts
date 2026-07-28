@@ -56,7 +56,57 @@ export type WorksheetId =
   // FTP Week 3 — Co-deliver begins
   | 'w3_d1' | 'w3_d2' | 'w3_e1' | 'w3_b1' | 'w3_g1'
   // FTP Week 4 — Co-deliver closes, Independence review
-  | 'w4_d2' | 'w4_e1' | 'w4_o1' | 'w4_b1' | 'w4_g1';
+  | 'w4_d2' | 'w4_e1' | 'w4_o1' | 'w4_b1' | 'w4_g1'
+  // Progression Department — Phase 1 (Orientation)
+  | 'pr_p1_w1' | 'pr_p1_w2' | 'pr_p1_w3' | 'pr_p1_w4' | 'pr_p1_w5' | 'pr_p1_w6'
+  // Progression — Phase 2 (Contribution)
+  | 'pr_p2_w1' | 'pr_p2_w2' | 'pr_p2_w3'
+  // Progression — Phase 3 (Ownership)
+  | 'pr_p3_w1' | 'pr_p3_w2' | 'pr_p3_w3' | 'pr_p3_w4'
+  // Progression — Gate Controls
+  | 'pr_gc1' | 'pr_gc2' | 'pr_gc3'
+  // Operations Department — Phase 1 (Orientation)
+  | 'op_p1_w1' | 'op_p1_w2' | 'op_p1_w3' | 'op_p1_w4' | 'op_p1_w5' | 'op_p1_w6'
+  // Operations — Phase 2 (Contribution)
+  | 'op_p2_w1' | 'op_p2_w2' | 'op_p2_w3'
+  // Operations — Phase 3 (Ownership)
+  | 'op_p3_w1' | 'op_p3_w2' | 'op_p3_w3' | 'op_p3_w4'
+  // Operations — Gate Controls
+  | 'op_gc1' | 'op_gc2' | 'op_gc3';
+
+/** Works for any department-prefixed worksheet ID */
+export function getDepartmentFromWorksheetId(id: string): Department | null {
+  if (id.startsWith('pr_')) return 'progression';
+  if (id.startsWith('op_')) return 'operations';
+  if (id.startsWith('p') || id.startsWith('gc') || id.startsWith('w')) return 'academics';
+  return null;
+}
+
+/** All department worksheet IDs grouped by department */
+export const DEPARTMENT_WORKSHEET_IDS: Record<Department, string[]> = {
+  academics: [
+    'p1_w1', 'p1_w2', 'p1_w3', 'p1_w4', 'p1_w5', 'p1_w6', 'p1_w7', 'p1_w8',
+    'p2_w1', 'p2_w2', 'p2_w3', 'p2_w4',
+    'p3_w1', 'p3_w2', 'p3_w3', 'p3_w4', 'p3_w5',
+    'gc1', 'gc2', 'gc3',
+    'w1_a1', 'w1_o1', 'w1_o2', 'w1_e1', 'w1_g1',
+    'w2_e1', 'w2_c3', 'w2_d2', 'w2_b1', 'w2_o1', 'w2_g1',
+    'w3_d1', 'w3_d2', 'w3_e1', 'w3_b1', 'w3_g1',
+    'w4_d2', 'w4_e1', 'w4_o1', 'w4_b1', 'w4_g1',
+  ],
+  progression: [
+    'pr_p1_w1', 'pr_p1_w2', 'pr_p1_w3', 'pr_p1_w4', 'pr_p1_w5', 'pr_p1_w6',
+    'pr_p2_w1', 'pr_p2_w2', 'pr_p2_w3',
+    'pr_p3_w1', 'pr_p3_w2', 'pr_p3_w3', 'pr_p3_w4',
+    'pr_gc1', 'pr_gc2', 'pr_gc3',
+  ],
+  operations: [
+    'op_p1_w1', 'op_p1_w2', 'op_p1_w3', 'op_p1_w4', 'op_p1_w5', 'op_p1_w6',
+    'op_p2_w1', 'op_p2_w2', 'op_p2_w3',
+    'op_p3_w1', 'op_p3_w2', 'op_p3_w3', 'op_p3_w4',
+    'op_gc1', 'op_gc2', 'op_gc3',
+  ],
+};
 
 // ─── Reviewer Types ──────────────────────────────────────
 export type ReviewerType = 'buddy' | 'manager' | 'onboarding_lead';
