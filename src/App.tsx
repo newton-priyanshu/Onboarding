@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CampusProvider } from './context/CampusContext';
@@ -23,6 +23,8 @@ import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
 import SelectCampus from './pages/SelectCampus';
 import DepartmentPhasePage from './pages/DepartmentPhasePage';
+import DeptDashboard from './pages/DeptDashboard';
+import CampusHeadDashboard from './pages/CampusHeadDashboard';
 
 // Lazy-loaded heavy pages (admin/buddy/review routes)
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
@@ -104,36 +106,21 @@ function HomeRoute() {
     return <Navigate to="/select-campus" replace />;
   }
 
+  // Campus Head → campus head overview dashboard
+  if (profile.role === 'campus_head') {
+    return <CampusHeadDashboard />;
+  }
+
   if (profile.role === 'lead_instructor') {
     return <Navigate to="/buddy" replace />;
   }
 
-  return <Dashboard />;
-}
+  // Department-aware redirect: progression/operations users go to their dept dashboard
+  if (profile.department && profile.department !== 'academics') {
+    return <Navigate to={`/${profile.department}`} replace />;
+  }
 
-/** Department dashboard — shared for Progression and Operations */
-function DeptDashboard({ dept, label, desc }: { dept: Department; label: string; desc: string }) {
-  const navigate = useNavigate();
-  return (
-    <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
-        <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
-        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', fontWeight: 400, marginBottom: '0.5rem' }}>{label}</h1>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--color-warm-grey)', marginBottom: '2rem' }}>{desc}</p>
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => navigate(`/${dept}/phase-1`)} className="lux-btn lux-btn-primary">
-            <span className="gold-overlay" /><span className="btn-content">Phase 1 — Orientation</span>
-          </button>
-          <button onClick={() => navigate(`/${dept}/phase-2`)} className="lux-btn lux-btn-secondary">
-            Phase 2 — Contribution
-          </button>
-          <button onClick={() => navigate(`/${dept}/phase-3`)} className="lux-btn lux-btn-secondary">
-            Phase 3 — Ownership
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return <Dashboard />;
 }
 
 /** Department worksheet wrapper — looks up the component from WORKSHEET_COMPONENTS */
@@ -194,19 +181,19 @@ function AppRoutes() {
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Admin / Lead — wrapped in Suspense for code-splitting */}
-        <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><Suspense fallback={<PageFallback />}><AdminDashboard /></Suspense></ProtectedRoute>} />
-        <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><Suspense fallback={<PageFallback />}><BuddyDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'campus_head', 'progression_head', 'ops_head']}><Suspense fallback={<PageFallback />}><AdminDashboard /></Suspense></ProtectedRoute>} />
+        <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyDashboard /></Suspense></ProtectedRoute>} />
         <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><Suspense fallback={<PageFallback />}><OnboardingLeadDashboard /></Suspense></ProtectedRoute>} />
         {/* Phase Review Routes */}
-        <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
         <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
 
         {/* Buddy Gate Pass Routes */}
-        <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><Suspense fallback={<PageFallback />}><BuddyGatePass /></Suspense></ProtectedRoute>} />
+        <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyGatePass /></Suspense></ProtectedRoute>} />
 
         {/* Individual Worksheet Review Routes */}
-        <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
-        <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+        <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
         <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
 
         {/* Dashboard / Phases */}
@@ -215,6 +202,13 @@ function AppRoutes() {
         <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
         <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
         <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
+
+        {/* Campus Head Route */}
+        <Route path="/campus-head" element={
+          <ProtectedRoute requiredRoles={['campus_head']}>
+            <CampusHeadDashboard />
+          </ProtectedRoute>
+        } />
 
         {/* Department Routes — Progression & Operations */}
         <Route path="/progression" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>

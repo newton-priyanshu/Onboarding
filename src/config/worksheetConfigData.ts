@@ -816,6 +816,70 @@ export function canAccessPhase(
   return false;
 }
 
+// ─── Department-Aware Phase Gating ───────────────────────
+
+/**
+ * Check if a department-specific phase has been fully approved by the manager.
+ * Uses the department's own worksheet map (PR_PHASE_WORKSHEETS_MAP, OP_PHASE_WORKSHEETS_MAP, etc.)
+ */
+export function isDeptPhaseApproved(
+  userId: string,
+  phaseNum: number,
+  submissions: WorksheetSubmission[],
+  dept: string
+): boolean {
+  const phaseMap = getDeptPhaseMap(dept);
+  const wsIds = phaseMap[phaseNum] || [];
+  const userSubs = submissions.filter(s => s.user_id === userId);
+  return wsIds.every((wsId: string) => {
+    const sub = userSubs.find(s => s.worksheet_id === wsId);
+    return sub?.review_status === REVIEW_STATUS.APPROVED;
+  });
+}
+
+/**
+ * Get all department-specific phases that are fully manager-approved.
+ */
+export function getDeptApprovedPhases(
+  userId: string,
+  submissions: WorksheetSubmission[],
+  dept: string
+): number[] {
+  return [1, 2, 3].filter(p => isDeptPhaseApproved(userId, p, submissions, dept));
+}
+
+/**
+ * Check if a joinee can access a department-specific phase.
+ * - Phase 1 always accessible
+ * - Phase 2 requires Phase 1 fully approved
+ * - Phase 3 requires Phase 1 AND 2 fully approved
+ */
+export function canAccessDeptPhase(
+  userId: string,
+  phaseNum: number,
+  submissions: WorksheetSubmission[],
+  dept: string
+): boolean {
+  if (phaseNum === 1) return true;
+  if (phaseNum === 2) return isDeptPhaseApproved(userId, 1, submissions, dept);
+  if (phaseNum === 3) return isDeptPhaseApproved(userId, 1, submissions, dept) && isDeptPhaseApproved(userId, 2, submissions, dept);
+  return false;
+}
+
+/**
+ * Get the highest phase number a joinee can access for a specific department.
+ */
+export function getDeptMaxAccessiblePhase(
+  userId: string,
+  submissions: WorksheetSubmission[],
+  dept: string
+): number {
+  const approved = getDeptApprovedPhases(userId, submissions, dept);
+  if (approved.includes(1) && approved.includes(2)) return 3;
+  if (approved.includes(1)) return 2;
+  return 1;
+}
+
 /**
  * WORKSHEET_NAMES — Short display names for worksheet cards/lists.
  */

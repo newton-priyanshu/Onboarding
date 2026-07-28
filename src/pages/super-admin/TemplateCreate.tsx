@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../api/supabase';
 import { validateTemplateStructure } from '../../api/templates';
+import TemplateBuilder from './templates/TemplateBuilder';
 import type { Campus } from '../../types/supabase';
 
 export default function TemplateCreate() {
@@ -200,28 +201,21 @@ export default function TemplateCreate() {
             />
           </div>
 
-          {/* JSON Structure */}
+          {/* Template Structure — Visual Builder */}
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-charcoal)', marginBottom: '0.5rem' }}>
-              Structure (JSON)
+              Structure
             </label>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', color: 'var(--color-warm-grey)', marginBottom: '0.5rem' }}>
-              Define weeks, phases, and gate artifacts in JSON format. Use the Preview button to validate.
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', color: 'var(--color-warm-grey)', marginBottom: '0.75rem' }}>
+              Define weeks, phases, worksheets, and gate artifacts. Use the Visual Builder or switch to Advanced for raw JSON editing.
             </p>
-            <textarea
-              value={jsonInput}
-              onChange={e => setJsonInput(e.target.value)}
-              rows={15}
-              style={{
-                width: '100%', padding: '12px', boxSizing: 'border-box',
-                border: '1px solid rgba(26,26,26,0.2)', background: 'rgba(26,26,26,0.02)',
-                fontFamily: 'monospace', fontSize: '0.7rem', lineHeight: 1.5,
-                color: 'var(--color-charcoal)', resize: 'vertical',
-              }}
+            <TemplateBuilder
+              jsonInput={jsonInput}
+              onJsonChange={setJsonInput}
             />
             <button type="button" onClick={handlePreview}
               style={{
-                marginTop: '0.5rem', padding: '6px 14px',
+                marginTop: '0.75rem', padding: '6px 14px',
                 border: '1px solid rgba(26,26,26,0.2)', background: 'transparent',
                 cursor: 'pointer', fontFamily: 'var(--font-body)',
                 fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase',

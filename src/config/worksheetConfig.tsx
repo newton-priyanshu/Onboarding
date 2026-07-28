@@ -35,6 +35,10 @@ export {
   getApprovedPhases,
   getMaxAccessiblePhase,
   canAccessPhase,
+  isDeptPhaseApproved,
+  canAccessDeptPhase,
+  getDeptApprovedPhases,
+  getDeptMaxAccessiblePhase,
   WK_WORKSHEETS_MAP,
   // Template-aware lookup helpers
   getWorksheetName,

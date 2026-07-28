@@ -69,9 +69,13 @@ export default function Navbar({ progress }: NavbarProps) {
 
   // Role-specific links
   const roleLinks: NavLink[] = [];
+  if (role === 'campus_head') {
+    roleLinks.push({ path: '/campus-head', label: 'Overview', icon: Shield });
+    roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
+  }
   if (role && (role === 'lead_instructor' || DEPT_HEAD_ROLES.has(role))) roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
   if (role === 'onboarding_lead') roleLinks.push({ path: '/onboarding-lead', label: 'Monitoring', icon: Shield });
-  if (role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead')) roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
+  if (role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && role !== 'campus_head') roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
 
   // Super Admin links
   const superAdminLinks: NavLink[] = (role === 'super_admin') ? [

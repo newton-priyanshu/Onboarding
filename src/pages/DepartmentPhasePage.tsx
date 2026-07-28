@@ -1,7 +1,14 @@
-import { WORKSHEET_NAMES, getDeptPhaseMap } from '../config/worksheetConfigData';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../api/supabase';
+import { unwrap } from '../api/db';
+import { useAuth } from '../context/AuthContext';
+import { WORKSHEET_NAMES, getDeptPhaseMap, canAccessDeptPhase } from '../config/worksheetConfigData';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ClipboardList, Lock } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Lock, AlertCircle, RefreshCw } from 'lucide-react';
 import type { Department } from '../types/supabase';
+import type { WorksheetSubmission } from '../config/worksheetConfig';
+import { t } from '../config/theme';
 
 interface DeptPhasePageProps {
   dept: Department;
@@ -27,11 +34,97 @@ const DEPT_COLORS: Record<string, string> = {
 };
 
 export default function DepartmentPhasePage({ dept, phaseNum }: DeptPhasePageProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [canAccess, setCanAccess] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setCheckingAccess(false);
+      return;
+    }
+    (async () => {
+      try {
+        const data = await supabase
+          .from('worksheet_submissions')
+          .select('worksheet_id, status, review_status, user_id')
+          .eq('user_id', user.id)
+          .then(unwrap);
+        const subs = data.map(s => ({ ...s, user_id: user.id })) as unknown as WorksheetSubmission[];
+        setCanAccess(canAccessDeptPhase(user.id, phaseNum, subs, dept));
+      } catch (err) {
+        console.error('Failed to check phase access:', err);
+        setLoadError('Could not verify phase access.');
+      } finally {
+        setCheckingAccess(false);
+      }
+    })();
+  }, [user?.id, phaseNum, dept]);
+
   const phaseMap = getDeptPhaseMap(dept);
   const wsIds = phaseMap[phaseNum] || [];
   const color = DEPT_COLORS[dept] || 'var(--color-charcoal)';
   const deptLabel = DEPT_LABELS[dept] || dept;
   const phaseTitle = PHASE_TITLES[phaseNum] || `Phase ${phaseNum}`;
+
+  // ── Loading / Error / Locked States ─────────────────────
+  if (checkingAccess) {
+    return (
+      <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="lux-container" style={{ width: '100%', textAlign: 'center' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-warm-grey)' }}>Checking access…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <AlertCircle size={32} strokeWidth={1.5} style={{ color: t.error, marginBottom: '1rem' }} />
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-charcoal)', marginBottom: '0.75rem' }}>
+            Couldn&apos;t Verify Access
+          </h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-warm-grey)', lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
+          <button onClick={() => window.location.reload()} className="lux-btn lux-btn-primary">
+            <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canAccess) {
+    return (
+      <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="lux-container" style={{ textAlign: 'center', maxWidth: '500px' }}>
+          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+          <div style={{ width: '64px', height: '64px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+            <Lock size={28} strokeWidth={1.5} style={{ color: 'var(--color-warm-grey)' }} />
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', fontWeight: 400, color: 'var(--color-charcoal)', marginBottom: '0.75rem' }}>
+            {phaseTitle} Locked
+          </h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-warm-grey)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            Complete and get <strong>all worksheets in Phase {phaseNum - 1}</strong> approved before accessing {phaseTitle}.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => navigate(`/${dept}`)} className="lux-btn lux-btn-primary">
+              <span className="gold-overlay" /><span className="btn-content">Go to Dashboard</span>
+            </button>
+            <button onClick={() => navigate(`/${dept}/phase-${phaseNum - 1}`)} className="lux-btn lux-btn-secondary">
+              Back to Phase {phaseNum - 1}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="lux-section">
