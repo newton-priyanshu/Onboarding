@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, campus_id, created_at, updated_at')
+        .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, campus_id, assigned_template_id, created_at, updated_at')
         .eq('id', userId)
         .single();
 
@@ -97,6 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         assigned_buddy_id: null,
         // Try to resolve campus_id from app_metadata first (server-set), then user_metadata
         campus_id: (appMeta.campus_id as string) || (meta.campus_id as string) || null,
+        // assigned_template_id is set server-side by the auto_assign trigger
+        assigned_template_id: (appMeta.assigned_template_id as string) || null,
         created_at: '',
         updated_at: '',
       });
@@ -143,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         const { data: retryProfile, error: retryError } = await supabase
           .from('user_profiles')
-          .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, campus_id, created_at, updated_at')
+          .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, campus_id, assigned_template_id, created_at, updated_at')
           .eq('id', userId)
           .single();
         if (retryError) {

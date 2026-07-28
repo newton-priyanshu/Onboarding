@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getCampusTemplate } from '../api/templates';
+import { getCampusTemplate, getTemplateById } from '../api/templates';
 import type { OnboardingTemplate } from '../types/supabase';
 
 // ─── Session-level cache ───────────────────────────────
@@ -37,6 +37,9 @@ export interface UseWorksheetTemplateResult {
 
 export function useWorksheetTemplate(): UseWorksheetTemplateResult {
   const { profile } = useAuth();
+  // Prefer assigned_template_id (set server-side by the auto_assign trigger),
+  // fall back to campus_id for dynamic lookup.
+  const assignedTemplateId = profile?.assigned_template_id || null;
   const campusId = profile?.campus_id || null;
 
   const [template, setTemplate] = useState<OnboardingTemplate | null>(
@@ -74,6 +77,18 @@ export function useWorksheetTemplate(): UseWorksheetTemplateResult {
       setError(null);
 
       try {
+        // If the profile already has an assigned_template_id, we can skip
+        // the campus-based lookup and use the assigned template directly.
+        if (assignedTemplateId) {
+          const result = await getTemplateById(assignedTemplateId);
+          if (!active) return;
+          sessionCache = { campusId: campus, template: result, promise: null };
+          setTemplate(result);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
         // Deduplicate: if another component is already fetching for this campus,
         // reuse its in-flight promise so we don't fire duplicate requests.
         if (sessionCache?.campusId === campus && sessionCache.promise) {
@@ -112,7 +127,7 @@ export function useWorksheetTemplate(): UseWorksheetTemplateResult {
     return () => {
       active = false;
     };
-  }, [campusId]);
+  }, [campusId, assignedTemplateId]);
 
   return { template, loading, error };
 }

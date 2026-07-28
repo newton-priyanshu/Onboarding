@@ -175,6 +175,41 @@ export async function getCampusTemplates(campusId: string): Promise<OnboardingTe
 }
 
 /**
+ * Fetch a single onboarding template by its ID.
+ * Checks the cache first, then fetches from Supabase.
+ */
+export async function getTemplateById(templateId: string): Promise<OnboardingTemplate | null> {
+  const cacheKey = `id:${templateId}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const { data, error } = await supabase
+      .from('onboarding_templates')
+      .select('*')
+      .eq('id', templateId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[Templates] Failed to fetch template ${templateId}:`, error?.message || error);
+      return null;
+    }
+
+    if (data) {
+      const template = data as OnboardingTemplate;
+      setCache(cacheKey, template);
+      return template;
+    }
+
+    return null;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[Templates] Failed to fetch template ${templateId}:`, msg);
+    return null;
+  }
+}
+
+/**
  * Invalidate the template cache for a campus.
  */
 export function invalidateTemplateCache(campusId: string): void {

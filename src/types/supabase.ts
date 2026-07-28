@@ -25,6 +25,7 @@ export interface UserProfile {
   assigned_lead_id: string | null;
   assigned_buddy_id: string | null;
   campus_id: string | null;
+  assigned_template_id: string | null;
   created_at: string;
   updated_at: string;
 }
