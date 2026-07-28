@@ -658,7 +658,8 @@ export default function SuperAdminDashboard() {
             {[
               { title: 'Manage Campuses', desc: 'Create, edit, activate/deactivate colleges', path: '/super-admin/campuses', icon: Building, color: '#006494' },
               { title: 'Onboarding Templates', desc: 'Configure weeks, phases, worksheets per campus', path: '/super-admin/templates', icon: FileText, color: '#D4A853' },
-              { title: 'Platform Analytics', desc: 'Detailed cross-campus reports — coming soon', path: '#', icon: BarChart3, color: 'var(--color-warm-grey)', disabled: true },
+              { title: 'Platform Analytics', desc: 'Detailed cross-campus reports and insights', path: '/super-admin/analytics', icon: BarChart3, color: '#1565C0' },
+              { title: 'Audit Log', desc: 'Track all platform changes and user actions', path: '/super-admin/audit-log', icon: Clock, color: '#37474F' },
             ].map(link => {
               const Icon = link.icon;
               return (

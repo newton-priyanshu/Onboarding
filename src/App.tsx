@@ -41,6 +41,9 @@ const CampusManagement = lazy(() => import('./pages/super-admin/CampusManagement
 const TemplateList = lazy(() => import('./pages/super-admin/TemplateList'));
 const TemplateCreate = lazy(() => import('./pages/super-admin/TemplateCreate'));
 const TemplateDetail = lazy(() => import('./pages/super-admin/TemplateDetail'));
+const CampusDetail = lazy(() => import('./pages/super-admin/CampusDetail'));
+const PlatformAnalytics = lazy(() => import('./pages/super-admin/PlatformAnalytics'));
+const AuditLogView = lazy(() => import('./pages/super-admin/AuditLogView'));
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
 import WeekWorksheetPage from './pages/WeekWorksheetPage';
@@ -259,6 +262,15 @@ function AppRoutes() {
         } />
         <Route path="/super-admin/templates/:id" element={
           <SuperAdminGuard><Suspense fallback={<PageFallback />}><TemplateDetail /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/campuses/:campusId" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><CampusDetail /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/analytics" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><PlatformAnalytics /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/audit-log" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><AuditLogView /></Suspense></SuperAdminGuard>
         } />
 
         {/* Legacy */}
