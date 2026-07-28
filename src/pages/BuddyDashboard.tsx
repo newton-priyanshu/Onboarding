@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle } from 'lucide-react';
-import { WORKSHEET_NAMES, type WorksheetSubmission } from '../config/worksheetConfig';
+import { getWorksheetName, type WorksheetSubmission } from '../config/worksheetConfig';
+import type { OnboardingTemplate } from '../types/supabase';
 import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
+import { useWorksheetTemplate } from '../hooks';
 
 interface SimpleInstructor {
   id: string;
@@ -53,6 +55,7 @@ export default function BuddyDashboard() {
   const [activeTab, setActiveTab] = useState('pending');
   const [viewMode, setViewMode] = useState('all');
 
+  const { template } = useWorksheetTemplate();
   const isBuddy = profile?.role === 'lead_instructor' || profile?.role === 'academic_head';
 
   useEffect(() => { if (isBuddy && user) loadData();
@@ -242,6 +245,7 @@ export default function BuddyDashboard() {
               instructors={myInstructors}
               getLink={(uid, wid) => `/buddy/review/${uid}/${wid}`}
               activeTab={activeTab}
+              template={template}
             />
           </>
         )}
@@ -251,12 +255,13 @@ export default function BuddyDashboard() {
   );
 }
 
-function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab }: {
+function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab, template }: {
   title: string;
   worksheets: WorksheetSubmission[];
   instructors: SimpleInstructor[];
   getLink: (userId: string, worksheetId: string) => string;
   activeTab: string;
+  template?: OnboardingTemplate | null;
 }) {
   const navigate = useNavigate();
 
@@ -294,7 +299,7 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab 
               </div>
               <div style={{ flex: 1, minWidth: '150px' }}>
                 <p style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch }}>{instr?.full_name || 'Unknown'}</p>
-                <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{WORKSHEET_NAMES[ws.worksheet_id] || ws.worksheet_id}</p>
+                <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{getWorksheetName(ws.worksheet_id, template) || ws.worksheet_id}</p>
                 <p style={{ fontFamily: t.body, fontSize: '0.6rem', color: t.wg }}>{ws.updated_at ? new Date(ws.updated_at).toLocaleDateString() : 'N/A'}</p>
               </div>
               {isBuddyApproved ? (

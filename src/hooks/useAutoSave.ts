@@ -223,7 +223,7 @@ export function useAutoSave(
       }
 
       lastError = error;
-      notifyError('Auto-save failed:', error);
+      notifyError(`Auto-save failed: ${error instanceof Error ? error.message : String(error)}`);
       if (!mountedRef.current) break;
       if (attempt < MAX_SAVE_ATTEMPTS) {
         await sleep(attempt * RETRY_BACKOFF_MS);

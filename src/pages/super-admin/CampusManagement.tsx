@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../api/supabase';
-import type { Campus } from '../../types/supabase';
-import { Plus, Building, Check, X, Edit2, Trash2, AlertCircle, Search, Loader2 } from 'lucide-react';
+import type { Campus, OnboardingTemplate } from '../../types/supabase';
+import { Plus, Building, Check, X, Edit2, Trash2, AlertCircle, Search, Loader2, FileText } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -23,7 +24,9 @@ function slugify(text: string): string {
 // ─── Component ──────────────────────────────────────────
 
 export default function CampusManagement() {
+  const navigate = useNavigate();
   const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [templateCounts, setTemplateCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -41,13 +44,22 @@ export default function CampusManagement() {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('campuses')
-        .select('*')
-        .order('name');
+      const [campusResult, templateResult] = await Promise.all([
+        supabase.from('campuses').select('*').order('name'),
+        supabase.from('onboarding_templates').select('id, campus_id'),
+      ]);
 
-      if (fetchError) throw fetchError;
-      setCampuses((data as Campus[]) || []);
+      if (campusResult.error) throw campusResult.error;
+
+      // Build template count per campus
+      const counts: Record<string, number> = {};
+      if (templateResult.data) {
+        for (const t of templateResult.data as Pick<OnboardingTemplate, 'id' | 'campus_id'>[]) {
+          counts[t.campus_id] = (counts[t.campus_id] || 0) + 1;
+        }
+      }
+      setTemplateCounts(counts);
+      setCampuses((campusResult.data as Campus[]) || []);
     } catch (err) {
       setError((err as { message?: string }).message || 'Failed to load campuses');
     } finally {
@@ -393,6 +405,7 @@ export default function CampusManagement() {
                         fontFamily: 'var(--font-body)',
                         fontSize: '0.7rem',
                         color: 'var(--color-warm-grey)',
+                        flexWrap: 'wrap',
                       }}>
                         <span style={{ fontFamily: 'monospace' }}>{campus.slug}</span>
                         {campus.domain && (
@@ -403,6 +416,20 @@ export default function CampusManagement() {
                         )}
                         <span style={{ opacity: 0.3 }}>|</span>
                         <span>Created {new Date(campus.created_at).toLocaleDateString()}</span>
+                        <span style={{ opacity: 0.3 }}>|</span>
+                        <button onClick={() => navigate(`/super-admin/templates?campus=${campus.slug}`)}
+                          title="View templates for this campus"
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontFamily: 'var(--font-body)', fontSize: '0.65rem',
+                            color: 'var(--color-charcoal)', padding: '2px 6px',
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            textDecoration: 'underline', textUnderlineOffset: '2px',
+                            textDecorationColor: 'rgba(26,26,26,0.2)',
+                          }}>
+                          <FileText size={11} strokeWidth={1.5} />
+                          {(templateCounts[campus.id] || 0)} templates
+                        </button>
                       </div>
                     </div>
 

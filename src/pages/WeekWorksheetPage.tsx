@@ -1,10 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Suspense } from 'react';
 import { useParams } from 'react-router-dom';
-import { WORKSHEET_COMPONENTS, WK_WORKSHEETS_MAP } from '../config/worksheetConfig';
-import { WORKSHEET_NAMES } from '../config/worksheetConfigData';
+import { WORKSHEET_COMPONENTS, WK_WORKSHEETS_MAP, getWorksheetName, getWeekWorksheetIds } from '../config/worksheetConfig';
 import { t } from '../config/theme';
 import { FileText } from 'lucide-react';
+import { useWorksheetTemplate } from '../hooks';
 
 interface WeekWorksheetPageProps {
   /**
@@ -41,6 +41,7 @@ function NotFoundMessage({ worksheetId, reason }: { worksheetId: string; reason:
  */
 export default function WeekWorksheetPage({ weekNum }: WeekWorksheetPageProps) {
   const { worksheetId } = useParams<{ worksheetId: string }>();
+  const { template } = useWorksheetTemplate();
 
   if (!worksheetId) {
     return (
@@ -52,11 +53,11 @@ export default function WeekWorksheetPage({ weekNum }: WeekWorksheetPageProps) {
     );
   }
 
-  // Validate that the requested worksheet actually belongs to this week
-  // per the canonical WK_WORKSHEETS_MAP. This prevents URL gating bypass,
-  // e.g. navigating to /week-1/worksheet/w4_g1 (a week-4 worksheet) while
-  // only WeekAccessGuard for week 1 has run.
-  const worksheetsForWeek = WK_WORKSHEETS_MAP[weekNum] ?? [];
+  // Validate that the requested worksheet actually belongs to this week.
+  // First tries the campus template, then falls back to hardcoded WK_WORKSHEETS_MAP.
+  // This prevents URL gating bypass.
+  const templateWsIds = template ? getWeekWorksheetIds(weekNum, template) : null;
+  const worksheetsForWeek = templateWsIds ?? (WK_WORKSHEETS_MAP[weekNum] ?? []);
   const belongsToWeek = (worksheetsForWeek as readonly string[]).includes(worksheetId);
   if (!belongsToWeek) {
     return (
@@ -100,5 +101,7 @@ function WorksheetLoading() {
  * WeekWorksheetLabel — Returns the display label for a worksheet within a week.
  */
 export function useWeekWorksheetLabel(worksheetId: string): string {
-  return WORKSHEET_NAMES[worksheetId] || worksheetId;
+  // Note: This is a simple helper — for template-aware labels, use
+  // getWorksheetName(worksheetId, template) where template comes from useWorksheetTemplate().
+  return getWorksheetName(worksheetId) || worksheetId;
 }
