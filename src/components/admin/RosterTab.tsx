@@ -13,9 +13,10 @@ interface BuddyProfile {
 interface RosterTabProps {
   instructors: UserProfile[];
   buddyProfiles: BuddyProfile[];
+  campusId?: string | null;
 }
 
-export default function RosterTab({ instructors, buddyProfiles }: RosterTabProps) {
+export default function RosterTab({ instructors, buddyProfiles, campusId }: RosterTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'assigned' | 'unassigned'>('all');
 
@@ -145,6 +146,7 @@ export default function RosterTab({ instructors, buddyProfiles }: RosterTabProps
           <div className="lux-line" style={{ margin: '0 auto 1rem' }} />
           <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>No Joinees Found</p>
           <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, lineHeight: 1.6, maxWidth: '400px', margin: '0 auto' }}>
+            {campusId && 'This campus has '}
             {searchQuery
               ? 'No joinees match your search. Try adjusting the query or clearing the filters.'
               : filterBy === 'unassigned'

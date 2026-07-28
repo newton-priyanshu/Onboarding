@@ -39,6 +39,10 @@ const ROLE_MAP: Record<string, string> = {
   manager: 'academic_head',
   onboarding_lead: 'onboarding_lead',
   buddy_approved: 'academic_head',
+  progression_head: 'progression_head',
+  ops_head: 'ops_head',
+  campus_head: 'campus_head',
+  campus_admin: 'campus_admin',
 };
 
 // ─── Hook ───────────────────────────────────────────────

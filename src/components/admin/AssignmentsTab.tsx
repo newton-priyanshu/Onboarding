@@ -17,6 +17,7 @@ interface AssignmentsTabProps {
   instructors: UserProfile[];
   buddyProfiles: BuddyProfile[];
   onRefresh: () => void;
+  campusId?: string | null;
 }
 
 export default function AssignmentsTab({ instructors, buddyProfiles, onRefresh }: AssignmentsTabProps) {

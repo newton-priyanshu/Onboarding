@@ -7,6 +7,7 @@ interface PhasesReadyTabProps {
   allWorksheets: WorksheetSubmission[];
   instructors: UserProfile[];
   isManager: boolean;
+  campusId?: string | null;
 }
 
 interface PhaseEntry {

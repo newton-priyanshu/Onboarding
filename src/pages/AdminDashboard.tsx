@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
+import { withCampusIf } from '../api/supabase';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, AlertCircle, type LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
@@ -67,9 +68,10 @@ export default function AdminDashboard() {
   // Preserve scroll position on refresh
   const savedScrollY = useRef(0);
 
-  const isManager = profile?.role === 'academic_head';
+  const isManager = profile?.role === 'academic_head' || profile?.role === 'progression_head' || profile?.role === 'ops_head' || profile?.role === 'campus_head' || profile?.role === 'campus_admin';
   const isOnboardingLead = profile?.role === 'onboarding_lead';
-  const canAssign = isManager || isOnboardingLead;
+  const isCampusAdmin = profile?.role === 'campus_admin';
+  const canAssign = isManager || isOnboardingLead || isCampusAdmin;
 
   useEffect(() => { if (canAssign) loadData();
     // loadData intentionally omitted: closes over fresh canAssign each render
@@ -84,21 +86,27 @@ export default function AdminDashboard() {
     try {
       // Step 1: load the visible hires first — everything else is scoped to their IDs
       // so we never pull the entire worksheet_submissions table (H34/H36).
+      const campusId = isCampusAdmin ? profile?.campus_id : null;
+
       const [instrDataRaw, buddyDataRaw] = await Promise.all([
-        fetchWithCache('admin-instructors', () =>
-          supabase.from('user_profiles')
-            .select('id, full_name, email, role, assigned_lead_id, assigned_buddy_id, created_at')
-            .in('role', ['new_joinee', 'lab_instructor'])
-            .order('created_at', { ascending: false })
-            .limit(500)
-            .then(unwrap)
+        fetchWithCache(`admin-instructors-${campusId || 'all'}`, () =>
+          withCampusIf(
+            supabase.from('user_profiles')
+              .select('id, full_name, email, role, assigned_lead_id, assigned_buddy_id, created_at')
+              .in('role', ['new_joinee', 'lab_instructor'])
+              .order('created_at', { ascending: false })
+              .limit(500),
+            campusId
+          ).then(unwrap)
         ),
-        fetchWithCache('admin-buddies', () =>
-          supabase.from('user_profiles')
-            .select('id, full_name, email, role')
-            .not('role', 'in', '("new_joinee","lab_instructor")')
-            .limit(500)
-            .then(unwrap)
+        fetchWithCache(`admin-buddies-${campusId || 'all'}`, () =>
+          withCampusIf(
+            supabase.from('user_profiles')
+              .select('id, full_name, email, role')
+              .not('role', 'in', '("new_joinee","lab_instructor")')
+              .limit(500),
+            campusId
+          ).then(unwrap)
         ),
       ]);
       const instrData = instrDataRaw as unknown as UserProfile[];
@@ -107,14 +115,16 @@ export default function AdminDashboard() {
       const ids = instrData.map(i => i.id);
       const wsDataRaw = ids.length === 0
         ? []
-        : await fetchWithCache(`admin-worksheets-${ids.slice().sort().join(',')}`, () =>
-            supabase.from('worksheet_submissions')
-              // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
-              .select('user_id, worksheet_id, review_status, status, updated_at')
-              .in('user_id', ids)
-              .order('updated_at', { ascending: false })
-              .limit(2000)
-              .then(unwrap)
+        : await fetchWithCache(`admin-worksheets-${campusId || 'all'}-${ids.slice().sort().join(',')}`, () =>
+            withCampusIf(
+              supabase.from('worksheet_submissions')
+                // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
+                .select('user_id, worksheet_id, review_status, status, updated_at')
+                .in('user_id', ids)
+                .order('updated_at', { ascending: false })
+                .limit(2000),
+              campusId
+            ).then(unwrap)
           );
       const wsData = wsDataRaw as unknown as WorksheetSubmission[];
 
@@ -252,7 +262,10 @@ export default function AdminDashboard() {
             <div style={{ flex: 1 }}>
               <h1 style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>Admin Dashboard</h1>
               <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
-                {isManager ? 'Academic Head' : 'Onboarding Lead'} · {isManager ? 'Approve phases · ' : 'Monitor · '} {instructors.length} joinee(s)
+                {isCampusAdmin ? 'Campus Admin' : isManager ? (profile?.role === 'campus_head' ? 'Campus Head' : profile?.role === 'progression_head' ? 'Progression Head' : profile?.role === 'ops_head' ? 'Ops Head' : 'Academic Head') : 'Onboarding Lead'} · {isManager ? 'Approve phases · ' : 'Monitor · '} {instructors.length} joinee(s)
+                {isCampusAdmin && profile?.campus_id && (
+                  <span style={{ marginLeft: '8px', opacity: 0.6 }}>· Campus-scoped view</span>
+                )}
               </p>
             </div>
             <button onClick={() => { invalidateCacheByPrefix('admin-'); loadData(); }} disabled={loading} style={{
@@ -404,13 +417,13 @@ export default function AdminDashboard() {
         )}
 
         {/* Roster Tab — Joinee list with buddy/manager assignments */}
-        {activeTab === 'roster' && <RosterTab instructors={instructors} buddyProfiles={allBuddyProfiles} />}
+        {activeTab === 'roster' && <RosterTab instructors={instructors} buddyProfiles={allBuddyProfiles} campusId={profile?.campus_id} />}
 
         {/* Pending Review Tab — Phases Ready for Manager */}
-        {activeTab === 'pending_review' && <PhasesReadyTab allWorksheets={allWorksheets} instructors={instructors} isManager={isManager} />}
+        {activeTab === 'pending_review' && <PhasesReadyTab allWorksheets={allWorksheets} instructors={instructors} isManager={isManager} campusId={profile?.campus_id} />}
 
         {/* Assignments Tab */}
-        {activeTab === 'assignments' && <AssignmentsTab instructors={instructors} buddyProfiles={allBuddyProfiles} onRefresh={loadData} />}
+        {activeTab === 'assignments' && <AssignmentsTab instructors={instructors} buddyProfiles={allBuddyProfiles} onRefresh={loadData} campusId={profile?.campus_id} />}
       </div>
     </div>
   );

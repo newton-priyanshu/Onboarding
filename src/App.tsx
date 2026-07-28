@@ -34,6 +34,13 @@ const WorksheetReview = lazy(() => import('./pages/WorksheetReview'));
 const PhaseReview = lazy(() => import('./pages/PhaseReview'));
 const BuddyGatePass = lazy(() => import('./pages/BuddyGatePass'));
 
+// Campus Admin pages
+const CampusAdminDashboard = lazy(() => import('./pages/campus-admin/CampusAdminDashboard'));
+const CampusUserManagement = lazy(() => import('./pages/campus-admin/CampusUserManagement'));
+const CampusReports = lazy(() => import('./pages/campus-admin/CampusReports'));
+const CampusSettings = lazy(() => import('./pages/campus-admin/CampusSettings'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+
 // Super Admin pages
 import SuperAdminGuard from './components/SuperAdminGuard';
 const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'));
@@ -145,6 +152,15 @@ function DeptWorksheetWrapper(_props: { dept: Department }) {
   );
 }
 
+/** Role-aware admin dashboard wrapper — campus_admin sees dedicated dashboard, others see existing */
+function RoleAwareAdminDashboard() {
+  const { profile } = useAuth();
+  if (profile?.role === 'campus_admin') {
+    return <CampusAdminDashboard />;
+  }
+  return <AdminDashboard />;
+}
+
 /** Wraps the routed page content in an ErrorBoundary that resets on route change */
 function AppRoutes() {
   const location = useLocation();
@@ -184,7 +200,17 @@ function AppRoutes() {
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Admin / Lead — wrapped in Suspense for code-splitting */}
-        <Route path="/admin" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'campus_head', 'progression_head', 'ops_head']}><Suspense fallback={<PageFallback />}><AdminDashboard /></Suspense></ProtectedRoute>} />
+        {/* Campus Admin Routes */}
+        <Route path="/admin" element={
+          <ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'campus_head', 'progression_head', 'ops_head', 'campus_admin']}>
+            <Suspense fallback={<PageFallback />}>
+              <RoleAwareAdminDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['campus_admin', 'academic_head', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusUserManagement /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/reports" element={<ProtectedRoute requiredRoles={['campus_admin', 'academic_head', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusReports /></Suspense></ProtectedRoute>} />
+        <Route path="/admin/settings" element={<ProtectedRoute requiredRoles={['campus_admin', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusSettings /></Suspense></ProtectedRoute>} />
         <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyDashboard /></Suspense></ProtectedRoute>} />
         <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><Suspense fallback={<PageFallback />}><OnboardingLeadDashboard /></Suspense></ProtectedRoute>} />
         {/* Phase Review Routes */}
@@ -275,6 +301,7 @@ function AppRoutes() {
 
         {/* Legacy */}
         <Route path="/assessment" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'lead_instructor']}><Assessment /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><NotificationsPage /></Suspense></ProtectedRoute>} />
         <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
 
         {/* 404 catch-all */}
