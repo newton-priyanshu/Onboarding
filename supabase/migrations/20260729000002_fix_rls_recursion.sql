@@ -20,6 +20,11 @@
 -- all existing users.
 -- =============================================================================
 
+-- ── 0. Ensure assigned_template_id column exists (in case 20260729000001 wasn't run) ─
+ALTER TABLE public.user_profiles
+  ADD COLUMN IF NOT EXISTS assigned_template_id UUID REFERENCES public.onboarding_templates(id) ON DELETE SET NULL;
+
+
 -- ── 1. Fix get_user_role() — remove DB fallback, only read JWT ─────────────
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS text
