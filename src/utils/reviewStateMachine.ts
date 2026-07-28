@@ -72,6 +72,15 @@ const REVIEWABLE_FROM_PENDING: ReadonlySet<string> = new Set([
  *   academic_head (manager):   buddy_approved
  *                                 --approve--------> approved
  *                                 --request_revision-> needs_revision
+ *   progression_head:          buddy_approved (same as academic_head)
+ *                                 --approve--------> approved
+ *                                 --request_revision-> needs_revision
+ *   ops_head:                  buddy_approved (same as academic_head)
+ *                                 --approve--------> approved
+ *                                 --request_revision-> needs_revision
+ *   campus_head:               buddy_approved (same as academic_head)
+ *                                 --approve--------> approved
+ *                                 --request_revision-> needs_revision
  *   new_joinee (owner):        submit only (see computeSubmitReviewStatus) —
  *                               can NEVER approve or request_revision, and a
  *                               submit action can NEVER itself yield 'approved'.
@@ -107,11 +116,11 @@ export function computeReviewTransition(
       }
       return { allowed: false, nextStatus: current, reason: `Buddy cannot approve from "${currentReviewStatus}"` };
     }
-    if (actorRole === 'academic_head') {
+    if (['academic_head', 'progression_head', 'ops_head', 'campus_head'].includes(actorRole)) {
       if (currentReviewStatus === REVIEW_STATUS.BUDDY_APPROVED) {
         return { allowed: true, nextStatus: REVIEW_STATUS.APPROVED };
       }
-      return { allowed: false, nextStatus: current, reason: `Manager cannot approve from "${currentReviewStatus}"` };
+      return { allowed: false, nextStatus: current, reason: `Department head cannot approve from "${currentReviewStatus}"` };
     }
     return { allowed: false, nextStatus: current, reason: `Role "${actorRole}" cannot approve worksheets` };
   }
@@ -123,11 +132,11 @@ export function computeReviewTransition(
       }
       return { allowed: false, nextStatus: current, reason: `Buddy cannot request revision from "${currentReviewStatus}"` };
     }
-    if (actorRole === 'academic_head') {
+    if (['academic_head', 'progression_head', 'ops_head', 'campus_head'].includes(actorRole)) {
       if (currentReviewStatus === REVIEW_STATUS.BUDDY_APPROVED) {
         return { allowed: true, nextStatus: REVIEW_STATUS.NEEDS_REVISION };
       }
-      return { allowed: false, nextStatus: current, reason: `Manager cannot request revision from "${currentReviewStatus}"` };
+      return { allowed: false, nextStatus: current, reason: `Department head cannot request revision from "${currentReviewStatus}"` };
     }
     return { allowed: false, nextStatus: current, reason: `Role "${actorRole}" cannot request revision` };
   }

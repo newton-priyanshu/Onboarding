@@ -36,6 +36,13 @@ export {
   getMaxAccessiblePhase,
   canAccessPhase,
   WK_WORKSHEETS_MAP,
+  // Template-aware lookup helpers
+  getWorksheetName,
+  getWorksheetInfoById,
+  getWeekWorksheetIds,
+  getPhaseWorksheetIds,
+  getPhaseLabel,
+  getGateArtifactList,
 } from './worksheetConfigData';
 
 export type { WorksheetSubmission, UserProfile } from '../types/supabase';

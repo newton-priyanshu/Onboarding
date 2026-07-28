@@ -57,3 +57,42 @@ if (!supabaseUrl || !supabaseKey) {
 
 export const supabase: SupabaseClient = supabaseClient!;
 
+/**
+ * withCampus — Chainable query helper that auto-filters by campus_id.
+ *
+ * Usage:
+ *   const rows = await withCampus(supabase.from('worksheet_submissions').select('*'), campusId);
+ *   // Equivalent to: supabase.from('worksheet_submissions').select('*').eq('campus_id', campusId)
+ *
+ * This is a convenience helper. The PRIMARY campus isolation mechanism is RLS,
+ * so this helper is optional for most queries — RLS will filter by campus_id
+ * from the JWT automatically. Use this helper when:
+ *   - You need to query data for a SPECIFIC campus (e.g. admin views)
+ *   - The query context differs from the logged-in user's campus (e.g. super admin)
+ *   - You want explicit, readable filtering in the query chain
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseQuery = any;
+
+/**
+ * withCampus — Chainable query helper that auto-filters by campus_id.
+ *
+ * Usage:
+ *   const rows = await withCampus(supabase.from('worksheet_submissions').select('*'), campusId);
+ *
+ * RLS is the PRIMARY campus isolation mechanism — this helper is optional.
+ * Use it when you need to query for a specific campus explicitly.
+ */
+export function withCampus(query: SupabaseQuery, campusId: string): SupabaseQuery {
+  return query.eq('campus_id', campusId);
+}
+
+/**
+ * withCampusIf — Conditionally apply campus filter.
+ * Only adds the filter if campusId is provided (non-null, non-empty).
+ */
+export function withCampusIf(query: SupabaseQuery, campusId: string | null | undefined): SupabaseQuery {
+  if (!campusId) return query;
+  return withCampus(query, campusId);
+}
+

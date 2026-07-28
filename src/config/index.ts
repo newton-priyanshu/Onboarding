@@ -15,6 +15,13 @@ export {
   getPhaseWorksheetsByStatus,
   getWorksheetsForReviewer,
   getReviewerLabel,
+  // Template-aware lookup helpers
+  getWorksheetName,
+  getWorksheetInfoById,
+  getWeekWorksheetIds,
+  getPhaseWorksheetIds,
+  getPhaseLabel,
+  getGateArtifactList,
 } from './worksheetConfigData';
 export {
   WORKSHEET_COMPONENTS,

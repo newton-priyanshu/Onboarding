@@ -31,13 +31,25 @@ if (!pat) {
 }
 
 // The migrations to run, in order
-const MIGRATIONS = [    {
+const MIGRATIONS = [
+    // Legacy migrations (already applied on most projects)
+    {
       file: 'db/__migration_notifications_dates.sql',
       description: 'Notifications table + due_date column + review_status constraint',
     },
     {
       file: 'db/__due_date_notifications.sql',
       description: 'Automated due_soon/overdue notification function',
+    },
+    // Multi-tenant Phase 0 — campuses, roles, permissions, templates, campus_id columns
+    {
+      file: 'supabase/migrations/20260727000001_multi_tenant_phase0.sql',
+      description: 'Multi-tenant Phase 0 — campuses table, roles, permissions, campus_id on existing tables',
+    },
+    // Multi-tenant Phase 3 — RLS policies for campus data isolation
+    {
+      file: 'supabase/migrations/20260727000002_multi_tenant_phase3_rls.sql',
+      description: 'Multi-tenant Phase 3 — RLS policies for campus isolation',
     },
 ];
 

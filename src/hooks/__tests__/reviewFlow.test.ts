@@ -30,6 +30,7 @@ function sub(
   review_comment: null;
   reviewed_at: null;
   review_history: [];
+  campus_id: null;
   created_at: string;
   updated_at: string;
 } {
@@ -47,6 +48,7 @@ function sub(
     review_comment: null,
     reviewed_at: null,
     review_history: [],
+    campus_id: null,
     created_at: '',
     updated_at: '',
   };

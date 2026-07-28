@@ -44,7 +44,13 @@
 
 import { t } from './theme';
 import { REVIEW_STATUS } from '../constants/status';
-import type { WorksheetId, ReviewerType, WorksheetSubmission, EngineTag, FtpWeek, FtpSession } from '../types/supabase';
+import type { WorksheetId, ReviewerType, WorksheetSubmission, EngineTag, FtpWeek, FtpSession, OnboardingTemplate } from '../types/supabase';
+import {
+  getWorksheetEntry as getTemplateWorksheetEntry,
+  getWeek as getTemplateWeek,
+  getPhase as getTemplatePhase,
+  getGateArtifacts as getTemplateGateArtifacts,
+} from '../api/templates';
 
 // ─── FTP 4-Week Curriculum Structure ─────────────────────
 // Maps each FTP session to an existing or new worksheet.
@@ -545,10 +551,7 @@ export const ALL_WORKSHEETS: Record<string, PhaseGroup> = {
   },
 };
 
-/** Get the reviewer type for a worksheet. Falls back to 'buddy' since ALL worksheets go through buddy first. */
-export function getReviewerType(worksheetId: string): string {
-  return WORKSHEET_REVIEWER[worksheetId] || 'buddy';
-}
+
 
 // ─── Phase-level Helper Functions ──────────────────────────────
 
@@ -655,9 +658,9 @@ export function getWorksheetsForReviewer(reviewerType: string): string[] {
     .map(([id]) => id);
 }
 
-/** Get reviewer label for a worksheet */
-export function getReviewerLabel(worksheetId: string): string {
-  const type = getReviewerType(worksheetId);
+/** Get reviewer label for a worksheet — template-aware. */
+export function getReviewerLabel(worksheetId: string, template?: OnboardingTemplate | null): string {
+  const type = getReviewerType(worksheetId, template);
   return REVIEWER_LABELS[type] || 'Manager';
 }
 
@@ -739,6 +742,105 @@ export const WORKSHEET_NAMES: Record<string, string> = {
   w4_o1: 'Pre-Semester Checklist', w4_b1: 'Why We Reflect',
   w4_g1: 'Gate 4 - Independence',
 };
+
+// ─── Template-Aware Lookup Helpers ────────────────────────
+// These functions bridge between template DB data and existing consumers.
+// They accept an optional OnboardingTemplate — if provided, the function
+// reads from the template first, falling back to hardcoded config.
+// If no template is provided, the hardcoded config is used directly.
+// This ensures backward compatibility during the migration.
+
+/**
+ * Get worksheet short name — template-aware.
+ * Falls back to WORKSHEET_NAMES if template doesn't have the entry.
+ */
+export function getWorksheetName(worksheetId: string, template?: OnboardingTemplate | null): string {
+  if (template) {
+    const entry = getTemplateWorksheetEntry(template, worksheetId);
+    if (entry?.title) return entry.title;
+  }
+  return WORKSHEET_NAMES[worksheetId] || worksheetId;
+}
+
+/**
+ * Get full worksheet info — template-aware.
+ * Falls back to WORKSHEET_INFO if template doesn't have the entry.
+ */
+export function getWorksheetInfoById(worksheetId: string, template?: OnboardingTemplate | null): { title: string; phase: string } {
+  if (template) {
+    const entry = getTemplateWorksheetEntry(template, worksheetId);
+    if (entry?.title) {
+      // Try to determine the phase from the template
+      const phases = template.structure?.phases as Array<{ num: number; title: string; worksheets: string[] }> | undefined;
+      const phase = phases?.find(p => p.worksheets.includes(worksheetId));
+      return {
+        title: entry.title,
+        phase: phase?.title || 'Unknown',
+      };
+    }
+  }
+  return WORKSHEET_INFO[worksheetId] || { title: worksheetId, phase: 'Unknown' };
+}
+
+/**
+ * Get week worksheet IDs — template-aware.
+ * Falls back to WK_WORKSHEETS_MAP if template doesn't have the week.
+ */
+export function getWeekWorksheetIds(weekNum: number, template?: OnboardingTemplate | null): string[] {
+  if (template) {
+    const week = getTemplateWeek(template, weekNum);
+    if (week) return week.worksheets.map(w => w.id);
+  }
+  return WK_WORKSHEETS_MAP[weekNum] || [];
+}
+
+/**
+ * Get phase worksheet IDs — template-aware.
+ * Falls back to PHASE_WORKSHEETS_MAP if template doesn't have the phase.
+ */
+export function getPhaseWorksheetIds(phaseNum: number, template?: OnboardingTemplate | null): string[] {
+  if (template) {
+    const phase = getTemplatePhase(template, phaseNum);
+    if (phase) return phase.worksheets;
+  }
+  return PHASE_WORKSHEETS_MAP[phaseNum] || [];
+}
+
+/**
+ * Get phase label — template-aware.
+ * Falls back to PHASE_LABELS.
+ */
+export function getPhaseLabel(phaseNum: number, template?: OnboardingTemplate | null): { title: string; days: string } {
+  if (template) {
+    const phase = getTemplatePhase(template, phaseNum);
+    if (phase) return { title: phase.title, days: phase.days };
+  }
+  return PHASE_LABELS[phaseNum] || { title: `Phase ${phaseNum}`, days: '' };
+}
+
+/**
+ * Get gate artifacts — template-aware.
+ * Falls back to FTP_GATE_ARTIFACTS.
+ */
+export function getGateArtifactList(gateId: string, template?: OnboardingTemplate | null): { label: string; required: boolean }[] {
+  if (template) {
+    const artifacts = getTemplateGateArtifacts(template, gateId);
+    if (artifacts.length > 0) return artifacts;
+  }
+  return FTP_GATE_ARTIFACTS[gateId] || [];
+}
+
+/**
+ * Get reviewer type for a worksheet — template-aware.
+ * Falls back to WORKSHEET_REVIEWER.
+ */
+export function getReviewerType(worksheetId: string, template?: OnboardingTemplate | null): string {
+  if (template) {
+    const entry = getTemplateWorksheetEntry(template, worksheetId);
+    if (entry?.reviewer) return entry.reviewer;
+  }
+  return WORKSHEET_REVIEWER[worksheetId] || 'buddy';
+}
 
 /**
  * PHASE_LABELS — Phase header info for review/admin pages.

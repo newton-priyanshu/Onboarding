@@ -1,8 +1,9 @@
 import { t } from '../config/theme';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, ChevronRight, Loader2 } from 'lucide-react';
+import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, Building, FileText, ChevronRight, Loader2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useCampus } from '../context/CampusContext';
 import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types/supabase';
 
@@ -29,9 +30,15 @@ const roleLabels: RoleLabels = {
   lab_instructor: 'Lab Instructor',
   lead_instructor: 'Buddy / Mentor',
   academic_head: 'Academic Head',
+  progression_head: 'Progression Head',
+  ops_head: 'Ops Head',
+  campus_head: 'Campus Head',
   onboarding_lead: 'Onboarding Lead',
   acad_ops: 'Acad Ops',
 };
+
+/** Roles that are department or campus heads — can review and manage */
+const DEPT_HEAD_ROLES = new Set(['academic_head', 'progression_head', 'ops_head', 'campus_head']);
 
 // ─── Component ──────────────────────────────────────────
 
@@ -44,6 +51,7 @@ export default function Navbar({ progress }: NavbarProps) {
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const { user, profile, signOut } = useAuth();
+  const { currentCampus, isLoading: campusLoading } = useCampus();
 
   // Close user menu on outside click
   useEffect(() => {
@@ -61,14 +69,21 @@ export default function Navbar({ progress }: NavbarProps) {
 
   // Role-specific links
   const roleLinks: NavLink[] = [];
-  if (role === 'lead_instructor' || role === 'academic_head') roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
+  if (role && (role === 'lead_instructor' || DEPT_HEAD_ROLES.has(role))) roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
   if (role === 'onboarding_lead') roleLinks.push({ path: '/onboarding-lead', label: 'Monitoring', icon: Shield });
-  if (role === 'academic_head' || role === 'onboarding_lead') roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
+  if (role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead')) roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
 
-  const baseLinks: NavLink[] = [
+  // Super Admin links
+  const superAdminLinks: NavLink[] = (role === 'super_admin') ? [
+    { path: '/super-admin', label: 'Dashboard', icon: Shield },
+    { path: '/super-admin/campuses', label: 'Campuses', icon: Building },
+    { path: '/super-admin/templates', label: 'Templates', icon: FileText },
+  ] : [];
+
+  const baseLinks: NavLink[] = user ? [
     { path: '/', label: 'Dashboard' },
     { path: '/stakeholders', label: 'Stakeholders' },
-  ];
+  ] : [];
 
   const joineeLinks: NavLink[] = (role === 'new_joinee' || role === 'lab_instructor') ? [
     { path: '/phase-1', label: 'Phase 1' },
@@ -77,7 +92,7 @@ export default function Navbar({ progress }: NavbarProps) {
     { path: '/phase-3', label: 'Phase 3' },
   ] : [];
 
-  const allLinks: NavLink[] = [...roleLinks, ...baseLinks, ...joineeLinks];
+  const allLinks: NavLink[] = [...superAdminLinks, ...roleLinks, ...baseLinks, ...joineeLinks];
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -127,6 +142,46 @@ export default function Navbar({ progress }: NavbarProps) {
             }}>
               <span style={{ fontWeight: 600, color: '#D4A853' }}>NST</span> BLR - AARAMBH
             </span>
+            {/* Campus tag badge */}
+            {currentCampus && !campusLoading && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                padding: '2px 8px',
+                fontSize: '0.6rem',
+                fontWeight: 500,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#D4A853',
+                border: '1px solid rgba(212, 168, 83, 0.3)',
+                background: 'rgba(212, 168, 83, 0.08)',
+                lineHeight: 1,
+              }}>
+                <span style={{
+                  width: '5px', height: '5px',
+                  borderRadius: '50%',
+                  background: currentCampus.is_active ? '#4CAF50' : '#BDBDBD',
+                  display: 'inline-block',
+                }} />
+                {currentCampus.name}
+              </span>
+            )}
+            {/* Department badge */}
+            {profile?.department && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                padding: '2px 8px',
+                fontSize: '0.6rem',
+                fontWeight: 500,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: profile.department === 'progression' ? '#2E7D32' : profile.department === 'operations' ? '#7B1FA2' : '#006494',
+                border: '1px solid ' + (profile.department === 'progression' ? 'rgba(46,125,50,0.3)' : profile.department === 'operations' ? 'rgba(123,31,162,0.3)' : 'rgba(0,100,148,0.3)'),
+                background: (profile.department === 'progression' ? 'rgba(46,125,50,0.08)' : profile.department === 'operations' ? 'rgba(123,31,162,0.08)' : 'rgba(0,100,148,0.08)'),
+                lineHeight: 1,
+              }}>
+                {profile.department}
+              </span>
+            )}
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -201,13 +256,37 @@ export default function Navbar({ progress }: NavbarProps) {
                     <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid rgba(26, 26, 26, 0.12)' }}>
                       <p style={{ fontWeight: 500, color: 'var(--color-charcoal)', fontSize: '0.85rem' }}>{profile?.full_name}</p>
                       <p style={{ fontSize: '0.7rem', color: 'var(--color-warm-grey)', marginTop: '4px' }}>{profile?.email}</p>
-                      {profile?.role && (
-                        <span className="lux-badge" style={{ marginTop: '8px', fontSize: '0.6rem' }}>
-                          {roleLabels[profile.role] || profile.role}
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {profile?.role && (
+                          <span className="lux-badge" style={{ fontSize: '0.6rem' }}>
+                            {roleLabels[profile.role] || profile.role}
+                          </span>
+                        )}
+                        {currentCampus && (
+                          <span className="lux-badge" style={{
+                            fontSize: '0.6rem',
+                            color: '#D4A853',
+                            border: '1px solid rgba(212, 168, 83, 0.3)',
+                            background: 'rgba(212, 168, 83, 0.08)',
+                          }}>
+                            {currentCampus.name}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {(role === 'lead_instructor' || role === 'academic_head') && (
+                    {role === 'super_admin' && (
+                      <button onClick={() => { navigate('/super-admin'); setUserMenuOpen(false); }}
+                        className="menu-item-btn">
+                        <Shield size={14} strokeWidth={1.5} /> Super Admin
+                      </button>
+                    )}
+                    {role && role === 'lead_instructor' && (
+                      <button onClick={() => { navigate('/buddy'); setUserMenuOpen(false); }}
+                        className="menu-item-btn">
+                        <UserCheck size={14} strokeWidth={1.5} /> Reviews
+                      </button>
+                    )}
+                    {role && DEPT_HEAD_ROLES.has(role) && (
                       <button onClick={() => { navigate('/buddy'); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <UserCheck size={14} strokeWidth={1.5} /> Reviews
@@ -219,7 +298,7 @@ export default function Navbar({ progress }: NavbarProps) {
                         <Shield size={14} strokeWidth={1.5} /> Onboarding Panel
                       </button>
                     )}
-                    {(role === 'academic_head' || role === 'onboarding_lead') && (
+                    {role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && (
                       <button onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <ClipboardCheck size={14} strokeWidth={1.5} /> Admin Dashboard

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CampusProvider } from './context/CampusContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -20,6 +21,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
+import SelectCampus from './pages/SelectCampus';
 
 // Lazy-loaded heavy pages (admin/buddy/review routes)
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
@@ -28,6 +30,14 @@ const OnboardingLeadDashboard = lazy(() => import('./pages/OnboardingLeadDashboa
 const WorksheetReview = lazy(() => import('./pages/WorksheetReview'));
 const PhaseReview = lazy(() => import('./pages/PhaseReview'));
 const BuddyGatePass = lazy(() => import('./pages/BuddyGatePass'));
+
+// Super Admin pages
+import SuperAdminGuard from './components/SuperAdminGuard';
+const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'));
+const CampusManagement = lazy(() => import('./pages/super-admin/CampusManagement'));
+const TemplateList = lazy(() => import('./pages/super-admin/TemplateList'));
+const TemplateCreate = lazy(() => import('./pages/super-admin/TemplateCreate'));
+const TemplateDetail = lazy(() => import('./pages/super-admin/TemplateDetail'));
 
 import { ALL_WORKSHEETS, WORKSHEET_COMPONENTS } from './config/worksheetConfig';
 import WeekWorksheetPage from './pages/WeekWorksheetPage';
@@ -81,7 +91,18 @@ function HomeRoute() {
     return <PageFallback />;
   }
 
-  if (profile?.role === 'lead_instructor') {
+  // Profile not loaded yet — wait for fetchProfile to finish
+  // (prevents Dashboard flash where profile is briefly null after sign-in)
+  if (!profile) {
+    return <PageFallback />;
+  }
+
+  // New users without a campus_id must select their campus first
+  if (!profile.campus_id && profile.role !== 'super_admin') {
+    return <Navigate to="/select-campus" replace />;
+  }
+
+  if (profile.role === 'lead_instructor') {
     return <Navigate to="/buddy" replace />;
   }
 
@@ -118,6 +139,7 @@ function AppRoutes() {
         {/* Auth routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/select-campus" element={<ProtectedRoute><SelectCampus /></ProtectedRoute>} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
@@ -159,6 +181,23 @@ function AppRoutes() {
         {/* Dynamic Worksheet Routes */}
         {worksheetRoutes}
 
+        {/* Super Admin Routes */}
+        <Route path="/super-admin" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><SuperAdminDashboard /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/campuses" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><CampusManagement /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/templates" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><TemplateList /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/templates/create" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><TemplateCreate /></Suspense></SuperAdminGuard>
+        } />
+        <Route path="/super-admin/templates/:id" element={
+          <SuperAdminGuard><Suspense fallback={<PageFallback />}><TemplateDetail /></Suspense></SuperAdminGuard>
+        } />
+
         {/* Legacy */}
         <Route path="/assessment" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'lead_instructor']}><Assessment /></ProtectedRoute>} />
         <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
@@ -193,8 +232,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
+      <CampusProvider>
+        <AuthProvider>
+          <ToastProvider>
           <AppLayout>
             <Navbar progress={progress} />
             <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
@@ -215,8 +255,8 @@ export default function App() {
               <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Programme</p>
             </footer>
           </AppLayout>
-        </ToastProvider>
-      </AuthProvider>
+        </ToastProvider>        </AuthProvider>
+      </CampusProvider>
     </BrowserRouter>
   );
 }

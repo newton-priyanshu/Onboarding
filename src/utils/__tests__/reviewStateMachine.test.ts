@@ -25,6 +25,9 @@ const ALL_ROLES: UserRole[] = [
   'academic_head',
   'onboarding_lead',
   'acad_ops',
+  'progression_head',
+  'ops_head',
+  'campus_head',
 ];
 
 const ACTIONS: ReviewAction[] = ['approve', 'request_revision'];
@@ -100,6 +103,15 @@ describe('computeReviewTransition — approve / request_revision (full role x st
     { action: 'request_revision', from: REVIEW_STATUS.REVISION_SUBMITTED, role: 'lead_instructor', to: REVIEW_STATUS.NEEDS_REVISION },
     { action: 'approve', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'academic_head', to: REVIEW_STATUS.APPROVED },
     { action: 'request_revision', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'academic_head', to: REVIEW_STATUS.NEEDS_REVISION },
+    // progression_head: same as academic_head (department head)
+    { action: 'approve', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'progression_head', to: REVIEW_STATUS.APPROVED },
+    { action: 'request_revision', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'progression_head', to: REVIEW_STATUS.NEEDS_REVISION },
+    // ops_head: same as academic_head (department head)
+    { action: 'approve', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'ops_head', to: REVIEW_STATUS.APPROVED },
+    { action: 'request_revision', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'ops_head', to: REVIEW_STATUS.NEEDS_REVISION },
+    // campus_head: same as academic_head (oversees all departments)
+    { action: 'approve', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'campus_head', to: REVIEW_STATUS.APPROVED },
+    { action: 'request_revision', from: REVIEW_STATUS.BUDDY_APPROVED, role: 'campus_head', to: REVIEW_STATUS.NEEDS_REVISION },
   ];
 
   function isLegal(action: ReviewAction, from: string, role: UserRole): { to: string } | null {
@@ -107,7 +119,7 @@ describe('computeReviewTransition — approve / request_revision (full role x st
     return match ? { to: match.to } : null;
   }
 
-  // Exhaustive cross product: 2 actions x 6 statuses x 6 roles = 72 edges.
+  // Exhaustive cross product: 2 actions x 6 statuses x 9 roles = 108 edges.
   for (const action of ACTIONS) {
     for (const status of ALL_STATUSES) {
       for (const role of ALL_ROLES) {
@@ -160,10 +172,13 @@ describe('computeReviewTransition — approve / request_revision (full role x st
     }
   });
 
-  it('a manager (academic_head) cannot approve a worksheet that is not yet buddy_approved', () => {
-    for (const status of ALL_STATUSES.filter(s => s !== REVIEW_STATUS.BUDDY_APPROVED)) {
-      const result = computeReviewTransition('approve', status, 'academic_head');
-      expect(result.allowed).toBe(false);
+  it('a department head (academic_head / progression_head / ops_head / campus_head) cannot approve a worksheet that is not yet buddy_approved', () => {
+    const deptHeadRoles: UserRole[] = ['academic_head', 'progression_head', 'ops_head', 'campus_head'];
+    for (const role of deptHeadRoles) {
+      for (const status of ALL_STATUSES.filter(s => s !== REVIEW_STATUS.BUDDY_APPROVED)) {
+        const result = computeReviewTransition('approve', status, role);
+        expect(result.allowed).toBe(false);
+      }
     }
   });
 

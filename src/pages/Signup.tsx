@@ -16,6 +16,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  // Campus selection happens after signup on /select-campus
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +36,7 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      await signUp(email, password, fullName, 'new_joinee');
+      await signUp(email, password, fullName);
       setSuccess(true);
     } catch (err) {
       setError((err as { message?: string }).message || 'Sign up failed.');
@@ -51,7 +52,8 @@ export default function Signup() {
           <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
           <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 400, marginBottom: '1rem' }}>Account Created</h1>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-warm-grey)', marginBottom: '2rem' }}>
-            Check your email to confirm your account. You can sign in once confirmed.
+            Check your email to confirm your account.{' '}
+            Once confirmed, sign in and you&apos;ll be prompted to select your campus.
           </p>
           <button onClick={() => navigate('/login')} className="lux-btn lux-btn-primary" style={{ minWidth: '200px' }}>
             <span className="gold-overlay" /><span className="btn-content">Go to Sign In</span>
@@ -72,6 +74,20 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* Campus hint banner */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem',
+              padding: '0.75rem 1rem',
+              background: 'rgba(0, 100, 148, 0.06)',
+              border: '1px solid rgba(0, 100, 148, 0.15)',
+              fontFamily: 'var(--font-body)', fontSize: '0.78rem',
+              color: 'var(--color-warm-grey)',
+              lineHeight: 1.5,
+            }}>
+              <Building size={16} strokeWidth={1.5} style={{ flexShrink: 0, color: '#006494' }} />
+              <span>After signing up, you&apos;ll select your <strong>college/campus</strong> before accessing the dashboard.</span>
+            </div>
+
             <div className="lux-form-group">
               <label className="lux-label" htmlFor="signup-name">Full Name</label>
               <div style={{ position: 'relative' }}>
@@ -107,7 +123,7 @@ export default function Signup() {
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem',
-              padding: '0.5rem 0.75rem', borderRadius: '8px',
+              padding: '0.5rem 0.75rem',
               background: 'rgba(0, 100, 148, 0.06)', border: '1px solid rgba(0, 100, 148, 0.15)',
               fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-warm-grey)',
             }}>

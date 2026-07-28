@@ -65,17 +65,28 @@ describe('getDueDateInfo', () => {
   });
 
   it('returns July 20, 2026 as the test deadline for all worksheets', () => {
-    const info = getDueDateInfo('gc3', new Date('2020-01-01'));
+    // Mock system time to before deadline for positive daysRemaining assertion
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-15'));
+
+    const info = getDueDateInfo('gc3');
     expect(info.dueDate).toBeInstanceOf(Date);
     expect(info.dueDate!.toISOString().split('T')[0]).toBe('2026-07-20');
     expect(info.daysRemaining).toBeGreaterThanOrEqual(0);
+
+    vi.useRealTimers();
   });
 
   it('shows remaining days for the July 20 test deadline', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-15'));
+
     const info = getDueDateInfo('p2_w1');
     expect(info.dueDate).toBeInstanceOf(Date);
     expect(info.dueDate!.toISOString().split('T')[0]).toBe('2026-07-20');
     expect(info.daysRemaining).toBeGreaterThanOrEqual(4);
     expect(info.daysRemaining).toBeLessThanOrEqual(6);
+
+    vi.useRealTimers();
   });
 });

@@ -45,6 +45,7 @@ function sub(worksheetId: string, reviewStatus: string, userId: string = 'user-1
     review_comment: null,
     reviewed_at: null,
     review_history: [],
+    campus_id: null,
     created_at: '',
     updated_at: '',
   };

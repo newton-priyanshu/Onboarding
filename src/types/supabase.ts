@@ -1,3 +1,6 @@
+// ─── Departments ─────────────────────────────────────────
+export type Department = 'academics' | 'progression' | 'operations';
+
 // ─── User Roles ──────────────────────────────────────────
 export type UserRole =
   | 'new_joinee'
@@ -5,7 +8,12 @@ export type UserRole =
   | 'lead_instructor'
   | 'academic_head'
   | 'onboarding_lead'
-  | 'acad_ops';
+  | 'acad_ops'
+  | 'super_admin'
+  | 'campus_admin'
+  | 'progression_head'
+  | 'ops_head'
+  | 'campus_head';
 
 // ─── User Profile ────────────────────────────────────────
 export interface UserProfile {
@@ -16,6 +24,7 @@ export interface UserProfile {
   department: string | null;
   assigned_lead_id: string | null;
   assigned_buddy_id: string | null;
+  campus_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,6 +130,7 @@ export interface WorksheetSubmission {
   review_comment: string | null;
   reviewed_at: string | null;
   review_history: ReviewHistoryEntry[];
+  campus_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -159,5 +169,90 @@ export interface Notification {
   type: NotificationType;
   message: string;
   read: boolean;
+  campus_id: string | null;
+  created_at: string;
+}
+
+// ─── Multi-Tenant Types ────────────────────────────────────
+
+/**
+ * Campus — A tenant in the multi-campus SaaS platform.
+ * Each campus is fully isolated from others via RLS policies.
+ */
+export interface Campus {
+  id: string;
+  name: string;
+  slug: string;
+  domain: string | null;
+  is_active: boolean;
+  branding: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * OnboardingTemplate — Configurable onboarding structure per campus.
+ * The `structure` JSONB defines weeks, phases, and worksheets.
+ * The `approval_chain` defines the ordered list of reviewer roles.
+ */
+export interface OnboardingTemplate {
+  id: string;
+  campus_id: string;
+  name: string;
+  description: string | null;
+  /**
+   * JSONB structure:
+   * { weeks: [{ num, title, subtitle, theme, worksheets: [{ id, num, title, reviewer, engineTag, isGate }] }],
+   *   phases: [{ num, title, days, worksheets: string[] }],
+   *   gateArtifacts: { [worksheetId]: [{ label, required }] }
+   * }
+   */
+  structure: Record<string, unknown>;
+  /** Ordered list of reviewer roles, e.g. ["lead_instructor", "academic_head"] */
+  approval_chain: string[];
+  is_active: boolean;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Role — A named role in the RBAC system.
+ * System roles (is_system = true) cannot be deleted.
+ * Global roles have campus_id = null; campus-scoped roles have a campus_id.
+ */
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  campus_id: string | null;
+  created_at: string;
+}
+
+/**
+ * Permission — An action a role is allowed to perform on a resource.
+ */
+export interface Permission {
+  id: string;
+  role_id: string;
+  resource: string;
+  action: string;
+  constraint_type: 'allow' | 'deny';
+  created_at: string;
+}
+
+/**
+ * AuditLog — Record of an action performed by a user in a campus context.
+ */
+export interface AuditLog {
+  id: string;
+  campus_id: string | null;
+  user_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  details: Record<string, unknown>;
+  ip_address: string | null;
   created_at: string;
 }

@@ -11,12 +11,16 @@ interface AuthContextValue {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<{ user: User | null }>;
+  /** Whether the current user is a super_admin (global platform admin) */
+  isSuperAdmin: boolean;
+  signUp: (email: string, password: string, fullName: string, role?: UserRole, campusId?: string) => Promise<{ user: User | null }>;
   signIn: (email: string, password: string) => Promise<{ user: User | null }>;
   signInWithGoogle: () => Promise<{ url: string | null } | undefined>;
   signOut: () => Promise<void>;
   hasRole: (...roles: UserRole[]) => boolean;
   refreshProfile: () => void;
+  /** Super admin: manage campuses (placeholder for Phase 6) */
+  manageCampuses: () => Promise<void>;
 }
 
 type ProfileState = UserProfile | null;
@@ -37,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, created_at, updated_at')
+        .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, campus_id, created_at, updated_at')
         .eq('id', userId)
         .single();
 
@@ -91,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         department: null,
         assigned_lead_id: null,
         assigned_buddy_id: null,
+        // Try to resolve campus_id from app_metadata first (server-set), then user_metadata
+        campus_id: (appMeta.campus_id as string) || (meta.campus_id as string) || null,
         created_at: '',
         updated_at: '',
       });
@@ -114,6 +120,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (u.user_metadata?.name as string) ||
         u.email?.split('@')[0] || 'User';
 
+      // Resolve campus_id from metadata (handle_new_user trigger won't fire
+      // for this direct INSERT, so we need to include it ourselves)
+      const campusId = (u.user_metadata?.campus_id as string) ||
+        (u.app_metadata?.campus_id as string) ||
+        undefined;
+
       // SECURITY: role is intentionally omitted here — clients never write role.
       // The row's role is assigned server-side (handle_new_user trigger / column
       // default), never from user_metadata.
@@ -123,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           email: u.email,
           full_name: fullName,
+          ...(campusId ? { campus_id: campusId } : {}),
         })
         .select()
         .single();
@@ -130,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         const { data: retryProfile, error: retryError } = await supabase
           .from('user_profiles')
-          .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, created_at, updated_at')
+          .select('id, email, full_name, role, department, assigned_lead_id, assigned_buddy_id, campus_id, created_at, updated_at')
           .eq('id', userId)
           .single();
         if (retryError) {
@@ -194,12 +207,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // unused. handle_new_user (a server-side trigger) creates the user_profiles row
   // with role='new_joinee' and a DB trigger notifies managers/leads of the new
   // signup — the client no longer writes a role or inserts that notification.
-  const signUp = useCallback(async (email: string, password: string, fullName: string, _role: UserRole = 'new_joinee') => {
+  // The `campusId` parameter is passed through user_metadata so the handle_new_user
+  // trigger can set the user's campus_id.
+  const signUp = useCallback(async (email: string, password: string, fullName: string, _role: UserRole = 'new_joinee', campusId?: string) => {
+    const metadata: Record<string, unknown> = { full_name: fullName };
+    if (campusId) {
+      metadata.campus_id = campusId;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: metadata,
       },
     });
     if (error) throw error;
@@ -243,17 +263,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) fetchProfile(user.id);
   }, [user]);
 
+  // ── Super Admin helpers ────────────────────────────────────────
+  const isSuperAdmin = profile?.role === 'super_admin';
+
+  // Placeholder for Phase 6 — super admin campus management
+  const manageCampuses = useCallback(async () => {
+    // Will be implemented in Phase 6 (Super Admin Dashboard)
+    console.warn('[Auth] manageCampuses is not yet implemented');
+  }, []);
+
   const value = useMemo<AuthContextValue>(() => ({
     user,
     profile,
     loading,
+    isSuperAdmin,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
     hasRole,
     refreshProfile,
-  }), [user, profile, loading, signUp, signIn, signInWithGoogle, signOut, hasRole, refreshProfile]);
+    manageCampuses,
+  }), [user, profile, loading, isSuperAdmin, signUp, signIn, signInWithGoogle, signOut, hasRole, refreshProfile, manageCampuses]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

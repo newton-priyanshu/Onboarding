@@ -1,4 +1,5 @@
 export type {
+  Department,
   UserRole,
   UserProfile,
   WorksheetId,
@@ -12,6 +13,11 @@ export type {
   OnboardingSubmission,
   NotificationType,
   Notification,
+  Campus,
+  OnboardingTemplate,
+  Role,
+  Permission,
+  AuditLog,
 } from './supabase';
 
 export type {
@@ -21,4 +27,10 @@ export type {
   PhaseLabel,
   PhaseReviewStatus,
   WorksheetReviewerMap,
+  TemplateWorksheet,
+  TemplateWeek,
+  TemplatePhase,
+  TemplateGateArtifact,
+  TemplateStructure,
+  ApprovalChain,
 } from './worksheet';
