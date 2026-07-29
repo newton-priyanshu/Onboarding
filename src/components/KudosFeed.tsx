@@ -106,8 +106,8 @@ export default function KudosFeed({ milestones, compact = true }: KudosFeedProps
                 opacity: 0,
                 transition: 'background 200ms var(--ease-lux)',
               }}
-              onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(26, 26, 26, 0.02)'; }}
-              onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(26, 26, 26, 0.02)'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
             >
               <MilestoneIcon Icon={Icon} color={config.color} />
 

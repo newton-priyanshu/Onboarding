@@ -162,7 +162,6 @@ export default function Dashboard() {
   // ── Kudos & Milestones ──
   const { receivedKudos } = useKudos(user?.id || null);
   const { milestones } = useMilestones({
-    userId: user?.id || null,
     submissions,
     achievements,
     receivedKudos,

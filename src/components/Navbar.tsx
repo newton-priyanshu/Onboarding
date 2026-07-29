@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCampus } from '../context/CampusContext';
 import { useTheme } from '../context/ThemeContext';
+import { useCampusPath } from '../utils/campusSlug';
 import { Sun, Moon } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types/supabase';
@@ -55,6 +56,7 @@ export default function Navbar({ progress }: NavbarProps) {
   const { user, profile, signOut } = useAuth();
   const { currentCampus, isLoading: campusLoading } = useCampus();
   const { toggleTheme, isDark } = useTheme();
+  const campusPath = useCampusPath();
 
   // Close user menu on outside click
   useEffect(() => {
@@ -70,41 +72,42 @@ export default function Navbar({ progress }: NavbarProps) {
 
   const role = profile?.role as UserRole | undefined;
 
-  // Role-specific links
+  // Role-specific links — prefixed with campus slug
   const roleLinks: NavLink[] = [];
   if (role === 'campus_head') {
-    roleLinks.push({ path: '/campus-head', label: 'Overview', icon: Shield });
-    roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
+    roleLinks.push({ path: campusPath('/campus-head'), label: 'Overview', icon: Shield });
+    roleLinks.push({ path: campusPath('/admin'), label: 'Admin', icon: ClipboardCheck });
   }
-  if (role && (role === 'lead_instructor' || DEPT_HEAD_ROLES.has(role))) roleLinks.push({ path: '/buddy', label: 'Reviews', icon: UserCheck });
-  if (role === 'onboarding_lead') roleLinks.push({ path: '/onboarding-lead', label: 'Monitoring', icon: Shield });
-  if (role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && role !== 'campus_head') roleLinks.push({ path: '/admin', label: 'Admin', icon: ClipboardCheck });
+  if (role && (role === 'lead_instructor' || DEPT_HEAD_ROLES.has(role))) roleLinks.push({ path: campusPath('/buddy'), label: 'Reviews', icon: UserCheck });
+  if (role === 'onboarding_lead') roleLinks.push({ path: campusPath('/onboarding-lead'), label: 'Monitoring', icon: Shield });
+  if (role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && role !== 'campus_head') roleLinks.push({ path: campusPath('/admin'), label: 'Admin', icon: ClipboardCheck });
 
-  // Super Admin links
+  // Super Admin links (flat — no campus prefix)
   const superAdminLinks: NavLink[] = (role === 'super_admin') ? [
     { path: '/super-admin', label: 'Dashboard', icon: Shield },
     { path: '/super-admin/campuses', label: 'Campuses', icon: Building },
     { path: '/super-admin/templates', label: 'Templates', icon: FileText },
   ] : [];
 
+  // Base links — prefixed with campus slug
   const baseLinks: NavLink[] = user ? [
-    { path: '/', label: 'Dashboard' },
-    { path: '/stakeholders', label: 'Stakeholders' },
+    { path: campusPath('/'), label: 'Dashboard' },
+    { path: campusPath('/stakeholders'), label: 'Stakeholders' },
   ] : [];
 
-  // Department-specific phase links for joinees
+  // Department-specific phase links for joinees — prefixed with campus slug
   const dept = profile?.department;
   const joineeLinks: NavLink[] = (role === 'new_joinee' || role === 'lab_instructor') ? [
     ...(dept && dept !== 'academics'
       ? [
-          { path: `/${dept}/phase-1`, label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 1` },
-          { path: `/${dept}/phase-2`, label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 2` },
-          { path: `/${dept}/phase-3`, label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 3` },
+          { path: campusPath(`/${dept}/phase-1`), label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 1` },
+          { path: campusPath(`/${dept}/phase-2`), label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 2` },
+          { path: campusPath(`/${dept}/phase-3`), label: `${dept.charAt(0).toUpperCase() + dept.slice(1)} Phase 3` },
         ]
       : [
-          { path: '/phase-1', label: 'Phase 1' },
-          { path: '/phase-2', label: 'Phase 2' },
-          { path: '/phase-3', label: 'Phase 3' },
+          { path: campusPath('/phase-1'), label: 'Phase 1' },
+          { path: campusPath('/phase-2'), label: 'Phase 2' },
+          { path: campusPath('/phase-3'), label: 'Phase 3' },
         ]
     ),
   ] : [];
@@ -138,7 +141,7 @@ export default function Navbar({ progress }: NavbarProps) {
       <div className="lux-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', position: 'relative', zIndex: 1 }}>
           {/* Logo */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <Link to={user ? campusPath('/') : '/'} style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
             <div style={{
               width: '36px', height: '36px',
               background: 'var(--color-charcoal)',
@@ -324,25 +327,25 @@ export default function Navbar({ progress }: NavbarProps) {
                       </button>
                     )}
                     {role && role === 'lead_instructor' && (
-                      <button onClick={() => { navigate('/buddy'); setUserMenuOpen(false); }}
+                      <button onClick={() => { navigate(campusPath('/buddy')); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <UserCheck size={14} strokeWidth={1.5} /> Reviews
                       </button>
                     )}
                     {role && DEPT_HEAD_ROLES.has(role) && (
-                      <button onClick={() => { navigate('/buddy'); setUserMenuOpen(false); }}
+                      <button onClick={() => { navigate(campusPath('/buddy')); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <UserCheck size={14} strokeWidth={1.5} /> Reviews
                       </button>
                     )}
                     {role === 'onboarding_lead' && (
-                      <button onClick={() => { navigate('/onboarding-lead'); setUserMenuOpen(false); }}
+                      <button onClick={() => { navigate(campusPath('/onboarding-lead')); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <Shield size={14} strokeWidth={1.5} /> Onboarding Panel
                       </button>
                     )}
                     {role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && (
-                      <button onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
+                      <button onClick={() => { navigate(campusPath('/admin')); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <ClipboardCheck size={14} strokeWidth={1.5} /> Admin Dashboard
                       </button>

@@ -22,7 +22,6 @@ export interface MilestoneItem {
 }
 
 interface UseMilestonesOpts {
-  userId: string | null;
   submissions: WorksheetSubmission[];
   achievements: AchievementWithState[];
   receivedKudos: KudosItem[];
@@ -133,7 +132,6 @@ function detectKudosMilestones(
 // ─── Hook ───────────────────────────────────────────────
 
 export function useMilestones({
-  userId: _userId,
   submissions,
   achievements,
   receivedKudos,

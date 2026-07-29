@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { CampusProvider } from './context/CampusContext';
+import { CampusProvider, useCampus } from './context/CampusContext';
 import { RBACProvider } from './context/RBACContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import PhaseAccessGuard from './components/PhaseAccessGuard';
 import WeekAccessGuard from './components/WeekAccessGuard';
+import CampusRouteLayout from './components/CampusRouteLayout';
 import { ToastProvider } from './components/Toast';
 import Dashboard from './pages/Dashboard';
 import Phase1 from './pages/Phase1';
@@ -97,20 +98,22 @@ function AppLayout({ children }: { children: ReactNode }) {
 }
 
 /**
- * Role-aware landing for "/". lead_instructor users are buddies, not new
- * joinees — sending them to the phase-card Dashboard dead-ends them, so route
- * them to the buddy dashboard instead. All other roles keep the existing
- * Dashboard.
+ * Root-level handler for "/". Routes users based on campus and role:
+ * - No campus_id → /select-campus
+ * - Has campus_id → /:campusSlug/ (campus-scoped index route)
+ *
+ * The campus-scoped HomeRoute (inside CampusRouteLayout) handles the
+ * actual dashboard rendering and role-based redirects.
  */
 function HomeRoute() {
   const { profile, loading } = useAuth();
+  const { campusSlug } = useCampus();
 
   if (loading) {
     return <PageFallback />;
   }
 
   // Profile not loaded yet — wait for fetchProfile to finish
-  // (prevents Dashboard flash where profile is briefly null after sign-in)
   if (!profile) {
     return <PageFallback />;
   }
@@ -120,18 +123,49 @@ function HomeRoute() {
     return <Navigate to="/select-campus" replace />;
   }
 
-  // Campus Head → campus head overview dashboard
+  // Redirect super admin to their dashboard
+  if (profile.role === 'super_admin') {
+    return <Navigate to="/super-admin" replace />;
+  }
+
+  // Redirect to campus-scoped URL
+  if (campusSlug) {
+    return <Navigate to={`/${campusSlug}/`} replace />;
+  }
+
+  // Fallback — campusSlug not yet resolved
+  return <PageFallback />;
+}
+
+/**
+ * Campus-scoped landing — renders the actual dashboard for authenticated
+ * users who already have a campus assigned. This is the index route
+ * inside CampusRouteLayout.
+ */
+function CampusHomeRoute() {
+  const { profile, loading } = useAuth();
+
+  if (loading) {
+    return <PageFallback />;
+  }
+
+  if (!profile) {
+    return <PageFallback />;
+  }
+
+  // Campus Head → campus head dashboard
   if (profile.role === 'campus_head') {
     return <CampusHeadDashboard />;
   }
 
+  // Lead instructor → buddy dashboard
   if (profile.role === 'lead_instructor') {
-    return <Navigate to="/buddy" replace />;
+    return <Navigate to="buddy" replace />;
   }
 
   // Department-aware redirect: progression/operations users go to their dept dashboard
   if (profile.department && profile.department !== 'academics') {
-    return <Navigate to={`/${profile.department}`} replace />;
+    return <Navigate to={profile.department} replace />;
   }
 
   return <Dashboard />;
@@ -140,6 +174,7 @@ function HomeRoute() {
 /** Department worksheet wrapper — looks up the component from WORKSHEET_COMPONENTS */
 function DeptWorksheetWrapper(_props: { dept: Department }) {
   const location = useLocation();
+  // Extract worksheet ID from path like /:campusSlug/progression/phase-1/worksheet/pr_p1_w1
   const wsId = location.pathname.split('/').pop() || '';
   const Component = WORKSHEET_COMPONENTS[wsId];
 
@@ -179,7 +214,7 @@ function GlobalOverlays() {
 /** Wraps the routed page content in an ErrorBoundary that resets on route change */
 function AppRoutes() {
   const location = useLocation();
-  // Generate dynamic worksheet routes — exclude department-specific worksheets (they have their own routes)
+  // Generate dynamic worksheet routes (relative to campus slug)
   const DEPT_PREFIXES = ['pr_', 'op_'];
   const worksheetRoutes = Object.entries(ALL_WORKSHEETS).flatMap(([phaseName, phaseData]) => {
     // Skip department phase entries (they have explicit routes)
@@ -192,7 +227,8 @@ function AppRoutes() {
         const Component = WORKSHEET_COMPONENTS[sheet.id];
         if (!Component) return null;
         const wsNum = sheet.id.includes('_w') ? sheet.id.split('_w')[1] : '';
-        const routePath = `/${phasePath}/worksheet-${wsNum}`;
+        // Route is relative to /:campusSlug/ parent
+        const routePath = `${phasePath}/worksheet-${wsNum}`;
         const phaseNum = data.num;
         const wrapped = phaseNum > 1
           ? <PhaseAccessGuard phaseNum={phaseNum}><Suspense fallback={<PageFallback />}><Component /></Suspense></PhaseAccessGuard>
@@ -206,89 +242,17 @@ function AppRoutes() {
   return (
     <ErrorBoundary locationKey={location.key}>
       <Routes>
-        {/* Auth routes */}
+        {/* ─── Auth Routes (flat — no campus prefix) ─── */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/select-campus" element={<ProtectedRoute><SelectCampus /></ProtectedRoute>} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Admin / Lead — wrapped in Suspense for code-splitting */}
-        {/* Campus Admin Routes */}
-        <Route path="/admin" element={
-          <ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'campus_head', 'progression_head', 'ops_head', 'campus_admin']}>
-            <Suspense fallback={<PageFallback />}>
-              <RoleAwareAdminDashboard />
-            </Suspense>
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/users" element={<ProtectedRoute requiredRoles={['campus_admin', 'academic_head', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusUserManagement /></Suspense></ProtectedRoute>} />
-        <Route path="/admin/reports" element={<ProtectedRoute requiredRoles={['campus_admin', 'academic_head', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusReports /></Suspense></ProtectedRoute>} />
-        <Route path="/admin/settings" element={<ProtectedRoute requiredRoles={['campus_admin', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusSettings /></Suspense></ProtectedRoute>} />
-        <Route path="/buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyDashboard /></Suspense></ProtectedRoute>} />
-        <Route path="/onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><Suspense fallback={<PageFallback />}><OnboardingLeadDashboard /></Suspense></ProtectedRoute>} />
-        {/* Phase Review Routes */}
-        <Route path="/admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
-        <Route path="/onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
+        {/* ─── Campus Selection (flat — happens before campus assignment) ─── */}
+        <Route path="/select-campus" element={<ProtectedRoute><SelectCampus /></ProtectedRoute>} />
 
-        {/* Buddy Gate Pass Routes */}
-        <Route path="/buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyGatePass /></Suspense></ProtectedRoute>} />
-
-        {/* Individual Worksheet Review Routes */}
-        <Route path="/admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
-        <Route path="/buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
-        <Route path="/onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
-
-        {/* Dashboard / Phases */}
-        <Route path="/" element={<ProtectedRoute><HomeRoute /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<Navigate to="/" replace />} />
-        <Route path="/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
-        <Route path="/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
-        <Route path="/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
-
-        {/* Campus Head Route */}
-        <Route path="/campus-head" element={
-          <ProtectedRoute requiredRoles={['campus_head']}>
-            <CampusHeadDashboard />
-          </ProtectedRoute>
-        } />
-
-        {/* Department Routes — Progression & Operations */}
-        <Route path="/progression" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
-          <DeptDashboard dept="progression" label="Progression Department" desc="Progress tracking, assessment design, and student outcome analysis" />
-        </ProtectedRoute>} />
-        <Route path="/progression/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={1} /></ProtectedRoute>} />
-        <Route path="/progression/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={2} /></ProtectedRoute>} />
-        <Route path="/progression/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={3} /></ProtectedRoute>} />
-        <Route path="/progression/phase-1/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
-        <Route path="/progression/phase-2/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
-        <Route path="/progression/phase-3/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
-        <Route path="/operations" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
-          <DeptDashboard dept="operations" label="Operations Department" desc="Campus operations, scheduling, compliance, and resource management" />
-        </ProtectedRoute>} />
-        <Route path="/operations/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={1} /></ProtectedRoute>} />
-        <Route path="/operations/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={2} /></ProtectedRoute>} />
-        <Route path="/operations/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={3} /></ProtectedRoute>} />
-        <Route path="/operations/phase-1/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
-        <Route path="/operations/phase-2/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
-        <Route path="/operations/phase-3/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
-
-        {/* FTP Week Routes — Week 1 always open, weeks 2+ gated behind prior week completion */}
-        <Route path="/week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekPage weekNum={1} /></ProtectedRoute>} />
-        <Route path="/week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekPage weekNum={3} /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekPage weekNum={4} /></WeekAccessGuard></ProtectedRoute>} />
-        {/* FTP Week Worksheet Routes — also gated by week access */}
-        <Route path="/week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage weekNum={1} /></ProtectedRoute>} />
-        <Route path="/week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekWorksheetPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekWorksheetPage weekNum={3} /></WeekAccessGuard></ProtectedRoute>} />
-        <Route path="/week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekWorksheetPage weekNum={4} /></WeekAccessGuard></ProtectedRoute>} />
-
-        {/* Dynamic Worksheet Routes */}
-        {worksheetRoutes}
-
-        {/* Super Admin Routes */}
+        {/* ─── Super Admin Routes (flat — no campus context) ─── */}
         <Route path="/super-admin" element={
           <SuperAdminGuard><Suspense fallback={<PageFallback />}><SuperAdminDashboard /></Suspense></SuperAdminGuard>
         } />
@@ -314,10 +278,91 @@ function AppRoutes() {
           <SuperAdminGuard><Suspense fallback={<PageFallback />}><AuditLogView /></Suspense></SuperAdminGuard>
         } />
 
-        {/* Legacy */}
-        <Route path="/assessment" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'lead_instructor']}><Assessment /></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><NotificationsPage /></Suspense></ProtectedRoute>} />
-        <Route path="/stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
+        {/* ─── Root redirect: handles campus routing ─── */}
+        <Route path="/" element={<ProtectedRoute><HomeRoute /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
+        {/* ─── Campus-Scoped Routes (all under /:campusSlug) ─── */}
+        <Route path="/:campusSlug" element={<ProtectedRoute><CampusRouteLayout /></ProtectedRoute>}>
+          {/* Index route — the dashboard/home (campus-aware) */}
+          <Route index element={<CampusHomeRoute />} />
+
+          {/* Phase Routes */}
+          <Route path="phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase1 /></ProtectedRoute>} />
+          <Route path="phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase2 /></ProtectedRoute>} />
+          <Route path="phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><Phase3 /></ProtectedRoute>} />
+
+          {/* Campus Head Route */}
+          <Route path="campus-head" element={
+            <ProtectedRoute requiredRoles={['campus_head']}>
+              <CampusHeadDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Department Routes — Progression */}
+          <Route path="progression" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
+            <DeptDashboard dept="progression" label="Progression Department" desc="Progress tracking, assessment design, and student outcome analysis" />
+          </ProtectedRoute>} />
+          <Route path="progression/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={1} /></ProtectedRoute>} />
+          <Route path="progression/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={2} /></ProtectedRoute>} />
+          <Route path="progression/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="progression" phaseNum={3} /></ProtectedRoute>} />
+          <Route path="progression/phase-1/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
+          <Route path="progression/phase-2/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
+          <Route path="progression/phase-3/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="progression" />} />
+
+          {/* Department Routes — Operations */}
+          <Route path="operations" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}>
+            <DeptDashboard dept="operations" label="Operations Department" desc="Campus operations, scheduling, compliance, and resource management" />
+          </ProtectedRoute>} />
+          <Route path="operations/phase-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={1} /></ProtectedRoute>} />
+          <Route path="operations/phase-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={2} /></ProtectedRoute>} />
+          <Route path="operations/phase-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><DepartmentPhasePage dept="operations" phaseNum={3} /></ProtectedRoute>} />
+          <Route path="operations/phase-1/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
+          <Route path="operations/phase-2/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
+          <Route path="operations/phase-3/worksheet/:worksheetId" element={<DeptWorksheetWrapper dept="operations" />} />
+
+          {/* FTP Week Routes */}
+          <Route path="week-1" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekPage weekNum={1} /></ProtectedRoute>} />
+          <Route path="week-2" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />
+          <Route path="week-3" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekPage weekNum={3} /></WeekAccessGuard></ProtectedRoute>} />
+          <Route path="week-4" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekPage weekNum={4} /></WeekAccessGuard></ProtectedRoute>} />
+          <Route path="week-1/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekWorksheetPage weekNum={1} /></ProtectedRoute>} />
+          <Route path="week-2/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={2}><WeekWorksheetPage weekNum={2} /></WeekAccessGuard></ProtectedRoute>} />
+          <Route path="week-3/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={3}><WeekWorksheetPage weekNum={3} /></WeekAccessGuard></ProtectedRoute>} />
+          <Route path="week-4/worksheet/:worksheetId" element={<ProtectedRoute requiredRoles={['new_joinee', 'lab_instructor']}><WeekAccessGuard weekNum={4}><WeekWorksheetPage weekNum={4} /></WeekAccessGuard></ProtectedRoute>} />
+
+          {/* Admin Routes */}
+          <Route path="admin" element={
+            <ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'campus_head', 'progression_head', 'ops_head', 'campus_admin']}>
+              <Suspense fallback={<PageFallback />}>
+                <RoleAwareAdminDashboard />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="admin/users" element={<ProtectedRoute requiredRoles={['campus_admin', 'academic_head', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusUserManagement /></Suspense></ProtectedRoute>} />
+          <Route path="admin/reports" element={<ProtectedRoute requiredRoles={['campus_admin', 'academic_head', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusReports /></Suspense></ProtectedRoute>} />
+          <Route path="admin/settings" element={<ProtectedRoute requiredRoles={['campus_admin', 'campus_head']}><Suspense fallback={<PageFallback />}><CampusSettings /></Suspense></ProtectedRoute>} />
+          <Route path="admin/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
+          <Route path="admin/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+
+          {/* Buddy Routes */}
+          <Route path="buddy" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyDashboard /></Suspense></ProtectedRoute>} />
+          <Route path="buddy/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+          <Route path="buddy/gate-pass/:userId/:gateId" element={<ProtectedRoute requiredRoles={['lead_instructor', 'academic_head', 'progression_head', 'ops_head', 'campus_head']}><Suspense fallback={<PageFallback />}><BuddyGatePass /></Suspense></ProtectedRoute>} />
+
+          {/* Onboarding Lead Routes */}
+          <Route path="onboarding-lead" element={<ProtectedRoute requiredRoles={['onboarding_lead']}><Suspense fallback={<PageFallback />}><OnboardingLeadDashboard /></Suspense></ProtectedRoute>} />
+          <Route path="onboarding-lead/review-phase/:userId/:phaseNum" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><PhaseReview /></Suspense></ProtectedRoute>} />
+          <Route path="onboarding-lead/review/:userId/:worksheetId" element={<ProtectedRoute requiredRoles={['onboarding_lead', 'academic_head']}><Suspense fallback={<PageFallback />}><WorksheetReview /></Suspense></ProtectedRoute>} />
+
+          {/* Other Routes */}
+          <Route path="assessment" element={<ProtectedRoute requiredRoles={['academic_head', 'onboarding_lead', 'lead_instructor']}><Assessment /></ProtectedRoute>} />
+          <Route path="notifications" element={<ProtectedRoute><Suspense fallback={<PageFallback />}><NotificationsPage /></Suspense></ProtectedRoute>} />
+          <Route path="stakeholders" element={<ProtectedRoute><Stakeholders /></ProtectedRoute>} />
+
+          {/* Dynamic Worksheet Routes */}
+          {worksheetRoutes}
+        </Route>
 
         {/* 404 catch-all */}
         <Route path="*" element={<NotFound />} />
