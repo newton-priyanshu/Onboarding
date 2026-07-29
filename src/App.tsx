@@ -5,6 +5,7 @@ import { CampusProvider, useCampus } from './context/CampusContext';
 import { RBACProvider } from './context/RBACContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
+import Breadcrumbs from './components/Breadcrumbs';
 import GlobalCommandPalette from './components/GlobalCommandPalette';
 import WelcomeOverlay from './components/WelcomeOverlay';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -401,6 +402,7 @@ export default function App() {
           <ToastProvider>
           <AppLayout>
             <Navbar progress={progress} />
+            <Breadcrumbs />
             <GlobalCommandPalette />
             <GlobalOverlays />
             <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
