@@ -2,7 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CampusProvider } from './context/CampusContext';
+import { RBACProvider } from './context/RBACContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
+import GlobalCommandPalette from './components/GlobalCommandPalette';
+import WelcomeOverlay from './components/WelcomeOverlay';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import PhaseAccessGuard from './components/PhaseAccessGuard';
@@ -159,6 +163,17 @@ function RoleAwareAdminDashboard() {
     return <CampusAdminDashboard />;
   }
   return <AdminDashboard />;
+}
+
+/** Global overlay components — shown on the dashboard home */
+function GlobalOverlays() {
+  const { profile, loading } = useAuth();
+  if (loading || !profile) return null;
+  // Only show welcome overlay to new joinees on their first visit
+  if (profile.role === 'new_joinee' || profile.role === 'lab_instructor') {
+    return <WelcomeOverlay fullName={profile.full_name || undefined} />;
+  }
+  return null;
 }
 
 /** Wraps the routed page content in an ErrorBoundary that resets on route change */
@@ -334,11 +349,15 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <CampusProvider>
         <AuthProvider>
+          <RBACProvider>
           <ToastProvider>
           <AppLayout>
             <Navbar progress={progress} />
+            <GlobalCommandPalette />
+            <GlobalOverlays />
             <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
               <AppRoutes />
             </main>
@@ -357,8 +376,11 @@ export default function App() {
               <p style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.7 }}>Faculty Onboarding Programme</p>
             </footer>
           </AppLayout>
-        </ToastProvider>        </AuthProvider>
+        </ToastProvider>
+        </RBACProvider>
+        </AuthProvider>
       </CampusProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

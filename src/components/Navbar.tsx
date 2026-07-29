@@ -4,6 +4,8 @@ import { Menu, X, LogOut, UserCheck, Shield, ClipboardCheck, Building, FileText,
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCampus } from '../context/CampusContext';
+import { useTheme } from '../context/ThemeContext';
+import { Sun, Moon } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import type { UserRole } from '../types/supabase';
 
@@ -52,6 +54,7 @@ export default function Navbar({ progress }: NavbarProps) {
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const { user, profile, signOut } = useAuth();
   const { currentCampus, isLoading: campusLoading } = useCampus();
+  const { toggleTheme, isDark } = useTheme();
 
   // Close user menu on outside click
   useEffect(() => {
@@ -199,6 +202,22 @@ export default function Navbar({ progress }: NavbarProps) {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '6px', color: 'var(--color-warm-grey)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'color 200ms var(--ease-lux)',
+              }}
+              onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-charcoal)'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLElement).style.color = 'var(--color-warm-grey)'; }}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDark ? 'Light mode' : 'Dark mode'}
+            >
+              {isDark ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
+            </button>
             {/* Notification Bell - rendered once, visible on all screen sizes */}
             <NotificationBell />
             {/* Desktop nav */}
