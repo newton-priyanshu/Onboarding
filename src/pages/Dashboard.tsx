@@ -23,6 +23,9 @@ import { useAchievements } from '../hooks/useAchievements';
 import AchievementCard from '../components/AchievementCard';
 import { getMotivation } from '../config/motivations';
 import { getEstimatedTime } from '../config/estimatedTimes';
+import { useKudos } from '../hooks/useKudos';
+import { useMilestones } from '../hooks/useMilestones';
+import KudosFeed from '../components/KudosFeed';
 
 /** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
 const PHASE1_WS_IDS = [...new Set(PHASE_WORKSHEETS_MAP[1])];
@@ -155,6 +158,15 @@ export default function Dashboard() {
   const { achievements } = useAchievements(user?.id || null, submissions);
   const unlockedAchievements = achievements.filter(a => a.unlocked);
   const lockedAchievements = achievements.filter(a => !a.unlocked);
+
+  // ── Kudos & Milestones ──
+  const { receivedKudos } = useKudos(user?.id || null);
+  const { milestones } = useMilestones({
+    userId: user?.id || null,
+    submissions,
+    achievements,
+    receivedKudos,
+  });
 
   // ── Daily motivation ──
   const [motivation] = useState(getMotivation);
@@ -784,6 +796,30 @@ export default function Dashboard() {
             })}
           </div>
         </section>
+
+        {/* Milestones Feed */}
+        {milestones.length > 0 && (
+          <section style={{ marginTop: '3rem' }}>
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1.5rem 0',
+              borderTop: '1px solid rgba(26, 26, 26, 0.12)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Sparkles size={22} strokeWidth={1.5} style={{ color: '#E91E63' }} />
+                    Activity Feed
+                  </h2>
+                  <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
+                    Your recognitions, achievements, and recent milestones
+                  </p>
+                </div>
+              </div>
+            </div>
+            <KudosFeed milestones={milestones} compact />
+          </section>
+        )}
 
         {/* Achievements Section */}
         {achievements.length > 0 && (

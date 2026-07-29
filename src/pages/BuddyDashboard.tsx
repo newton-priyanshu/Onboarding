@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
-import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle, Coffee, UserPlus } from 'lucide-react';
+import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle, Coffee, UserPlus, Heart } from 'lucide-react';
 import { getWorksheetName, type WorksheetSubmission } from '../config/worksheetConfig';
 import type { OnboardingTemplate } from '../types/supabase';
 import { REVIEW_STATUS } from '../constants/status';
@@ -11,6 +11,7 @@ import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import { useWorksheetTemplate } from '../hooks';
 import EmptyState from '../components/EmptyState';
+import SendKudosDialog from '../components/SendKudosDialog';
 
 interface SimpleInstructor {
   id: string;
@@ -250,7 +251,20 @@ export default function BuddyDashboard() {
             />
           </>
         )}
-        {activeTab === 'instructors' && <InstructorsTab myInstructors={myInstructors} allWorksheets={allWorksheets} />}
+        {activeTab === 'instructors' && (
+          <InstructorsTab
+            myInstructors={myInstructors}
+            allWorksheets={allWorksheets}
+            sendKudos={async (toUserId, message) => {
+              const { error } = await supabase.from('kudos').insert({
+                from_user_id: user!.id,
+                to_user_id: toUserId,
+                message: message.trim(),
+              });
+              if (error) throw error;
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -321,10 +335,12 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab,
   );
 }
 
-function InstructorsTab({ myInstructors, allWorksheets }: {
+function InstructorsTab({ myInstructors, allWorksheets, sendKudos }: {
   myInstructors: SimpleInstructor[];
   allWorksheets: WorksheetSubmission[];
+  sendKudos: (toUserId: string, message: string) => Promise<void>;
 }) {
+  const [kudosTarget, setKudosTarget] = useState<SimpleInstructor | null>(null);
   const navigate = useNavigate();
 
   /** Check if all regular worksheets in a phase are buddy-approved for this user */
@@ -421,9 +437,38 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
                   })}
                 </div>
               )}
+              {/* Kudos button */}
+              <div style={{ paddingLeft: '28px', marginTop: '8px' }}>
+                <button
+                  onClick={() => setKudosTarget(instr)}
+                  style={{
+                    fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    padding: '4px 12px', border: '1px solid #E91E63',
+                    background: 'transparent', color: '#E91E63',
+                    cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    transition: 'all 300ms var(--ease-lux)',
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.background = '#E91E63'; e.currentTarget.style.color = '#FFF'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#E91E63'; }}
+                >
+                  <Heart size={12} strokeWidth={1.5} />
+                  Send Kudos
+                </button>
+              </div>
             </div>
           );
         })
+      )}
+
+      {/* Kudos Dialog */}
+      {kudosTarget && (
+        <SendKudosDialog
+          recipientName={kudosTarget.full_name}
+          recipientId={kudosTarget.id}
+          onSend={sendKudos}
+          onClose={() => setKudosTarget(null)}
+        />
       )}
     </div>
   );
