@@ -15,7 +15,6 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   // Campus selection happens after signup on /select-campus
 
   const handleSubmit = async (e: FormEvent) => {
@@ -37,31 +36,16 @@ export default function Signup() {
     setLoading(true);
     try {
       await signUp(email, password, fullName);
-      setSuccess(true);
+      // Email confirmation is disabled — user is auto-signed-in.
+      // Navigate to / where HomeRoute will redirect to /select-campus
+      // if the user hasn't picked a campus yet.
+      navigate('/', { replace: true });
     } catch (err) {
       setError((err as { message?: string }).message || 'Sign up failed.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="lux-container" style={{ width: '100%', textAlign: 'center' }}>
-          <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', fontWeight: 400, marginBottom: '1rem' }}>Account Created</h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-warm-grey)', marginBottom: '2rem' }}>
-            Check your email to confirm your account.{' '}
-            Once confirmed, sign in and you&apos;ll be prompted to select your campus.
-          </p>
-          <button onClick={() => navigate('/login')} className="lux-btn lux-btn-primary" style={{ minWidth: '200px' }}>
-            <span className="gold-overlay" /><span className="btn-content">Go to Sign In</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
