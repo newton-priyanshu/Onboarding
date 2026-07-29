@@ -456,6 +456,31 @@ button:focus-visible,
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Progress-bar shimmer effect */
+@keyframes luxShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.lux-progress-shimmer {
+  background: linear-gradient(90deg,
+    var(--color-gold) 25%,
+    rgba(212, 175, 55, 0.6) 50%,
+    var(--color-gold) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: luxShimmer 2s ease-in-out infinite;
+}
+
+.lux-progress-pulse {
+  animation: luxProgressPulse 2s ease-in-out infinite;
+}
+
+@keyframes luxProgressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 /* ================================================
    VERTICAL TEXT LABEL
    ================================================ */

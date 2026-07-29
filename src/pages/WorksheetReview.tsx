@@ -28,7 +28,7 @@ function StatusBadge({ status, submissionStatus }: { status: string; submissionS
   if (status === REVIEW_STATUS.BUDDY_APPROVED) return <span className="lux-badge" style={{ borderColor: t.purple, color: t.purple, fontSize: '0.6rem' }}><Shield size={10} strokeWidth={2} /> Buddy Approved · Awaiting Manager</span>;
   // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
   if (status === REVIEW_STATUS.PENDING_REVIEW || (status === REVIEW_STATUS.EMPTY && (submissionStatus === SUBMISSION_STATUS.SUBMITTED || submissionStatus === 'Submitted'))) return <span className="lux-badge" style={{ borderColor: t.gd, color: t.gd, fontSize: '0.6rem' }}><Clock size={10} strokeWidth={2} /> Pending Review</span>;
-  if (status === REVIEW_STATUS.NEEDS_REVISION) return <span className="lux-badge" style={{ borderColor: t.error, color: t.error, fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
+  if (status === REVIEW_STATUS.NEEDS_REVISION) return <span className="lux-badge" style={{ borderColor: t.warning, color: t.warning, fontSize: '0.6rem' }}><XCircle size={10} strokeWidth={2} /> Needs Revision</span>;
   if (status === REVIEW_STATUS.REVISION_SUBMITTED) return <span className="lux-badge" style={{ borderColor: t.pending, color: t.pending, fontSize: '0.6rem' }}><RefreshCw size={10} strokeWidth={2} /> Re-submitted</span>;
   return null;
 }

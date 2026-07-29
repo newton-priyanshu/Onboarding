@@ -1,13 +1,14 @@
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, MessageSquare, ClipboardCheck, FileText, Monitor, Lock, CheckCircle2, AlertCircle, RefreshCw, type LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MessageSquare, ClipboardCheck, FileText, Monitor, Lock, CheckCircle2, AlertCircle, RefreshCw, ArrowLeft, type LucideIcon } from 'lucide-react';
+import { getEstimatedTime } from '../config/estimatedTimes';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { t } from '../config/theme';
-import { REVIEWER_LABELS, REVIEWER_STYLES, canAccessPhase, type WorksheetSubmission } from '../config/worksheetConfig';
+import { REVIEWER_LABELS, REVIEWER_STYLES, canAccessPhase, getReviewerType, type WorksheetSubmission } from '../config/worksheetConfig';
 import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
-import PhaseWorksheetList from '../components/PhaseWorksheetList';
 import { countCompleted } from '../utils/worksheetHelpers';
 
 interface WorksheetMeta {
@@ -28,6 +29,8 @@ interface PhaseLockedViewProps {
 }
 
 const phaseLabels: Record<number, string> = { 1: 'Orientation', 2: 'Contribution', 3: 'Ownership' };
+
+const ACCENT = t.gd;
 
 const worksheets: WorksheetMeta[] = [
   { id: 'p2_w1', num: 1, path: '/phase-2/worksheet-1', title: 'Student Doubt Resolution & Common Errors Diagnostic Log', icon: MessageSquare, desc: 'Track 30+ student interactions and identify confusion patterns.' },
@@ -126,34 +129,52 @@ export default function Phase2() {
   return (
     <div className="lux-section">
       <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '3rem' }}>
-          <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ width: '48px', height: '48px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <BookOpen size={22} strokeWidth={1.5} style={{ color: t.ch }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>
-                Phase 2: <em style={{ fontStyle: 'italic', color: t.gd }}>Contribution</em>
-              </h1>
-              <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>Days 31–60 — 4 worksheets</span>
-            </div>
+        {/* Back link */}
+        <Link to="/" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          padding: '6px 12px', marginBottom: '2rem',
+          fontFamily: t.body, fontSize: '0.7rem',
+          fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
+          color: t.wg, textDecoration: 'none',
+        }}>
+          <ArrowLeft size={14} strokeWidth={1.5} /> Back to Dashboard
+        </Link>
+
+        <div className="lux-line" style={{ marginBottom: '1.5rem', borderColor: ACCENT }} />
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '4px 14px', marginBottom: '1rem',
+            background: `${ACCENT}14`,
+            border: `1px solid ${ACCENT}4D`,
+            fontFamily: t.body, fontSize: '0.65rem',
+            fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
+            color: ACCENT,
+          }}>
+            Academics
           </div>
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginTop: '1rem', maxWidth: '600px' }}>
-            Teach, create content, and develop your craft with mentor support.
+          <h1 style={{
+            fontFamily: t.heading, fontSize: '2rem', fontWeight: 400,
+            letterSpacing: '-0.02em', marginBottom: '0.5rem',
+          }}>
+            Phase 2: <em style={{ fontStyle: 'italic', color: ACCENT }}>Contribution</em>
+          </h1>
+          <p style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.wg }}>
+            Days 31–60 — Teach, create content, and develop your craft with mentor support.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '1.25rem' }}>
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
-              <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${(completed / worksheets.length) * 100}%` }} />
+              <div className="lux-progress-fill" style={{ width: `${(completed / worksheets.length) * 100}%`, background: ACCENT }} />
             </div>
             <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
-              <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: t.gd, verticalAlign: 'middle' }} />
+              <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: ACCENT, verticalAlign: 'middle' }} />
               {completed} / {worksheets.length}
             </span>
           </div>
         </div>
 
-        <div style={{ marginBottom: '2.5rem', borderTop: '1px solid rgba(26, 26, 26, 0.1)', paddingTop: '1.5rem' }}>
+        {/* Reviewer Legend */}
+        <div style={{ marginBottom: '2rem', borderTop: '1px solid rgba(26, 26, 26, 0.1)', paddingTop: '1.5rem' }}>
           <span style={{ fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.25em', textTransform: 'uppercase', color: t.wg, display: 'block', marginBottom: '0.75rem' }}>
             Reviewed by
           </span>
@@ -168,7 +189,84 @@ export default function Phase2() {
           </div>
         </div>
 
-        <PhaseWorksheetList worksheets={worksheets} statuses={statuses} />
+        {/* Worksheet cards — progression-style cleaner design */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {worksheets.map((ws, idx) => {
+            const wsStatus = statuses[ws.id];
+            const statusLabel = wsStatus?.review_status || wsStatus?.status || 'not_started';
+            const reviewerType = getReviewerType(ws.id, template);
+            const reviewerStyle = REVIEWER_STYLES[reviewerType as keyof typeof REVIEWER_STYLES];
+            let statusColor = t.wg;
+            if (statusLabel === 'approved') statusColor = t.success;
+            else if (statusLabel === 'buddy_approved') statusColor = t.purple;
+            else if (statusLabel === 'under_review' || statusLabel === 'pending_review' || statusLabel === 'revision_submitted') statusColor = t.pending;
+            else if (statusLabel === 'needs_revision') statusColor = t.warning;
+            else if (statusLabel === 'in_progress') statusColor = t.ch;
+            const statusDisplay = statusLabel === 'approved' ? 'Reviewed' :
+              statusLabel === 'buddy_approved' ? 'Buddy ✓' :
+              statusLabel === 'needs_revision' ? 'Revise' :
+              statusLabel === 'in_progress' ? 'In Prog.' :
+              (statusLabel === 'submitted' || statusLabel === 'under_review' || statusLabel === 'pending_review' || statusLabel === 'revision_submitted') ? 'Submitted' :
+              'Not Started';
+
+            return (
+              <Link
+                key={ws.id}
+                to={ws.path}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '16px',
+                  padding: '16px 20px',
+                  border: '1px solid rgba(26, 26, 26, 0.12)',
+                  textDecoration: 'none',
+                  transition: 'all 200ms var(--ease-lux)',
+                  opacity: 0,
+                  animation: `luxFadeIn 0.4s ${idx * 0.06}s forwards`,
+                }}
+                onMouseOver={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.background = `${ACCENT}08`; }}
+                onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(26, 26, 26, 0.12)'; e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div style={{
+                  width: '36px', height: '36px',
+                  border: '1px solid rgba(26, 26, 26, 0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <ws.icon size={16} strokeWidth={1.5} style={{ color: t.ch }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500,
+                    color: t.ch, marginBottom: '2px',
+                  }}>
+                    {ws.title}
+                  </p>
+                  <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg, margin: 0 }}>
+                    {ws.desc}
+                  </p>
+                  {getEstimatedTime(ws.id) && (
+                    <span style={{ fontSize: '0.6rem', color: t.wg, marginTop: '2px', display: 'inline-block' }}>
+                      {getEstimatedTime(ws.id)}
+                    </span>
+                  )}
+                </div>
+                {reviewerStyle && (
+                  <span style={{
+                    fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.15em',
+                    textTransform: 'uppercase', color: reviewerStyle.color,
+                    border: '1px solid ' + reviewerStyle.color,
+                    padding: '1px 6px',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {reviewerType === 'buddy' ? 'Buddy' : reviewerType === 'manager' ? 'Manager' : 'Self'}
+                  </span>
+                )}
+                <span style={{ fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: statusColor, whiteSpace: 'nowrap' }}>
+                  {statusDisplay}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

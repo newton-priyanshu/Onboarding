@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
-import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle } from 'lucide-react';
+import { Users, Clock, ArrowRight, RefreshCw, UserCheck, BadgeCheck, Shield, FileCheck, AlertCircle, Coffee, UserPlus } from 'lucide-react';
 import { getWorksheetName, type WorksheetSubmission } from '../config/worksheetConfig';
 import type { OnboardingTemplate } from '../types/supabase';
 import { REVIEW_STATUS } from '../constants/status';
 import { t } from '../config/theme';
 import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import { useWorksheetTemplate } from '../hooks';
+import EmptyState from '../components/EmptyState';
 
 interface SimpleInstructor {
   id: string;
@@ -270,17 +271,19 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab,
       <p style={{ fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1rem' }}>
         {title} ({worksheets.length})
       </p>
-      {worksheets.length === 0 ? (          <div style={{ textAlign: 'center', padding: '2.5rem', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
-            <div className="lux-line" style={{ margin: '0 auto 1rem' }} />
-            <p style={{ fontFamily: t.heading, fontSize: '1.25rem', fontWeight: 400, color: t.ch, marginBottom: '0.5rem' }}>All Caught Up</p>
-            <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>
-              {activeTab === 'pending'
-                ? 'All assigned worksheets have been reviewed. Switch to "Buddy Approved" or "My Instructors" to see the full picture.'
-                : activeTab === 'buddy_approved'
-                  ? 'No buddy-approved worksheets awaiting manager review. Worksheets will appear here once you approve them.'
-                  : 'No worksheets match the current filter.'}
-            </p>
-          </div>
+      {worksheets.length === 0 ? (
+        <div style={{ padding: '2rem 0', borderTop: '1px solid rgba(26,26,26,0.1)' }}>
+          <EmptyState
+            icon={activeTab === 'buddy_approved' ? Shield : Coffee}
+            title={activeTab === 'pending' ? 'All Caught Up' : 'Awaiting Manager'}
+            description={activeTab === 'pending'
+              ? 'All assigned worksheets have been reviewed. Take a breather — or switch tabs to see the full picture.'
+              : activeTab === 'buddy_approved'
+                ? 'No buddy-approved worksheets are awaiting manager review yet. Worksheets will appear here once you approve them.'
+                : 'No worksheets match the current filter.'}
+            iconColor={activeTab === 'buddy_approved' ? t.purple : t.gd}
+          />
+        </div>
       ) : (
         worksheets.map((ws, idx) => {
           const instr = instructors.find(i => i.id === ws.user_id);
@@ -347,11 +350,11 @@ function InstructorsTab({ myInstructors, allWorksheets }: {
         Your Assigned Instructors ({myInstructors.length})
       </p>
       {myInstructors.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg, lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>
-            No instructors assigned yet. Ask an admin to assign joinees to you as a buddy or manager.
-          </p>
-        </div>
+        <EmptyState
+          icon={UserPlus}
+          title="No Instructors Assigned"
+          description="No instructors are assigned to you yet. Ask a campus admin to assign joinees to your buddy or manager queue."
+        />
       ) : (
         myInstructors.map((instr, idx) => {
           const instrWorksheets = allWorksheets.filter(w => w.user_id === instr.id);

@@ -1,14 +1,19 @@
 import { BookOpen, Users, MessageSquare, MessageCircle, Shield, CheckCircle2, AlertCircle, RefreshCw, Anchor, Layers, Flag, type LucideIcon } from 'lucide-react';
+import { getEstimatedTime } from '../config/estimatedTimes';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import { t } from '../config/theme';
-import { REVIEWER_LABELS, REVIEWER_STYLES } from '../config/worksheetConfig';
+import { REVIEWER_LABELS, REVIEWER_STYLES, getReviewerType } from '../config/worksheetConfig';
+import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import PhaseWorksheetList from '../components/PhaseWorksheetList';
+import { Link } from 'react-router-dom';
 import Skeleton, { SkeletonBlock } from '../components/Skeleton';
 import { countCompleted, buildStatusMap, type StatusInfo } from '../utils/worksheetHelpers';
 import { week1Worksheets, week2Worksheets, week3Worksheets, week4Worksheets, type WorksheetMeta } from '../config/weeklyWorksheets';
+
+const ACCENT = t.gd;
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -54,6 +59,7 @@ function getAllWeekWorksheetIds(): string[] {
 
 export default function Phase1() {
   const { user } = useAuth();
+  const { template } = useWorksheetTemplate();
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -180,14 +186,14 @@ export default function Phase1() {
       <div className="lux-container" style={{ maxWidth: '960px', margin: '0 auto' }}>
         {/* Phase Header */}
         <div style={{ marginBottom: '3rem' }}>
-          <div className="lux-line lux-line-gold" style={{ marginBottom: '1.5rem' }} />
+          <div className="lux-line" style={{ marginBottom: '1.5rem', borderColor: ACCENT }} />
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ width: '48px', height: '48px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <BookOpen size={22} strokeWidth={1.5} style={{ color: t.ch }} />
             </div>
             <div style={{ flex: 1 }}>
               <h1 style={{ fontFamily: t.heading, fontSize: '2rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '4px' }}>
-                Phase 1: <em style={{ fontStyle: 'italic', color: t.gd }}>Orientation</em>
+                Phase 1: <em style={{ fontStyle: 'italic', color: ACCENT }}>Orientation</em>
               </h1>
               <span style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, letterSpacing: '0.05em' }}>Days 1–30 — {totalAll} worksheets</span>
             </div>
@@ -197,10 +203,10 @@ export default function Phase1() {
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '1.25rem' }}>
             <div className="lux-progress" style={{ flex: 1, maxWidth: '300px' }}>
-              <div className="lux-progress-fill lux-progress-fill-gold" style={{ width: `${totalAll > 0 ? (completedAll / totalAll) * 100 : 0}%` }} />
+              <div className="lux-progress-fill" style={{ width: `${totalAll > 0 ? (completedAll / totalAll) * 100 : 0}%`, background: ACCENT }} />
             </div>
             <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
-              <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: t.gd, verticalAlign: 'middle' }} />
+              <CheckCircle2 size={14} strokeWidth={1.5} style={{ marginRight: '6px', color: ACCENT, verticalAlign: 'middle' }} />
               {completedAll} / {totalAll}
             </span>
           </div>
@@ -230,11 +236,15 @@ export default function Phase1() {
           </div>
         </div>
 
-        {/* Week Sections */}          {weekSections.map((week, weekIdx) => {
+        {/* Week Sections — progression-style cleaner layout */}
+        {weekSections.map((week, weekIdx) => {
           const weekCompleted = countCompleted(week.worksheets.map(w => w.id), statuses);
           const WeekIcon = week.icon;
           return (
-            <div key={week.num} style={{ marginBottom: '3rem' }}>
+            <div key={week.num} style={{
+              marginBottom: '3rem',
+              animation: `luxFadeIn 0.6s ${weekIdx * 0.1}s forwards`, opacity: 0,
+            }}>
               {/* Week Header */}
               <div style={{
                 display: 'flex', alignItems: 'flex-start', gap: '1rem',
@@ -254,7 +264,7 @@ export default function Phase1() {
                       fontFamily: t.heading, fontSize: '1.35rem', fontWeight: 400,
                       letterSpacing: '-0.02em', color: t.ch, margin: 0,
                     }}>
-                      Week {week.num}: <em style={{ fontStyle: 'italic', color: t.gd }}>{week.title}</em>
+                      Week {week.num}: <em style={{ fontStyle: 'italic', color: ACCENT }}>{week.title}</em>
                     </h2>
                     <span style={{ fontFamily: t.body, fontSize: '0.6rem', color: t.wg, letterSpacing: '0.15em' }}>
                       {week.subtitle}
@@ -269,7 +279,7 @@ export default function Phase1() {
                   {week.worksheets.length > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div className="lux-progress" style={{ flex: 1, maxWidth: '200px' }}>
-                        <div className="lux-progress-fill" style={{ width: `${(weekCompleted / week.worksheets.length) * 100}%` }} />
+                        <div className="lux-progress-fill" style={{ width: `${(weekCompleted / week.worksheets.length) * 100}%`, background: ACCENT }} />
                       </div>
                       <span style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, color: t.ch }}>
                         {weekCompleted}/{week.worksheets.length}
@@ -279,15 +289,86 @@ export default function Phase1() {
                 </div>
               </div>
 
-              {/* Week Worksheets */}
-              <PhaseWorksheetList worksheets={week.worksheets} statuses={statuses} />
+              {/* Week Worksheets — enhanced with hover effects like progression */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {week.worksheets.map((ws, i) => {
+                  const wsStatus = statuses[ws.id];
+                  const statusLabel = wsStatus?.review_status || wsStatus?.status || 'not_started';
+                  const reviewerType = getReviewerType(ws.id, template);
+                  const reviewerStyle = REVIEWER_STYLES[reviewerType as keyof typeof REVIEWER_STYLES];
+                  let statusColor = t.wg;
+                  if (statusLabel === 'approved') statusColor = t.success;
+                  else if (statusLabel === 'buddy_approved') statusColor = t.purple;
+                  else if (statusLabel === 'under_review' || statusLabel === 'pending_review' || statusLabel === 'revision_submitted') statusColor = t.pending;
+                  else if (statusLabel === 'needs_revision') statusColor = t.warning;
+                  else if (statusLabel === 'in_progress') statusColor = t.ch;
+
+                  return (
+                    <Link
+                      key={ws.id}
+                      to={ws.path}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '14px 0 14px 12px',
+                        borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
+                        textDecoration: 'none',
+                        fontFamily: t.body, fontSize: '0.8rem', color: t.ch,
+                        transition: 'color 200ms var(--ease-lux), opacity 200ms',
+                        opacity: 0,
+                        animation: `luxFadeIn 0.4s ${(weekIdx * 5 + i) * 0.05 + 0.3}s forwards`,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.color = ACCENT; }}
+                      onMouseOut={e => { e.currentTarget.style.color = t.ch; }}
+                    >
+                      <div style={{
+                        width: '36px', height: '36px',
+                        border: '1px solid rgba(26, 26, 26, 0.15)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        <ws.icon size={16} strokeWidth={1.5} style={{ color: t.ch }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontWeight: 500, marginBottom: '2px' }}>{ws.title}</span>
+                        <span style={{ fontSize: '0.7rem', color: t.wg }}>{ws.desc}</span>
+                        {getEstimatedTime(ws.id) && (
+                          <span style={{ fontSize: '0.6rem', color: t.wg, marginTop: '2px', display: 'inline-block' }}>
+                            {getEstimatedTime(ws.id)}
+                          </span>
+                        )}
+                      </div>
+                      {reviewerStyle && (
+                        <span style={{
+                          fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.15em',
+                          textTransform: 'uppercase', color: reviewerStyle.color,
+                          border: '1px solid ' + reviewerStyle.color,
+                          padding: '1px 6px',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {reviewerType === 'buddy' ? 'Buddy' : reviewerType === 'manager' ? 'Manager' : 'Self'}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: statusColor, whiteSpace: 'nowrap' }}>
+                        {statusLabel === 'approved' ? 'Reviewed' :
+                         statusLabel === 'buddy_approved' ? 'Buddy ✓' :
+                         statusLabel === 'needs_revision' ? 'Revise' :
+                         statusLabel === 'in_progress' ? 'In Prog.' :
+                         statusLabel === 'submitted' || statusLabel === 'under_review' || statusLabel === 'pending_review' || statusLabel === 'revision_submitted' ? 'Submitted' :
+                         'Not Started'}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
 
-        {/* Additional Phase 1 Worksheets */}
+        {/* Additional Phase 1 Worksheets — progression-style */}
         {additionalWorksheets.length > 0 && (
-          <div style={{ marginBottom: '2rem' }}>
+          <div style={{
+            marginBottom: '2rem',
+            animation: 'luxFadeIn 0.6s 0.5s forwards', opacity: 0,
+          }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: '0.75rem',
               padding: '1.25rem 0 0.75rem',
@@ -302,10 +383,7 @@ export default function Phase1() {
                 <BookOpen size={14} strokeWidth={1.5} style={{ color: t.wg }} />
               </div>
               <div>
-                <h3 style={{
-                  fontFamily: t.heading, fontSize: '0.95rem', fontWeight: 400,
-                  color: t.wg, margin: 0,
-                }}>
+                <h3 style={{ fontFamily: t.heading, fontSize: '0.95rem', fontWeight: 400, color: t.wg, margin: 0 }}>
                   Additional Worksheets
                 </h3>
                 <p style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg, marginTop: '2px' }}>

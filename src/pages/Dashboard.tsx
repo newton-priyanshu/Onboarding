@@ -1,19 +1,28 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
-  CheckCircle2, Clock, AlertCircle, FileText, RefreshCw, LucideIcon,
-  UserCheck, Shield,
+  CheckCircle2, Clock, AlertCircle, FileText, RefreshCw, type LucideIcon,
+  UserCheck, Shield, Trophy, Zap, Award,
 } from 'lucide-react';
 import { t } from '../config/theme';
-import { getWorksheetName, isPhaseApproved, ReviewerBadge, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { getWorksheetName, isPhaseApproved, getReviewerType, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { REVIEWER_STYLES } from '../config/worksheetConfig';
 import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import type { UserProfile } from '../types/supabase';
 import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
+import CelebrationOverlay from '../components/CelebrationOverlay';
+import ProgressRing from '../components/ProgressRing';
+import JourneyTimeline from '../components/JourneyTimeline';
+import { getDueDateInfo } from '../hooks/useDueDates';
+import { useAchievements } from '../hooks/useAchievements';
+import AchievementCard from '../components/AchievementCard';
+import { getMotivation } from '../config/motivations';
+import { getEstimatedTime } from '../config/estimatedTimes';
 
 /** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
 const PHASE1_WS_IDS = [...new Set(PHASE_WORKSHEETS_MAP[1])];
@@ -34,7 +43,7 @@ const phases: PhaseInfo[] = [
   { num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90', description: 'Teach independently and propose improvements.', icon: Sparkles, path: '/phase-3', worksheets: ['p3_w1','p3_w2','p3_w3','p3_w4','p3_w5'] },
 ];
 
-
+const ACCENT = t.gd; // gold — academic brand color
 
 interface StatusInfo {
   status: string;
@@ -117,9 +126,8 @@ export default function Dashboard() {
     if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
     if (sub.review_status === REVIEW_STATUS.APPROVED) return { status: 'approved', label: 'Reviewed', color: t.success, icon: CheckCircle2 };
     if (sub.review_status === REVIEW_STATUS.BUDDY_APPROVED) return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
-    if (sub.review_status === REVIEW_STATUS.NEEDS_REVISION) return { status: 'needs_revision', label: 'Needs Revision', color: t.error, icon: AlertCircle };
+    if (sub.review_status === REVIEW_STATUS.NEEDS_REVISION) return { status: 'needs_revision', label: 'Needs Revision', color: t.warning, icon: AlertCircle };
     if (sub.review_status === REVIEW_STATUS.REVISION_SUBMITTED || sub.review_status === REVIEW_STATUS.PENDING_REVIEW) return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
-    // Support both legacy capital 'Submitted' (from gate controls before fix) and lowercase 'submitted'
     const rawStatus = (sub.status as string) || '';
     if (rawStatus === SUBMISSION_STATUS.SUBMITTED || rawStatus === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };
     return { status: 'in_progress', label: 'In Progress', color: t.ch, icon: FileText };
@@ -135,14 +143,42 @@ export default function Dashboard() {
   }
 
   const totalApproved = submissions.filter(s => s.review_status === 'approved').length;
-
-  // Count all unique worksheets across phases
   const allPhaseWorksheetIds = new Set(phases.flatMap(p => p.worksheets));
   const totalWorksheets = allPhaseWorksheetIds.size;
 
   // Phase gating
   const phase1Approved = isPhaseApproved(user?.id || '', 1, submissions);
   const phase2Approved = isPhaseApproved(user?.id || '', 2, submissions);
+  const phase3Approved = isPhaseApproved(user?.id || '', 3, submissions);
+
+  // ── Achievements ──
+  const { achievements } = useAchievements(user?.id || null, submissions);
+  const unlockedAchievements = achievements.filter(a => a.unlocked);
+  const lockedAchievements = achievements.filter(a => !a.unlocked);
+
+  // ── Daily motivation ──
+  const [motivation] = useState(getMotivation);
+
+  // ── Celebration overlay state ──
+  const prevPhase1Ref = useRef(phase1Approved);
+  const prevPhase2Ref = useRef(phase2Approved);
+  const prevPhase3Ref = useRef(phase3Approved);
+  const [celebrationPhase, setCelebrationPhase] = useState<number | null>(null);
+
+  // Detect phase approval transitions — fire celebration only once per transition
+  useEffect(() => {
+    if (loading && submissions.length === 0) return;
+    if (phase1Approved && !prevPhase1Ref.current) {
+      setCelebrationPhase(1);
+    } else if (phase2Approved && !prevPhase2Ref.current) {
+      setCelebrationPhase(2);
+    } else if (phase3Approved && !prevPhase3Ref.current) {
+      setCelebrationPhase(3);
+    }
+    prevPhase1Ref.current = phase1Approved;
+    prevPhase2Ref.current = phase2Approved;
+    prevPhase3Ref.current = phase3Approved;
+  }, [phase1Approved, phase2Approved, phase3Approved, loading, submissions.length]);
 
   const lockedPhase = (phaseNum: number) => {
     if (phaseNum === 2 && !phase1Approved) return true;
@@ -160,21 +196,18 @@ export default function Dashboard() {
     return (
       <div className="lux-section">
         <div className="lux-container" aria-label="Loading dashboard">
-          {/* Hero skeleton */}
           <div style={{ marginBottom: '4rem', maxWidth: '800px' }}>
-            <div className="lux-line lux-line-gold" style={{ marginBottom: '1.25rem' }} />
+            <div className="lux-line" style={{ marginBottom: '1.25rem', borderColor: ACCENT }} />
             <Skeleton width="280px" height="0.6rem" style={{ marginBottom: '1rem' }} />
             <Skeleton width="70%" height="2.8rem" style={{ marginBottom: '0.5rem' }} />
             <Skeleton width="45%" height="2.8rem" style={{ marginBottom: '1.25rem' }} />
             <div style={{ marginBottom: '2rem' }}><SkeletonBlock lines={2} width="500px" /></div>
-            {/* Status legend badges */}
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <Skeleton key={i} width="90px" height="24px" />
               ))}
             </div>
           </div>
-          {/* Overall progress skeleton */}
           <div style={{
             marginBottom: '3.5rem', padding: '1.5rem 0',
             borderTop: '1px solid rgba(26, 26, 26, 0.12)',
@@ -186,24 +219,11 @@ export default function Dashboard() {
               <Skeleton width="50px" height="0.8rem" />
             </div>
           </div>
-          {/* Phase card skeletons */}
           <section>
             <Skeleton width="250px" height="1.5rem" style={{ marginBottom: '0.5rem' }} />
             <Skeleton width="350px" height="0.8rem" style={{ marginBottom: '2rem' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <SkeletonCard count={3} />
-            </div>
-          </section>
-          {/* Quick links skeleton */}
-          <section style={{ marginTop: '4rem', borderTop: '1px solid rgba(26, 26, 26, 0.12)', paddingTop: '2rem' }}>
-            <Skeleton width="100px" height="0.65rem" style={{ marginBottom: '1.25rem' }} />
-            <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
-              {[1, 2, 3].map(i => (
-                <div key={i} style={{ minWidth: '160px', borderTop: '1px solid var(--color-charcoal)', padding: '1rem 0' }}>
-                  <Skeleton width="80%" height="0.85rem" style={{ marginBottom: '0.35rem' }} />
-                  <Skeleton width="60%" height="0.7rem" />
-                </div>
-              ))}
             </div>
           </section>
         </div>
@@ -220,9 +240,7 @@ export default function Dashboard() {
           <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
             Couldn&apos;t Load Your Dashboard
           </h2>
-          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            {loadError}
-          </p>
+          <p style={{ fontFamily: t.body, fontSize: '0.875rem', color: t.wg, lineHeight: 1.6, marginBottom: '1.5rem' }}>{loadError}</p>
           <button onClick={() => loadSubmissions()} className="lux-btn lux-btn-primary">
             <span className="gold-overlay" /><span className="btn-content"><RefreshCw size={14} strokeWidth={1.5} /> Retry</span>
           </button>
@@ -233,10 +251,19 @@ export default function Dashboard() {
 
   return (
     <div className="lux-section">
+      {/* Celebration overlay on phase completion */}
+      {celebrationPhase && (
+        <CelebrationOverlay
+          phaseNum={celebrationPhase}
+          onDismiss={() => setCelebrationPhase(null)}
+          progressPath={`/phase-${celebrationPhase}`}
+          storageKey={`phase_${celebrationPhase}_${user?.id || ''}`}
+        />
+      )}
       <div className="lux-container">
-        {/* Hero */}
-        <div style={{ marginBottom: '4rem', maxWidth: '800px' }}>
-          <div className="lux-line lux-line-gold" style={{ marginBottom: '1.25rem' }} />
+        {/* Hero — progression-style cleaner design */}
+        <div style={{ marginBottom: '3.5rem', maxWidth: '800px' }}>
+          <div className="lux-line" style={{ marginBottom: '1.25rem', borderColor: ACCENT }} />
           <span style={{
             fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
             letterSpacing: '0.25em', textTransform: 'uppercase',
@@ -246,35 +273,55 @@ export default function Dashboard() {
           </span>
           <h1 style={{
             fontFamily: t.heading,
-            fontSize: 'clamp(2.25rem, 4.5vw, 3.5rem)',
+            fontSize: 'clamp(2rem, 4vw, 3rem)',
             fontWeight: 400,
             lineHeight: 1.05,
             letterSpacing: '-0.03em',
             color: t.ch,
-            marginBottom: '1.25rem',
+            marginBottom: '1rem',
           }}>
-            Welcome to Your{' '}
-            <em style={{ fontStyle: 'italic', color: t.gd }}>Onboarding</em>
-            <br />
-            Journey
+            {profile?.full_name ? (
+              <>Welcome back, <em style={{ fontStyle: 'italic', color: ACCENT }}>{profile.full_name.split(' ')[0]}</em></>
+            ) : (
+              <>Welcome to Your{' '}
+              <em style={{ fontStyle: 'italic', color: ACCENT }}>Onboarding</em>
+              <br />
+              Journey</>
+            )}
           </h1>
           <p style={{
-            fontFamily: t.body, fontSize: '0.95rem', lineHeight: 1.7,
+            fontFamily: t.body, fontSize: '0.9rem', lineHeight: 1.7,
             color: t.wg, maxWidth: '500px', marginBottom: '2rem',
           }}>
             This 30–60–90 day program helps you integrate into our faculty community.
             Complete worksheets and get them reviewed to advance through each phase.
           </p>
-
+          {/* Motivation + Today's progress */}
+          {submissions.length > 0 && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '0.75rem 1rem',
+              borderLeft: '2px solid ' + ACCENT,
+              fontFamily: t.heading,
+              fontSize: '0.9rem',
+              fontStyle: 'italic',
+              color: t.ch,
+              lineHeight: 1.5,
+              maxWidth: '400px',
+              animation: 'luxFadeIn 0.6s var(--ease-lux) forwards',
+            }}>
+              &ldquo;{motivation}&rdquo;
+            </div>
+          )}
           {/* Status Legend */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             {([
               { label: 'Not Started', color: t.wg },
               { label: 'In Progress', color: t.ch },
               { label: 'Buddy Approved', color: t.purple },
               { label: 'Under Review', color: t.pending },
               { label: 'Reviewed', color: t.success },
-              { label: 'Needs Revision', color: t.error },
+              { label: 'Needs Revision', color: t.warning },
             ] as { label: string; color: string }[]).map(b => (
               <span key={b.label} className="lux-badge lux-badge-light" style={{
                 borderColor: b.color, color: b.color, fontSize: '0.55rem',
@@ -283,7 +330,57 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Your Support Team — Buddy & Manager */}
+        {/* Continue Last Worksheet */}
+        {submissions.length > 0 && (
+          (() => {
+            const recentSub = submissions
+              .filter(s => s.review_status !== REVIEW_STATUS.APPROVED && s.review_status !== REVIEW_STATUS.BUDDY_APPROVED)
+              .sort((a, b) => new Date(b.updated_at as string).getTime() - new Date(a.updated_at as string).getTime())[0];
+            if (recentSub) {
+              // Parse phase number and worksheet number from worksheet_id (e.g., p2_w3 -> phase 2, worksheet 3)
+              const wsId = recentSub.worksheet_id as string;
+              const phaseMatch = wsId.match(/^(\w*?)(\d)_w(\d+)$/);
+              const phaseNum = phaseMatch ? parseInt(phaseMatch[2]!, 10) : 1;
+              const wsNum = phaseMatch ? parseInt(phaseMatch[3]!, 10) : 1;
+              const recentPath = `/phase-${phaseNum}/worksheet-${wsNum}`;
+              return (
+                <div style={{
+                  marginBottom: '2rem',
+                  padding: '1rem 1.25rem',
+                  border: '1px solid ' + ACCENT,
+                  background: 'rgba(212, 175, 55, 0.04)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
+                  animation: 'luxFadeIn 0.5s forwards',
+                }}>
+                  <div>
+                    <span style={{
+                      fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                      color: ACCENT, display: 'block', marginBottom: '2px',
+                    }}>
+                      Continue Where You Left Off
+                    </span>
+                    <span style={{ fontFamily: t.body, fontSize: '0.85rem', color: t.ch, fontWeight: 500 }}>
+                      {getWorksheetName(recentSub.worksheet_id as string, template)}
+                    </span>
+                  </div>
+                  <Link
+                    to={recentPath}
+                    className="lux-btn lux-btn-primary"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <span className="gold-overlay" /><span className="btn-content">
+                      Continue <ArrowRight size={14} strokeWidth={1.5} />
+                    </span>
+                  </Link>
+                </div>
+              );
+            }
+            return null;
+          })()
+        )}
+
+        {/* Your Support Team */}
         {(buddyProfile || managerProfile) && !supportLoading && (
           <div style={{
             marginBottom: '2.5rem',
@@ -322,16 +419,10 @@ export default function Dashboard() {
                     }}>
                       Buddy / Mentor
                     </span>
-                    <span style={{
-                      fontFamily: t.heading, fontSize: '0.95rem',
-                      fontWeight: 400, color: t.ch, display: 'block',
-                    }}>
+                    <span style={{ fontFamily: t.heading, fontSize: '0.95rem', fontWeight: 400, color: t.ch, display: 'block' }}>
                       {buddyProfile.full_name || 'Buddy'}
                     </span>
-                    <span style={{
-                      fontFamily: t.body, fontSize: '0.65rem',
-                      color: t.wg, display: 'block', marginTop: '2px',
-                    }}>
+                    <span style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg, display: 'block', marginTop: '2px' }}>
                       {buddyProfile.email || ''}
                     </span>
                   </div>
@@ -360,16 +451,10 @@ export default function Dashboard() {
                     }}>
                       Manager
                     </span>
-                    <span style={{
-                      fontFamily: t.heading, fontSize: '0.95rem',
-                      fontWeight: 400, color: t.ch, display: 'block',
-                    }}>
+                    <span style={{ fontFamily: t.heading, fontSize: '0.95rem', fontWeight: 400, color: t.ch, display: 'block' }}>
                       {managerProfile.full_name || 'Manager'}
                     </span>
-                    <span style={{
-                      fontFamily: t.body, fontSize: '0.65rem',
-                      color: t.wg, display: 'block', marginTop: '2px',
-                    }}>
+                    <span style={{ fontFamily: t.body, fontSize: '0.65rem', color: t.wg, display: 'block', marginTop: '2px' }}>
                       {managerProfile.email || ''}
                     </span>
                   </div>
@@ -379,37 +464,157 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Overall Progress */}
-        {submissions.length > 0 && (
+        {/* Dashboard Widgets — Progress Ring + Due Soon + Recent Activity */}
+        {(submissions.length > 0 || phase1Approved || phase2Approved || phase3Approved) && (
           <div style={{
-            marginBottom: '3.5rem', padding: '1.5rem 0',
-            borderTop: '1px solid rgba(26, 26, 26, 0.12)',
-            borderBottom: '1px solid rgba(26, 26, 26, 0.12)',
+            marginBottom: '3rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1px',
+            background: 'rgba(26, 26, 26, 0.1)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <span style={{
-                fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
-                letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
-              }}>
-                Overall Progress
-              </span>
-              <div className="lux-progress" style={{ flex: 1, minWidth: '150px', maxWidth: '350px' }}>
-                <div className="lux-progress-fill lux-progress-fill-gold" style={{
-                  width: `${Math.round(totalWorksheets > 0 ? (totalApproved / totalWorksheets) * 100 : 0)}%`,
-                }} />
-              </div>
-              <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
-                {totalApproved}<span style={{ color: t.wg, fontWeight: 400 }}> / {totalWorksheets}</span>
-              </span>
+            {/* Progress Ring */}
+            <div style={{
+              background: 'var(--color-alabaster)',
+              padding: '2rem 1.5rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              minHeight: '180px',
+              animation: 'luxFadeIn 0.5s forwards',
+            }}>
+              <ProgressRing
+                percentage={Math.round(totalWorksheets > 0 ? (totalApproved / totalWorksheets) * 100 : 0)}
+                size={130}
+                color={ACCENT}
+                label="Approved"
+              />
             </div>
+
+            {/* Overall Progress bar */}
+            {submissions.length > 0 && (
+              <div style={{
+                background: 'var(--color-alabaster)',
+                padding: '2rem 1.5rem',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                animation: 'luxFadeIn 0.5s 0.1s forwards', opacity: 0,
+              }}>
+                <span style={{
+                  fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
+                  letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
+                  display: 'block', marginBottom: '1rem',
+                }}>
+                  Overall Progress
+                </span>
+                <div className="lux-progress" style={{ flex: 'none', width: '100%', height: '3px', marginBottom: '0.75rem' }}>
+                  <div
+                    className={`lux-progress-fill ${totalApproved === totalWorksheets && totalWorksheets > 0 ? 'lux-progress-shimmer' : ''}`}
+                    style={{
+                      width: `${Math.round(totalWorksheets > 0 ? (totalApproved / totalWorksheets) * 100 : 0)}%`,
+                      background: ACCENT,
+                      height: '3px',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
+                    {totalApproved}<span style={{ color: t.wg, fontWeight: 400 }}> / {totalWorksheets}</span>
+                  </span>
+                  {totalApproved === totalWorksheets && totalWorksheets > 0 && (
+                    <Trophy size={16} strokeWidth={1.5} style={{ color: ACCENT }} />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Due Soon widget */}
+            {submissions.length > 0 && (
+              <div style={{
+                background: 'var(--color-alabaster)',
+                padding: '2rem 1.5rem',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                animation: 'luxFadeIn 0.5s 0.2s forwards', opacity: 0,
+              }}>
+                <span style={{
+                  fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
+                  letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
+                  display: 'block', marginBottom: '0.75rem',
+                }}>
+                  Due Soon
+                </span>
+                {(() => {
+                  const dueSoon = phases.flatMap(p => p.worksheets).filter(wsId => {
+                    const due = getDueDateInfo(wsId);
+                    return due.isDueSoon || due.isOverdue;
+                  }).slice(0, 3);
+                  if (dueSoon.length === 0) {
+                    return (
+                      <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
+                        No worksheets due in the next 48 hours.
+                      </p>
+                    );
+                  }
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {dueSoon.map(wsId => {
+                        const due = getDueDateInfo(wsId);
+                        return (
+                          <div key={wsId} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem' }}>
+                            <Zap size={12} strokeWidth={1.5} style={{ color: due.isOverdue ? t.error : t.warning, flexShrink: 0 }} />
+                            <span style={{ color: t.ch, flex: 1 }}>{getWorksheetName(wsId, template)}</span>
+                            <span style={{ color: due.statusColor, whiteSpace: 'nowrap', fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500 }}>
+                              {due.statusLabel}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Phase Roadmap */}
+        {/* Journey Timeline */}
+        <div style={{
+          marginBottom: '3rem',
+          padding: '1.5rem 0',
+          borderTop: '1px solid rgba(26, 26, 26, 0.12)',
+          borderBottom: '1px solid rgba(26, 26, 26, 0.12)',
+        }}>
+          <span style={{
+            fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
+            letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
+            display: 'block', marginBottom: '1.25rem',
+          }}>
+            Your Journey
+          </span>
+          <JourneyTimeline
+            phases={[
+              {
+                num: 1, title: 'Orientation & Understanding', days: 'Days 1–30',
+                description: 'People, culture, systems, and processes.',
+                status: phase1Approved ? 'completed' : submissions.length > 0 ? 'current' : 'locked',
+              },
+              {
+                num: 2, title: 'Contribution & Guided Teaching', days: 'Days 31–60',
+                description: 'Teach, create content, and develop your craft.',
+                status: phase2Approved ? 'completed' : phase1Approved ? 'current' : 'locked',
+              },
+              {
+                num: 3, title: 'Independent Teaching & Ownership', days: 'Days 61–90',
+                description: 'Teach independently and propose improvements.',
+                status: phase3Approved ? 'completed' : phase2Approved ? 'current' : 'locked',
+              },
+            ]}
+            accentColor={ACCENT}
+          />
+        </div>
+
+        {/* Phase Roadmap — progression-style inline worksheets for ALL phases */}
         <section>
           <div style={{ marginBottom: '2rem' }}>
             <h2 style={{ fontFamily: t.heading, fontSize: '1.75rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '0.5rem' }}>
-              Onboarding <em style={{ fontStyle: 'italic', color: t.gd }}>Roadmap</em>
+              Onboarding <em style={{ fontStyle: 'italic', color: ACCENT }}>Roadmap</em>
             </h2>
             <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
               Three phases to build your teaching practice at NST BLR
@@ -427,25 +632,32 @@ export default function Dashboard() {
                   borderTop: '1px solid var(--color-charcoal)',
                   padding: '2rem 0',
                 }}>
-                  {/* Phase Header */}
-                  <div onClick={() => { if (!isLocked) navigate(phase.path); }}
-                    onKeyDown={!isLocked ? (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(phase.path); } } : undefined}
+                  {/* Phase Header — clickable card */}
+                  <div
+                    onClick={() => { if (!isLocked) navigate(phase.path); }}
+                    onKeyDown={(e: React.KeyboardEvent) => { if (!isLocked && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigate(phase.path); } }}
                     role={isLocked ? 'presentation' : 'button'}
                     tabIndex={isLocked ? -1 : 0}
-                    aria-label={isLocked ? `Phase ${phase.num} is locked. ${phaseLockReason(phase.num)}` : `Go to Phase ${phase.num}`}
+                    aria-label={isLocked ? `Phase ${phase.num} is locked. ${phaseLockReason(phase.num)}` : `Go to ${phase.title}`}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: '1.25rem',
                       textDecoration: 'none', cursor: isLocked ? 'default' : 'pointer',
                       transition: 'opacity 200ms var(--ease-lux)',
                       opacity: isLocked ? 0.5 : 1,
+                      borderLeft: progress.pct === 100 ? '2px solid ' + ACCENT : 'none',
+                      paddingLeft: progress.pct === 100 ? '1rem' : 0,
                     }}
                   >
                     <div style={{
                       width: '52px', height: '52px',
-                      border: '1px solid var(--color-charcoal)',
+                      border: '1px solid ' + (progress.pct === 100 ? ACCENT : 'var(--color-charcoal)'),
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      background: progress.pct === 100 ? 'rgba(212, 175, 55, 0.06)' : 'transparent',
+                      transition: 'border-color 200ms var(--ease-lux)',
                     }}>
-                      {isLocked ? <Lock size={22} strokeWidth={1.5} style={{ color: t.wg }} /> : <Icon size={24} strokeWidth={1.5} style={{ color: t.ch }} />}
+                      {isLocked ? <Lock size={22} strokeWidth={1.5} style={{ color: t.wg }} /> :
+                       progress.pct === 100 ? <Trophy size={22} strokeWidth={1.5} style={{ color: ACCENT }} /> :
+                       <Icon size={24} strokeWidth={1.5} style={{ color: t.ch }} />}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px', flexWrap: 'wrap' }}>
@@ -461,6 +673,17 @@ export default function Dashboard() {
                         {isLocked && (
                           <span className="lux-badge" style={{ fontSize: '0.55rem', borderColor: t.wg, color: t.wg }}>
                             <Lock size={10} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: '4px' }} />Locked
+                          </span>
+                        )}
+                        {progress.pct === 100 && !isLocked && (
+                          <span style={{
+                            fontFamily: t.body, fontSize: '0.5rem', fontWeight: 500,
+                            letterSpacing: '0.15em', textTransform: 'uppercase',
+                            color: t.success, padding: '1px 8px',
+                            border: '1px solid ' + t.success,
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          }}>
+                            <CheckCircle2 size={10} strokeWidth={2} /> Complete
                           </span>
                         )}
                       </div>
@@ -480,7 +703,11 @@ export default function Dashboard() {
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div className="lux-progress" style={{ flex: 1, maxWidth: '250px' }}>
-                            <div className="lux-progress-fill" style={{ width: `${progress.pct}%` }} />
+                            <div
+                              className={`lux-progress-fill ${progress.pct === 100 ? 'lux-progress-shimmer' : ''}
+                                ${progress.pct > 0 && progress.pct < 100 ? 'lux-progress-pulse' : ''}`}
+                              style={{ width: `${progress.pct}%`, background: progress.pct === 100 ? ACCENT : undefined }}
+                            />
                           </div>
                           <span style={{ fontFamily: t.body, fontSize: '0.75rem', fontWeight: 500, color: t.ch }}>
                             {progress.done}/{progress.total}
@@ -491,43 +718,35 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Worksheet List — Phase 1 is too large to expand; show link instead */}
-                  {!loading && !isLocked && phase.num === 1 && (
-                    <div style={{ marginTop: '1rem', paddingLeft: 'calc(52px + 1.25rem)' }}>
-                      <Link to="/phase-1" style={{
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '10px 0 10px 12px',
-                        textDecoration: 'none',
-                        fontFamily: t.body, fontSize: '0.8rem', color: t.gd,
-                        transition: 'opacity 200ms var(--ease-lux)',
-                      }}
-                        onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
-                        onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
-                      >
-                        <ArrowRight size={13} strokeWidth={1.5} />
-                        <span>View all {phase.worksheets.length} worksheets in Phase 1</span>
-                      </Link>
-                    </div>
-                  )}
-                  {/* Phase 2 & 3 — expanded worksheet list */}
-                  {!loading && !isLocked && phase.num > 1 && (
+                  {/* Inline worksheet list for ALL unlocked phases — matches progression design */}
+                  {!loading && !isLocked && (
                     <div style={{ marginTop: '1rem', paddingLeft: 'calc(52px + 1.25rem)' }}>
                       {phase.worksheets.map((wsId, i) => {
                         const ws = getWorksheetStatus(wsId);
                         const StatusIcon = ws.icon;
+                        const reviewerType = getReviewerType(wsId, template);
+                        const reviewerStyle = REVIEWER_STYLES[reviewerType as keyof typeof REVIEWER_STYLES];
+                        // Build correct path per worksheet
+                        const wsNumMatch = wsId.match(/_w(\d+)$/);
+                        const wsNum = wsNumMatch ? wsNumMatch[1] : '';
+                        const phasePath = phase.num === 1
+                          ? `/phase-1/worksheet-${wsNum}`
+                          : `/phase-${phase.num}/worksheet-${wsId.replace('p' + phase.num + '_w', '')}`;
                         return (
-                          <Link key={wsId} to={`/phase-${phase.num}/worksheet-${wsId.replace('p' + phase.num + '_w', '')}`}
+                          <Link
+                            key={wsId}
+                            to={phasePath}
                             style={{
                               display: 'flex', alignItems: 'center', gap: '12px',
                               padding: '10px 0 10px 12px',
                               borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
                               textDecoration: 'none',
                               fontFamily: t.body, fontSize: '0.8rem', color: t.ch,
-                              transition: 'color 200ms var(--ease-lux)',
+                              transition: 'color 200ms var(--ease-lux), opacity 200ms',
                               opacity: 0,
                               animation: `luxFadeIn 0.5s ${(idx * phase.worksheets.length + i) * 0.04 + 0.3}s forwards`,
                             }}
-                            onMouseOver={e => { e.currentTarget.style.color = t.gd; }}
+                            onMouseOver={e => { e.currentTarget.style.color = ACCENT; }}
                             onMouseOut={e => { e.currentTarget.style.color = t.ch; }}
                           >
                             {StatusIcon ? (
@@ -536,7 +755,22 @@ export default function Dashboard() {
                               <div style={{ width: '10px', height: '10px', border: '1px solid ' + ws.color, flexShrink: 0 }} />
                             )}
                             <span style={{ flex: 1 }}>{getWorksheetName(wsId, template)}</span>
-                            <ReviewerBadge worksheetId={wsId} />
+                            {getEstimatedTime(wsId) && (
+                              <span style={{ fontSize: '0.5rem', color: t.wg, whiteSpace: 'nowrap' }}>
+                                {getEstimatedTime(wsId)}
+                              </span>
+                            )}
+                            {reviewerStyle && (
+                              <span style={{
+                                fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.15em',
+                                textTransform: 'uppercase', color: reviewerStyle.color,
+                                border: '1px solid ' + reviewerStyle.color,
+                                padding: '1px 6px',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {reviewerType === 'buddy' ? 'Buddy' : reviewerType === 'manager' ? 'Manager' : 'Self'}
+                              </span>
+                            )}
                             <span style={{ fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: ws.color, whiteSpace: 'nowrap' }}>
                               {ws.label}
                             </span>
@@ -550,43 +784,76 @@ export default function Dashboard() {
             })}
           </div>
         </section>
-        {/* Quick Links */}
-        <section style={{ marginTop: '4rem', borderTop: '1px solid rgba(26, 26, 26, 0.12)', paddingTop: '2rem' }}>
-          <h4 style={{
-            fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
-            letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg, marginBottom: '1.25rem',
-          }}>
-            Quick Links
-          </h4>
-          <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
-            {([
-              { to: '/phase-1', label: 'Start Phase 1', desc: 'Begin your orientation' },
-              { to: '/phase-2', label: 'Phase 2 Worksheets', desc: 'Teaching & content creation' },
-              { to: '/phase-3', label: 'Phase 3 Worksheets', desc: 'Independent teaching' },
 
-              { to: '/assessment', label: 'Final Assessment', desc: 'Check readiness criteria' },
-              { to: '/stakeholders', label: 'Meet the Team', desc: 'View stakeholders' },
-              { to: 'https://newton.school/academy', label: 'Help & Guide', desc: 'NST BLR resources' },
-            ] as { to: string; label: string; desc: string }[]).map((link, i) => (
-              <Link key={i} to={link.to} style={{
-                textDecoration: 'none', padding: '1rem 0',
-                borderTop: '1px solid var(--color-charcoal)',
-                minWidth: '160px',
-                transition: 'opacity 200ms var(--ease-lux)',
-              }}
-                onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
-                onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
-              >
-                <p style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, marginBottom: '2px' }}>
-                  {link.label} <ArrowRight size={11} strokeWidth={1.5} style={{ marginLeft: '4px', color: t.wg }} />
-                </p>
-                <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>
-                  {link.desc}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        {/* Achievements Section */}
+        {achievements.length > 0 && (
+          <section style={{ marginTop: '3rem' }}>
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1.5rem 0',
+              borderTop: '1px solid rgba(26, 26, 26, 0.12)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <h2 style={{ fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400, letterSpacing: '-0.02em', color: t.ch, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Award size={22} strokeWidth={1.5} style={{ color: ACCENT }} />
+                    Achievements
+                  </h2>
+                  <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
+                    {unlockedAchievements.length} of {achievements.length} unlocked
+                  </p>
+                </div>
+                {unlockedAchievements.length > 0 && (
+                  <span style={{
+                    fontFamily: t.heading,
+                    fontSize: '0.85rem',
+                    color: ACCENT,
+                  }}>
+                    {Math.round((unlockedAchievements.length / achievements.length) * 100)}% complete
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Unlocked achievements */}
+            {unlockedAchievements.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <span style={{
+                  fontFamily: t.body, fontSize: '0.6rem', fontWeight: 500,
+                  letterSpacing: '0.2em', textTransform: 'uppercase', color: t.wg,
+                  display: 'block', marginBottom: '0.75rem',
+                }}>
+                  Unlocked
+                </span>
+                <div role="list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
+                  {unlockedAchievements.map(a => (
+                    <AchievementCard key={a.id} achievement={a} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Locked achievements (collapsible) */}
+            {lockedAchievements.length > 0 && (
+              <details style={{ borderTop: '1px solid rgba(26, 26, 26, 0.06)', paddingTop: '1rem' }}>
+                <summary style={{
+                  fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500,
+                  letterSpacing: '0.15em', textTransform: 'uppercase',
+                  color: t.wg, cursor: 'pointer',
+                  padding: '0.5rem 0',
+                  userSelect: 'none',
+                }}>
+                  Locked ({lockedAchievements.length}) — click to reveal hints
+                </summary>
+                <div role="list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px', marginTop: '0.75rem' }}>
+                  {lockedAchievements.map(a => (
+                    <AchievementCard key={a.id} achievement={a} />
+                  ))}
+                </div>
+              </details>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

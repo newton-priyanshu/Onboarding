@@ -1,6 +1,6 @@
-import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle, type LucideIcon } from 'lucide-react';
+import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle, ChevronDown, type LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
 
 const t = {
   body: 'var(--font-body)', heading: 'var(--font-heading)',
@@ -20,6 +20,8 @@ interface WorksheetHeaderProps {
   subtitle?: string;
   badge?: string;
   saveStatus?: SaveStatus;
+  /** Compact mode for sticky header — reduces bottom margin */
+  compact?: boolean;
 }
 
 interface SectionProps {
@@ -50,6 +52,8 @@ interface ActionBarProps {
   onSubmit?: () => void;
   submitting?: boolean;
   submitLabel?: string;
+  /** Show a success checkmark animation after submission */
+  submitSuccess?: boolean;
 }
 
 interface StatusViewProps {
@@ -100,10 +104,10 @@ interface ReviewHistoryEntry {
 }
 
 /* ─── Worksheet Header ────────────────────────────────── */
-export function WorksheetHeader({ icon: Icon, title, subtitle, badge }: WorksheetHeaderProps) {
+export function WorksheetHeader({ icon: Icon, title, subtitle, badge, compact }: WorksheetHeaderProps) {
   return (
-    <div style={{ marginBottom: '2.5rem' }}>
-      <div className="lux-line lux-line-gold" style={{ marginBottom: '1rem' }} />
+    <div style={{ marginBottom: compact ? '0.25rem' : '2.5rem' }}>
+      <div className="lux-line lux-line-gold" style={{ marginBottom: compact ? '0.5rem' : '1rem' }} />
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
         <div style={{ width: '44px', height: '44px', border: '1px solid var(--color-charcoal)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icon size={20} strokeWidth={1.5} style={{ color: t.ch }} />
@@ -177,7 +181,7 @@ export function SaveIndicator({ status }: SaveIndicatorProps) {
 }
 
 /* ─── Action Bar ──────────────────────────────────────── */
-export function ActionBar({ onCancel, onSubmit, submitting, submitLabel = 'Submit for Review' }: ActionBarProps) {
+export function ActionBar({ onCancel, onSubmit, submitting, submitSuccess, submitLabel = 'Finish Worksheet' }: ActionBarProps) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'flex-end', gap: '12px',
@@ -187,10 +191,30 @@ export function ActionBar({ onCancel, onSubmit, submitting, submitLabel = 'Submi
       <button type="button" onClick={onCancel} className="lux-btn lux-btn-secondary">
         Cancel
       </button>
-      <button type="button" onClick={onSubmit} disabled={submitting} className="lux-btn lux-btn-primary" style={{ minWidth: '160px' }}>
-        <span className="gold-overlay" />
-        <span className="btn-content">
-          {submitting ? 'Submitting…' : <><Send size={14} strokeWidth={1.5} /> {submitLabel}</>}
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={submitting || submitSuccess}
+        className="lux-btn"
+        style={{
+          minWidth: '160px',
+          background: submitSuccess ? 'var(--color-success)' : 'var(--color-charcoal)',
+          color: '#FFFFFF',
+          border: 'none',
+          boxShadow: submitSuccess ? 'none' : 'var(--shadow-btn)',
+          transition: 'background 400ms var(--ease-lux), box-shadow 400ms var(--ease-lux), transform 200ms var(--ease-lux)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <span className="btn-content" style={{ position: 'relative', zIndex: 1 }}>
+          {submitSuccess ? (
+            <><CheckCircle2 size={16} strokeWidth={2} style={{ animation: 'luxFadeIn 300ms var(--ease-lux)' }} /> Submitted!</>
+          ) : submitting ? (
+            <><Clock size={14} strokeWidth={1.5} style={{ animation: 'spin 1s linear infinite' }} /> Submitting…</>
+          ) : (
+            <><Send size={14} strokeWidth={1.5} /> {submitLabel}</>
+          )}
         </span>
       </button>
     </div>
@@ -409,9 +433,9 @@ export function ReviewFeedback({ data }: ReviewFeedbackProps) {
 export function ErrorAlert({ message, onDismiss }: ErrorAlertProps) {
   if (!message) return null;
   return (
-    <div className="lux-alert lux-alert-error" style={{ marginBottom: '1rem' }}>
+    <div className="lux-alert" style={{ borderLeftColor: t.error, color: t.error, marginBottom: '1rem' }}>
       <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0, marginTop: '1px' }} />
-      <span style={{ flex: 1 }}>{message}</span>
+      <span style={{ flex: 1 }}>Something went wrong. {message}</span>
       {onDismiss && (
         <button onClick={onDismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.error, padding: '0 0 0 8px', fontSize: '0.8rem' }}>×</button>
       )}
@@ -447,13 +471,179 @@ export function GridTable({ headers, rows, renderCell }: GridTableProps) {
   );
 }
 
-/* ─── GateControl Section ─────────────────────────────── */
-export function Section({ title, subtitle, children }: SectionProps) {
+/* ─── Collapsible Section Context ──────────────────────── */
+// Tracks the position of each WorksheetSection within a worksheet form
+// so the first section auto-opens and subsequent ones start collapsed.
+
+type SectionContextType = {
+  registerSection: () => number;
+};
+
+const SectionContext = createContext<SectionContextType | null>(null);
+
+/** Wrap worksheet form children to enable auto-collapse (first section open by default). */
+export function CollapseProvider({ children }: { children: ReactNode }) {
+  const counterRef = useRef(0);
+  const registerSection = useCallback(() => {
+    const idx = counterRef.current;
+    counterRef.current += 1;
+    return idx;
+  }, []);
   return (
-    <div style={{ borderTop: '1px solid var(--color-charcoal)', padding: '1.25rem 0' }}>
-      <h3 style={{ fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.ch, marginBottom: subtitle ? '4px' : '0.75rem' }}>{title}</h3>
-      {subtitle && <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, marginBottom: '0.75rem' }}>{subtitle}</p>}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>{children}</div>
+    <SectionContext.Provider value={{ registerSection }}>
+      {children}
+    </SectionContext.Provider>
+  );
+}
+
+/* ─── Collapsible Section (Card) ──────────────────────── */
+export function Section({ title, subtitle, children }: SectionProps) {
+  const ctx = useContext(SectionContext);
+  const indexRef = useRef<number | null>(null);
+
+  // Register this section synchronously during first render
+  if (ctx && indexRef.current === null) {
+    indexRef.current = ctx.registerSection();
+  }
+
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    if (ctx && indexRef.current !== null) return indexRef.current === 0;
+    return true; // No context = always open (backward compat)
+  });
+
+  const toggle = useCallback(() => setIsOpen(prev => !prev), []);
+
+  return (
+    <div style={{ borderTop: '1px solid var(--color-charcoal)' }}>
+      {/* Clickable header */}
+      <div
+        onClick={toggle}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
+        aria-expanded={isOpen}
+        aria-controls={`section-content-${title?.replace(/\s+/g, '-')}`}
+        style={{
+          padding: '1.25rem 0',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '1rem',
+          userSelect: 'none',
+          transition: 'opacity 200ms var(--ease-lux)',
+        }}
+        onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.opacity = '0.7'; }}
+        onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}
+      >
+        <div style={{ flex: 1 }}>
+          <h3 style={{
+            fontFamily: t.body, fontSize: '0.7rem', fontWeight: 500,
+            letterSpacing: '0.2em', textTransform: 'uppercase',
+            color: t.ch,
+            marginBottom: subtitle ? '4px' : 0,
+          }}>{title}</h3>
+          {subtitle && (
+            <p style={{ fontFamily: t.body, fontSize: '0.75rem', color: t.wg, marginTop: '4px', marginBottom: 0 }}>{subtitle}</p>
+          )}
+        </div>
+        <ChevronDown
+          size={16}
+          strokeWidth={1.5}
+          style={{
+            color: t.wg,
+            flexShrink: 0,
+            marginTop: '2px',
+            transform: `rotate(${isOpen ? 180 : 0}deg)`,
+            transition: 'transform 350ms var(--ease-lux)',
+          }}
+        />
+      </div>
+
+      {/* Collapsible content — max-height transition for smooth open/close */}
+      <div
+        id={`section-content-${title?.replace(/\s+/g, '-')}`}
+        style={{
+          overflow: 'hidden',
+          maxHeight: isOpen ? '2000px' : '0px',
+          opacity: isOpen ? 1 : 0,
+          transition: 'max-height 450ms var(--ease-lux), opacity 300ms var(--ease-lux)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '1.25rem' }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Worksheet Progress Bar (sticky header) ──────────── */
+
+interface WorksheetProgressBarProps {
+  data: Record<string, unknown>;
+  /** Optional: total expected fields. If omitted, counted from non-_saved keys. */
+  totalFields?: number;
+}
+
+/**
+ * Thin progress bar for the sticky header area.
+ * Counts filled fields (excluding internal _saved* keys) and shows % + count.
+ */
+export function WorksheetProgressBar({ data, totalFields }: WorksheetProgressBarProps) {
+  const fieldKeys = Object.keys(data).filter(k => !k.startsWith('_saved'));
+  const total = totalFields ?? fieldKeys.length;
+  const filled = fieldKeys.filter(k => {
+    const v = data[k];
+    if (v === '' || v === null || v === undefined) return false;
+    if (Array.isArray(v) && v.length === 0) return false;
+    return true;
+  }).length;
+  const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+
+  if (total === 0) return null;
+
+  const isComplete = filled >= total;
+
+  return (
+    <div style={{
+      paddingTop: '0.5rem',
+      paddingBottom: '0.35rem',
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: '5px',
+      }}>
+        <span style={{
+          fontFamily: t.body, fontSize: '0.55rem',
+          letterSpacing: '0.15em', textTransform: 'uppercase',
+          color: t.wg,
+        }}>
+          Progress
+        </span>
+        <span style={{
+          fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+          letterSpacing: '0.05em',
+          color: isComplete ? t.success : t.ch,
+          transition: 'color 400ms var(--ease-lux)',
+        }}>
+          {Math.min(filled, total)}/{total}
+        </span>
+      </div>
+      <div style={{
+        height: '3px',
+        background: 'rgba(26,26,26,0.08)',
+        borderRadius: '2px',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${Math.min(pct, 100)}%`,
+          background: isComplete ? t.success : t.ch,
+          borderRadius: '2px',
+          transition: 'width 600ms var(--ease-lux), background 400ms var(--ease-lux)',
+        }} />
+      </div>
     </div>
   );
 }

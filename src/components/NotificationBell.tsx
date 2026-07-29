@@ -93,7 +93,7 @@ const NOTIFICATION_ICONS: Record<string, NotificationIconConfig> = {
   revision_submitted: { icon: RefreshCw, color: t.pending, label: 'Re-submitted' },
   approved: { icon: CheckCircle2, color: t.success, label: 'Approved' },
   buddy_approved: { icon: Shield, color: t.purple, label: 'Buddy Approved' },
-  needs_revision: { icon: XCircle, color: t.error, label: 'Needs Revision' },
+  needs_revision: { icon: XCircle, color: t.warning, label: 'Needs Revision' },
   phase_approved: { icon: Award, color: t.success, label: 'Phase Approved' },
   promoted: { icon: Star, color: '#D4A853', label: 'Promoted' },
   due_soon: { icon: Clock, color: t.warning, label: 'Due Soon' },

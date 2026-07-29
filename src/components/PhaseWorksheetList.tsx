@@ -27,7 +27,7 @@ interface PhaseWorksheetListProps {
 function getBadge(status: string | null, reviewStatus: string | null): { label: string; color: string } {
   if (reviewStatus === REVIEW_STATUS.APPROVED) return { label: 'Reviewed', color: t.success };
   if (reviewStatus === REVIEW_STATUS.BUDDY_APPROVED) return { label: 'Buddy Approved', color: t.purple };
-  if (reviewStatus === REVIEW_STATUS.NEEDS_REVISION) return { label: 'Revise', color: t.error };
+  if (reviewStatus === REVIEW_STATUS.NEEDS_REVISION) return { label: 'Revise', color: t.warning };
   if (status === SUBMISSION_STATUS.SUBMITTED || reviewStatus === REVIEW_STATUS.PENDING_REVIEW || reviewStatus === REVIEW_STATUS.REVISION_SUBMITTED) return { label: 'Pending', color: t.pending };
   if (status === SUBMISSION_STATUS.IN_PROGRESS) return { label: 'In Progress', color: t.ch };
   return { label: 'Not Started', color: t.wg };

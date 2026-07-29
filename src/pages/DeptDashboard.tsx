@@ -11,6 +11,7 @@ import { t } from '../config/theme';
 import { getWorksheetName, getDeptPhaseMap, getReviewerType, getDeptApprovedPhases } from '../config/worksheetConfigData';
 import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
 import { REVIEWER_STYLES, type WorksheetSubmission } from '../config/worksheetConfig';
+import { getEstimatedTime } from '../config/estimatedTimes';
 import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
 import type { Department } from '../types/supabase';
 import Skeleton, { SkeletonBlock } from '../components/Skeleton';
@@ -109,7 +110,7 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
     if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
     if (sub.review_status === REVIEW_STATUS.APPROVED) return { status: 'approved', label: 'Reviewed', color: t.success, icon: CheckCircle2 };
     if (sub.review_status === REVIEW_STATUS.BUDDY_APPROVED) return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
-    if (sub.review_status === REVIEW_STATUS.NEEDS_REVISION) return { status: 'needs_revision', label: 'Needs Revision', color: t.error, icon: AlertCircle };
+    if (sub.review_status === REVIEW_STATUS.NEEDS_REVISION) return { status: 'needs_revision', label: 'Needs Revision', color: t.warning, icon: AlertCircle };
     if (sub.review_status === REVIEW_STATUS.REVISION_SUBMITTED || sub.review_status === REVIEW_STATUS.PENDING_REVIEW) return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
     const rawStatus = (sub.status as string) || '';
     if (rawStatus === SUBMISSION_STATUS.SUBMITTED || rawStatus === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };
@@ -238,7 +239,7 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
               { label: 'Buddy Approved', color: t.purple },
               { label: 'Under Review', color: t.pending },
               { label: 'Reviewed', color: t.success },
-              { label: 'Needs Revision', color: t.error },
+              { label: 'Needs Revision', color: t.warning },
             ] as { label: string; color: string }[]).map(b => (
               <span key={b.label} className="lux-badge lux-badge-light" style={{
                 borderColor: b.color, color: b.color, fontSize: '0.55rem',
@@ -261,11 +262,12 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
               }}>
                 Overall Progress
               </span>
-              <div className="lux-progress" style={{ flex: 1, minWidth: '150px', maxWidth: '350px' }}>
-                <div className="lux-progress-fill" style={{
-                  width: `${totalWorksheets > 0 ? (totalApproved / totalWorksheets) * 100 : 0}%`,
-                  background: color,
-                }} />
+              <div className="lux-progress" style={{ flex: 1, minWidth: '150px', maxWidth: '350px' }}>                      <div
+                        className={`lux-progress-fill ${totalApproved === totalWorksheets && totalWorksheets > 0 ? 'lux-progress-shimmer' : ''}`}
+                        style={{
+                          width: `${totalWorksheets > 0 ? (totalApproved / totalWorksheets) * 100 : 0}%`,
+                          background: color,
+                        }} />
               </div>
               <span style={{ fontFamily: t.body, fontSize: '0.8rem', fontWeight: 500, color: t.ch }}>
                 {totalApproved}<span style={{ color: t.wg, fontWeight: 400 }}> / {totalWorksheets}</span>
@@ -350,7 +352,11 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div className="lux-progress" style={{ flex: 1, maxWidth: '250px' }}>
-                            <div className="lux-progress-fill" style={{ width: `${progress.pct}%`, background: progress.pct === 100 ? color : undefined }} />
+                            <div
+                              className={`lux-progress-fill ${progress.pct === 100 ? 'lux-progress-shimmer' : ''}
+                                ${progress.pct > 0 && progress.pct < 100 ? 'lux-progress-pulse' : ''}`}
+                              style={{ width: `${progress.pct}%`, background: progress.pct === 100 ? color : undefined }}
+                            />
                           </div>
                           <span style={{ fontFamily: t.body, fontSize: '0.75rem', fontWeight: 500, color: t.ch }}>
                             {progress.done}/{progress.total}
@@ -395,6 +401,11 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
                               <div style={{ width: '10px', height: '10px', border: '1px solid ' + ws.color, flexShrink: 0 }} />
                             )}
                             <span style={{ flex: 1 }}>{getWorksheetName(wsId, template)}</span>
+                            {getEstimatedTime(wsId) && (
+                              <span style={{ fontSize: '0.5rem', color: t.wg, whiteSpace: 'nowrap' }}>
+                                {getEstimatedTime(wsId)}
+                              </span>
+                            )}
                             {reviewerStyle && (
                               <span style={{
                                 fontSize: '0.5rem', fontWeight: 500, letterSpacing: '0.15em',

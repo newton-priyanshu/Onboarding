@@ -329,7 +329,7 @@ export default function PhaseReview() {
           <SummaryCard label="Buddy Approved" value={buddyApproved.length} color={t.purple} icon={Shield} />
           <SummaryCard label="Already Approved" value={alreadyApproved.length} color={t.success} icon={CheckCircle2} />
           <SummaryCard label="Pending Review" value={pending.length} color="#D4AF37" icon={Clock} />
-          {needsRevision.length > 0 && <SummaryCard label="Needs Revision" value={needsRevision.length} color={t.error} />}
+          {needsRevision.length > 0 && <SummaryCard label="Needs Revision" value={needsRevision.length} color={t.warning} />}
           {notSubmitted.length > 0 && <SummaryCard label="Not Started" value={notSubmitted.length} color={t.wg} />}
         </div>
 
@@ -377,7 +377,7 @@ export default function PhaseReview() {
               [REVIEW_STATUS.BUDDY_APPROVED]: t.purple,
               [REVIEW_STATUS.PENDING_REVIEW]: t.gd,
               [REVIEW_STATUS.REVISION_SUBMITTED]: t.pending,
-              [REVIEW_STATUS.NEEDS_REVISION]: t.error,
+              [REVIEW_STATUS.NEEDS_REVISION]: t.warning,
             };
             const statusLabels: Record<string, string> = {
               [REVIEW_STATUS.APPROVED]: 'Approved (Manager)',

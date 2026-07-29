@@ -4,7 +4,7 @@ import { useWorksheet } from '../hooks/useWorksheet';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
-  WorksheetHeader, WorksheetSection, ActionBar, SubmittedView,
+  WorksheetHeader, WorksheetSection, WorksheetProgressBar, ActionBar, SubmittedView,
   ApprovedView, BuddyApprovedView, LoadingView, BackButton,
   ErrorAlert, ReviewFeedback, FieldGroup, FieldGrid,
 } from '../config/worksheetComponents';
@@ -124,17 +124,8 @@ export default function WorksheetPage({
   return (
     <div className="lux-section">
       {/*
-        Shared responsive/a11y utilities for all worksheet forms (H26 + a11y fixes).
-        Kept here rather than duplicated in every worksheet file:
-        - .ws-sr-only: visually-hidden label text (still read by screen readers),
-          used to give bare table-style inputs a real associated <label> without
-          changing the visual design.
-        - .ws-scroll-x + .ws-matrix-row: wide "spreadsheet" style rows (fixed
-          multi-column grids used for review matrices/logs) become horizontally
-          scrollable on narrow screens instead of squashing into unreadable columns.
-        - .ws-stack-sm: simple side-by-side field pairs collapse to a single
-          column on phones.
-        - .ws-star-btn: ensures star/rating buttons meet the 44px touch target.
+        Shared responsive/a11y utilities for all worksheet forms.
+        Includes .ws-sticky-pad for bottom sticky-action-bar clearance.
       */}
       <style>{`
         .ws-sr-only {
@@ -147,23 +138,69 @@ export default function WorksheetPage({
           min-width: 44px; min-height: 44px;
           display: inline-flex; align-items: center; justify-content: center;
         }
+        .ws-sticky-pad {
+          height: 72px;
+        }
         @media (max-width: 640px) {
           .ws-stack-sm, .ws-stack-sm > div { grid-template-columns: 1fr !important; }
+          .ws-sticky-pad {
+            height: 96px;
+          }
+        }
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+          .ws-sticky-footer {
+            padding-bottom: env(safe-area-inset-bottom);
+          }
         }
       `}</style>
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '0 1rem' }}>
         <BackButton to={backTo} label={`Back to ${phaseLabel(phase)}`} />
-        <WorksheetHeader icon={icon} title={title} subtitle={subtitle} saveStatus={saveStatus} />
+
+        {/* ── Sticky Header: title + progress bar ── */}
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
+          background: 'var(--color-bg)',
+          paddingTop: '0.5rem',
+          marginBottom: '1rem',
+        }}>
+          {/* Compact header in sticky area — reduced bottom margin */}
+          <WorksheetHeader icon={icon} title={title} subtitle={subtitle} saveStatus={saveStatus} compact />
+          <WorksheetProgressBar data={data} />
+          {/* Subtle shadow separator when scrolled */}
+          <div style={{
+            height: '1px',
+            background: 'rgba(26,26,26,0.06)',
+            marginTop: '0.35rem',
+          }} />
+        </div>
+
         <ReviewFeedback data={data} />
-        <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column' }}>
+
+        <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {typeof children === 'function' ? (children as (ctx: WorksheetContext) => ReactNode)(context) : children}
           <ErrorAlert message={submitError} />
-          <ActionBar onCancel={() => navigate(backTo)} onSubmit={ws.handleSubmit} submitting={submitting} />
         </form>
+
+        {/* Spacer so content doesn't hide behind sticky footer */}
+        <div className="ws-sticky-pad" />
+
+        {/* ── Sticky Footer: action bar ── */}
+        <div className="ws-sticky-footer" style={{
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 20,
+          background: 'var(--color-bg)',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
+          paddingTop: '0.5rem',
+        }}>
+          <ActionBar onCancel={() => navigate(backTo)} onSubmit={ws.handleSubmit} submitting={submitting} />
+        </div>
       </div>
     </div>
   );
 }
 
 // Re-export shared sub-components for convenience
-export { WorksheetSection, FieldGroup, FieldGrid };
+export { WorksheetSection, FieldGroup, FieldGrid, WorksheetProgressBar };
