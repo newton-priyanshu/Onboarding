@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCampusPath } from '../utils/campusSlug';
 import { supabase } from '../api/supabase';
 import { CheckCircle2, XCircle, ArrowLeft, Clock, AlertCircle, User, Send, RefreshCw, Eye, History, ThumbsUp, ThumbsDown, Shield } from 'lucide-react';
 import { WORKSHEET_INFO, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
@@ -39,6 +40,8 @@ export default function WorksheetReview() {
   const worksheetId = params.worksheetId;
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const campusPath = useCampusPath();
   const [submission, setSubmission] = useState<WorksheetSubmission | null>(null);
   const [instructor, setInstructor] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,19 @@ export default function WorksheetReview() {
 
   const wsInfo = WORKSHEET_INFO[worksheetId || ''] || { title: worksheetId || '', phase: 'Unknown' };
   const data = submission?.worksheet_data || {};
+
+  // ── Post-action navigation (BUG-7): after approve/reject, return to the
+  // review-list page we came from (buddy/admin/onboarding-lead) instead of
+  // navigate(-1), which can land on a stale URL and 404. Replace keeps the
+  // list page as the current history entry so Back never re-opens the review.
+  function returnToList() {
+    const path = location.pathname;
+    let origin: string;
+    if (path.includes('/buddy/')) origin = '/buddy';
+    else if (path.includes('/onboarding-lead/')) origin = '/onboarding-lead';
+    else origin = '/admin';
+    navigate(campusPath(origin), { replace: true });
+  }
 
   // ── Role-based access ──
   const isBuddy = profile?.role === 'lead_instructor';
@@ -184,7 +200,7 @@ export default function WorksheetReview() {
     setActionMessage('Worksheet approved by buddy. ✓');
     setSubmission(rows[0] as unknown as WorksheetSubmission);
     setComment('');
-    setTimeout(() => navigate(-1), 2000);
+    setTimeout(returnToList, 2000);
     setActionLoading(false);
   }
 
@@ -235,7 +251,7 @@ export default function WorksheetReview() {
     setActionMessage('Revision requested.');
     setSubmission(rows[0] as unknown as WorksheetSubmission);
     setComment('');
-    setTimeout(() => navigate(-1), 2000);
+    setTimeout(returnToList, 2000);
     setActionLoading(false);
   }
 
@@ -288,7 +304,7 @@ export default function WorksheetReview() {
     setActionMessage('Revision requested by manager.');
     setSubmission(rows[0] as unknown as WorksheetSubmission);
     setComment('');
-    setTimeout(() => navigate(-1), 2000);
+    setTimeout(returnToList, 2000);
     setActionLoading(false);
   }
 

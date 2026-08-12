@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy, type ReactNode } from 'react';
+import { LEGACY_TOP_LEVEL_ROUTES } from './constants/campus';
+import { LegacyRedirect, LegacyRouteFallback } from './components/LegacyRedirect';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CampusProvider, useCampus } from './context/CampusContext';
 import { RBACProvider } from './context/RBACContext';
@@ -93,6 +95,7 @@ function PageFallback() {
 function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {children}
     </div>
   );
@@ -162,6 +165,15 @@ function CampusHomeRoute() {
   // Lead instructor → buddy dashboard
   if (profile.role === 'lead_instructor') {
     return <Navigate to="buddy" replace />;
+  }
+
+  // Admin roles → their dashboards (BUG-3): campus_admin and academic_head
+  // land on the admin dashboard; onboarding_lead on their monitoring panel.
+  if (profile.role === 'campus_admin' || profile.role === 'academic_head') {
+    return <Navigate to="admin" replace />;
+  }
+  if (profile.role === 'onboarding_lead') {
+    return <Navigate to="onboarding-lead" replace />;
   }
 
   // Department-aware redirect: progression/operations users go to their dept dashboard
@@ -283,6 +295,11 @@ function AppRoutes() {
         <Route path="/" element={<ProtectedRoute><HomeRoute /></ProtectedRoute>} />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
+        {/* ─── Legacy backward-compat redirects (Phase 9) ─── */}
+        {[...LEGACY_TOP_LEVEL_ROUTES].map(route => (
+          <Route key={route} path={`/${route}`} element={<LegacyRedirect />} />
+        ))}
+
         {/* ─── Campus-Scoped Routes (all under /:campusSlug) ─── */}
         <Route path="/:campusSlug" element={<ProtectedRoute><CampusRouteLayout /></ProtectedRoute>}>
           {/* Index route — the dashboard/home (campus-aware) */}
@@ -365,8 +382,8 @@ function AppRoutes() {
           {worksheetRoutes}
         </Route>
 
-        {/* 404 catch-all */}
-        <Route path="*" element={<NotFound />} />
+        {/* 404 catch-all — also handles nested legacy URLs (e.g. /week-2/worksheet/x) */}
+        <Route path="*" element={<LegacyRouteFallback />} />
       </Routes>
     </ErrorBoundary>
   );
@@ -405,7 +422,7 @@ export default function App() {
             <Breadcrumbs />
             <GlobalCommandPalette />
             <GlobalOverlays />
-            <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+            <main id="main-content" tabIndex={-1} style={{ flex: 1, position: 'relative', zIndex: 1 }}>
               <AppRoutes />
             </main>
 

@@ -72,7 +72,7 @@ All findings from the 20-dimension production-readiness audit closed in code.
 | L1 | **ReviewContent.tsx ~1000 lines** | `src/components/` | Split into renderers + helpers |
 | L2 | **Week1-4.tsx 95% identical** | `src/pages/` | Collapse to parameterized `<WeekPage>` |
 | L3 | **Bundle size 768 kB** — 40+ eager worksheet imports | `worksheetConfig.tsx` | Convert to `React.lazy()` |
-| L4 | **Notification polling every 15s** | `useNotifications.ts` | Switch to Supabase Realtime |
+| L4 | **Notification polling every 15s** | `useNotifications.ts` | ✅ Done — switched to Supabase Realtime (`postgres_changes` INSERT/UPDATE/DELETE, no polling) + migration `20260730000002_notifications_realtime.sql` adds table to `supabase_realtime` publication |
 | L5 | **Self-host Google Fonts** | `index.css` | Remove CDN dependency |
 | L6 | **Add CHANGELOG.md + CONTRIBUTING.md** | Root | Documentation |
 | L7 | **Configure Dependabot** | `.github/` | Weekly dependency updates |

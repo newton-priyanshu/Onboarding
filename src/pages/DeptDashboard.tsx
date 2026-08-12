@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCampusPath } from '../utils/campusSlug';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import {
@@ -59,6 +60,7 @@ interface StatusInfo {
 export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const campusPath = useCampusPath();
   const [submissions, setSubmissions] = useState<WorksheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
       days: info.days,
       description: info.desc,
       icon: info.icon,
-      path: `/${dept}/phase-${n}`,
+      path: campusPath(`/${dept}/phase-${n}`),
     };
   });
 
@@ -378,8 +380,8 @@ export default function DeptDashboard({ dept, label, desc }: DeptDashboardProps)
                         return (
                           <div
                             key={wsId}
-                            onClick={() => navigate(`/${dept}/phase-${phase.num}/worksheet/${wsId}`)}
-                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') navigate(`/${dept}/phase-${phase.num}/worksheet/${wsId}`); }}
+                            onClick={() => navigate(campusPath(`/${dept}/phase-${phase.num}/worksheet/${wsId}`))}
+                            onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') navigate(campusPath(`/${dept}/phase-${phase.num}/worksheet/${wsId}`)); }}
                             role="button"
                             tabIndex={0}
                             style={{

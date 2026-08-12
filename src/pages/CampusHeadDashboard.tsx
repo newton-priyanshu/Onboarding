@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCampusPath } from '../utils/campusSlug';
 import { supabase } from '../api/supabase';
-import { unwrap } from '../api/db';
+import { fetchAllPages } from '../api/db';
 import {
   BookOpen, Target, Sparkles, Users, ArrowRight, Shield, CheckCircle2,
   Clock, AlertCircle, RefreshCw, BarChart3,
@@ -10,6 +11,7 @@ import {
 import { t } from '../config/theme';
 import { REVIEW_STATUS } from '../constants/status';
 import Skeleton from '../components/Skeleton';
+import LeaderboardPanel from '../components/LeaderboardPanel';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -81,6 +83,7 @@ const DEPT_WORKSHEETS: Record<string, string[]> = {
 
 export default function CampusHeadDashboard() {
   const navigate = useNavigate();
+  const campusPath = useCampusPath();
   const { user } = useAuth();
   const [deptStats, setDeptStats] = useState<DeptStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,22 +98,26 @@ export default function CampusHeadDashboard() {
 
     try {
       // 1. Get all non-super-admin users grouped by department
-      const profiles = await supabase
-        .from('user_profiles')
-        .select('id, department, full_name')
-        .neq('role', 'super_admin')
-        .then(unwrap) as { id: string; department: string | null; full_name: string | null }[];
+      const profiles = await fetchAllPages((from, to) =>
+        supabase
+          .from('user_profiles')
+          .select('id, department, full_name')
+          .neq('role', 'super_admin')
+          .order('id')
+          .range(from, to)
+      ) as { id: string; department: string | null; full_name: string | null }[];
 
       const totalUsers = profiles.length;
       setOverallUsers(totalUsers);
 
-      // 2. Get all recent worksheet submissions (last 1000)
-      const submissions = await supabase
-        .from('worksheet_submissions')
-        .select('user_id, worksheet_id, review_status, updated_at')
-        .limit(1000)
-        .order('updated_at', { ascending: false })
-        .then(unwrap) as { user_id: string; worksheet_id: string; review_status: string; updated_at: string | null }[];
+      // 2. Get all worksheet submissions (paginated — no silent truncation)
+      const submissions = await fetchAllPages((from, to) =>
+        supabase
+          .from('worksheet_submissions')
+          .select('user_id, worksheet_id, review_status, updated_at')
+          .order('updated_at', { ascending: false })
+          .range(from, to)
+      ) as { user_id: string; worksheet_id: string; review_status: string; updated_at: string | null }[];
 
       // 3. Calculate stats per department
       const allDeptStats: DeptStats[] = DEPARTMENTS.map(dept => {
@@ -339,8 +346,8 @@ export default function CampusHeadDashboard() {
                   animation: `luxFadeIn 0.6s ${idx * 0.12}s forwards`,
                   opacity: 0,
                 }}
-                onClick={() => navigate(deptDef.key === 'academics' ? '/' : `/${deptDef.key}`)}
-                onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') navigate(deptDef.key === 'academics' ? '/' : `/${deptDef.key}`); }}
+                onClick={() => navigate(campusPath(deptDef.key === 'academics' ? '/' : `/${deptDef.key}`))}
+                onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') navigate(campusPath(deptDef.key === 'academics' ? '/' : `/${deptDef.key}`)); }}
                 role="button"
                 tabIndex={0}
                 aria-label={`View ${deptDef.label} department`}
@@ -450,7 +457,7 @@ export default function CampusHeadDashboard() {
                           key={ph}
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(deptDef.key === 'academics' ? `/phase-${ph}` : `/${deptDef.key}/phase-${ph}`);
+                            navigate(campusPath(deptDef.key === 'academics' ? `/phase-${ph}` : `/${deptDef.key}/phase-${ph}`));
                           }}
                           style={{
                             padding: '6px 14px',
@@ -477,6 +484,26 @@ export default function CampusHeadDashboard() {
           })}
         </div>
 
+        {/* Gamification Leaderboard */}
+        <div style={{ marginTop: '4rem' }}>
+          <div style={{
+            marginBottom: '1.5rem',
+            borderTop: '1px solid rgba(26, 26, 26, 0.12)',
+            paddingTop: '2rem',
+          }}>
+            <h4 style={{
+              fontFamily: t.heading, fontSize: '1.5rem', fontWeight: 400,
+              letterSpacing: '-0.02em', color: t.ch, marginBottom: '0.25rem',
+            }}>
+              Joinee <em style={{ fontStyle: 'italic', color: t.gd }}>Momentum</em>
+            </h4>
+            <p style={{ fontFamily: t.body, fontSize: '0.8rem', color: t.wg }}>
+              See who's earning XP, building streaks, and unlocking achievements across your campus.
+            </p>
+          </div>
+          <LeaderboardPanel limit={10} />
+        </div>
+
         {/* Quick Links */}
         <div style={{
           marginTop: '4rem',
@@ -491,13 +518,13 @@ export default function CampusHeadDashboard() {
             Quick Actions
           </h4>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/admin')} className="lux-btn lux-btn-secondary">
+            <button onClick={() => navigate(campusPath('/admin'))} className="lux-btn lux-btn-secondary">
               <Shield size={14} strokeWidth={1.5} /> Admin Dashboard
             </button>
-            <button onClick={() => navigate('/buddy')} className="lux-btn lux-btn-secondary">
+            <button onClick={() => navigate(campusPath('/buddy'))} className="lux-btn lux-btn-secondary">
               <Users size={14} strokeWidth={1.5} /> Reviews & Approvals
             </button>
-            <button onClick={() => navigate('/super-admin/campuses')} className="lux-btn lux-btn-secondary">
+            <button onClick={() => navigate(campusPath('/super-admin/campuses'))} className="lux-btn lux-btn-secondary">
               <BarChart3 size={14} strokeWidth={1.5} /> Campus Management
             </button>
           </div>

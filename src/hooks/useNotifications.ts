@@ -63,6 +63,9 @@ export function useNotifications(
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const mountedRef = useRef(true);
+  // Unique per hook instance — the navbar mounts the bell twice (desktop + mobile),
+  // and two channels sharing a name on one socket would conflict.
+  const channelSuffixRef = useRef(`sub-${Math.random().toString(36).slice(2, 8)}`);
   const userId = (user as { id?: string } | null)?.id;
 
   const fetchNotifications = useCallback(async () => {
@@ -106,9 +109,11 @@ export function useNotifications(
     // Initial fetch
     fetchNotifications();
 
-    // Subscribe to new INSERTs on the notifications table for this user
+    // Subscribe to live changes on this user's notifications — event-driven,
+    // no polling. Requires the `notifications` table to be in the
+    // `supabase_realtime` publication (migration 20260730000002_notifications_realtime.sql).
     const channel = supabase
-      .channel('notifications-realtime')
+      .channel(`notifications-realtime-${userId}-${channelSuffixRef.current}`)
       .on(
         'postgres_changes',
         {
@@ -119,10 +124,43 @@ export function useNotifications(
         },
         (payload) => {
           if (!mountedRef.current) return;
-          const newNotification = payload.new as NotificationItem;
-          setNotifications(prev => [newNotification, ...prev]);
-          if (!newNotification.read) {
-            setUnreadCount(prev => prev + 1);
+          const incoming = payload.new as NotificationItem;
+          setNotifications(prev =>
+            // Dedupe — the initial fetch can race the live insert.
+            prev.some(n => n.id === incoming.id) ? prev : [incoming, ...prev]
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (!mountedRef.current) return;
+          // Syncs read state across tabs/devices.
+          const updated = payload.new as NotificationItem;
+          setNotifications(prev =>
+            prev.map(n => (n.id === updated.id ? updated : n))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (!mountedRef.current) return;
+          const removedId = (payload.old as { id?: string } | null)?.id;
+          if (removedId) {
+            setNotifications(prev => prev.filter(n => n.id !== removedId));
           }
         }
       )
@@ -139,6 +177,13 @@ export function useNotifications(
     };
   }, [userId, fetchNotifications]);
 
+  // unreadCount is derived from the list — single source of truth, so realtime
+  // INSERT/UPDATE/DELETE events (including cross-tab mark-as-read echoes) stay
+  // consistent without delta bookkeeping.
+  useEffect(() => {
+    setUnreadCount(notifications.filter(n => !n.read).length);
+  }, [notifications]);
+
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!userId) return;
     try {
@@ -152,7 +197,6 @@ export function useNotifications(
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -170,7 +214,6 @@ export function useNotifications(
         .in('id', unreadIds);
       if (updateError) throw updateError;
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
     } catch (err) {
       console.error('Error marking all as read:', err);
     }

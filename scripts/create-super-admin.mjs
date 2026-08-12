@@ -34,7 +34,8 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const SUPER_ADMIN = {
   email: 'superadmin@newtonschool.co',
-  password: 'SuperAdmin123!',
+  // Standardized QA password (BUG-4) — every seed script uses Test123!.
+  password: 'Test123!',
   fullName: 'Platform Super Admin',
 };
 

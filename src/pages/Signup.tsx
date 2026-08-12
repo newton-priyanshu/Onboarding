@@ -95,7 +95,10 @@ export default function Signup() {
                 <input id="signup-password" className="lux-input" type={showPw ? 'text' : 'password'}
                   value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 characters"
                   style={{ paddingLeft: '28px', paddingRight: '32px' }} required autoComplete="new-password" />
-                <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '0', top: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0 }}>
+                <button type="button" onClick={() => setShowPw(!showPw)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPw}
+                  style={{ position: 'absolute', right: '0', top: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0 }}>
                   {showPw ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
               </div>

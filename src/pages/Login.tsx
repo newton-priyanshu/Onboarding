@@ -88,7 +88,10 @@ export default function Login() {
                 <input id="login-password" className="lux-input" type={showPw ? 'text' : 'password'}
                   value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password"
                   style={{ paddingLeft: '28px', paddingRight: '32px' }} required autoComplete="current-password" />
-                <button type="button" onClick={() => setShowPw(!showPw)} style={{
+                <button type="button" onClick={() => setShowPw(!showPw)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPw}
+                  style={{
                   position: 'absolute', right: '0', top: '14px',
                   background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-warm-grey)', padding: 0,
                 }}>

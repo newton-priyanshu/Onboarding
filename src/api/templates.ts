@@ -398,8 +398,11 @@ export function resolveReviewer(
   fallbackReviewer: Record<string, string>
 ): string {
   if (template) {
-    const reviewer = getWorksheetReviewer(template, worksheetId);
-    if (reviewer) return reviewer;
+    // Look the worksheet up directly: getWorksheetReviewer() always returns a
+    // truthy 'buddy' default, so using it here would make the fallback map
+    // below unreachable whenever a template exists.
+    const entry = getWorksheetEntry(template, worksheetId);
+    if (entry?.reviewer) return entry.reviewer;
   }
   return fallbackReviewer[worksheetId] || 'buddy';
 }

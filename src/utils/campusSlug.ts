@@ -14,11 +14,19 @@ export function campusPath(slug: string | null | undefined, path: string): strin
   ];
 
   if (!slug) return path;
-  if (FLAT_PATHS.some(p => path === p || path.startsWith(p + '/'))) return path;
+
+  // Compare only the path portion, preserving any query string or hash
+  // fragment (e.g. /auth/callback?code=123 or /auth/callback#access_token=…
+  // must stay flat AND keep their ?…/#… suffix).
+  const suffixIdx = path.search(/[?#]/);
+  const pathOnly = suffixIdx >= 0 ? path.slice(0, suffixIdx) : path;
+  const suffix = suffixIdx >= 0 ? path.slice(suffixIdx) : '';
+
+  if (FLAT_PATHS.some(p => pathOnly === p || pathOnly.startsWith(p + '/'))) return path;
 
   // Strip leading slash before adding prefix
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `/${slug}/${cleanPath}`;
+  const cleanPath = pathOnly.startsWith('/') ? pathOnly.slice(1) : pathOnly;
+  return `/${slug}/${cleanPath}${suffix}`;
 }
 
 /**

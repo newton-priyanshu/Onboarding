@@ -36,6 +36,7 @@ const roleLabels: RoleLabels = {
   progression_head: 'Progression Head',
   ops_head: 'Ops Head',
   campus_head: 'Campus Head',
+  campus_admin: 'Campus Admin',
   onboarding_lead: 'Onboarding Lead',
   acad_ops: 'Acad Ops',
 };
@@ -80,6 +81,7 @@ export default function Navbar({ progress }: NavbarProps) {
   }
   if (role && (role === 'lead_instructor' || DEPT_HEAD_ROLES.has(role))) roleLinks.push({ path: campusPath('/buddy'), label: 'Reviews', icon: UserCheck });
   if (role === 'onboarding_lead') roleLinks.push({ path: campusPath('/onboarding-lead'), label: 'Monitoring', icon: Shield });
+  if (role === 'campus_admin') roleLinks.push({ path: campusPath('/admin'), label: 'Admin', icon: ClipboardCheck });
   if (role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && role !== 'campus_head') roleLinks.push({ path: campusPath('/admin'), label: 'Admin', icon: ClipboardCheck });
 
   // Super Admin links (flat — no campus prefix)
@@ -342,6 +344,12 @@ export default function Navbar({ progress }: NavbarProps) {
                       <button onClick={() => { navigate(campusPath('/onboarding-lead')); setUserMenuOpen(false); }}
                         className="menu-item-btn">
                         <Shield size={14} strokeWidth={1.5} /> Onboarding Panel
+                      </button>
+                    )}
+                    {role === 'campus_admin' && (
+                      <button onClick={() => { navigate(campusPath('/admin')); setUserMenuOpen(false); }}
+                        className="menu-item-btn">
+                        <ClipboardCheck size={14} strokeWidth={1.5} /> Admin Dashboard
                       </button>
                     )}
                     {role && (DEPT_HEAD_ROLES.has(role) || role === 'onboarding_lead') && (

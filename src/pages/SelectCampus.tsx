@@ -116,7 +116,18 @@ export default function SelectCampus() {
 
   // ── Handle final submission ────────────────────────────
   async function handleSubmit(campusId: string) {
-    if (!profile?.id || !selectedDepartment) return;
+    // Surface a visible error instead of silently no-oping when the profile
+    // hasn't loaded (BUG-4: previously users got stuck on /select-campus with
+    // no recoverable UI when profile?.id was missing).
+    if (!selectedDepartment) {
+      setError('Please select a department first.');
+      setStep('department');
+      return;
+    }
+    if (!profile?.id) {
+      setError('Your profile is still loading. Please refresh the page and try again.');
+      return;
+    }
     setSelectedCampusId(campusId);
     setIsSaving(true);
     setError(null);
@@ -304,6 +315,22 @@ export default function SelectCampus() {
               );
             })}
           </div>
+
+          {/* Error message (e.g. department missing — visible on this step too) */}
+          {error && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              marginTop: '1.25rem',
+              padding: '0.75rem 1rem',
+              background: 'rgba(200, 50, 50, 0.06)',
+              border: '1px solid rgba(200, 50, 50, 0.15)',
+              fontFamily: 'var(--font-body)', fontSize: '0.78rem',
+              color: t.error,
+            }}>
+              <AlertCircle size={14} strokeWidth={1.5} style={{ flexShrink: 0 }} />
+              <span>{error}</span>
+            </div>
+          )}
 
           <p style={{
             textAlign: 'center', marginTop: '2rem',

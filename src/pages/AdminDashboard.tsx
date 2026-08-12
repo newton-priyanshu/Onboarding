@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { unwrap } from '../api/db';
+import { unwrap, fetchAllPages } from '../api/db';
 import { withCampusIf } from '../api/supabase';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, XCircle, AlertCircle, type LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
@@ -116,15 +116,17 @@ export default function AdminDashboard() {
       const wsDataRaw = ids.length === 0
         ? []
         : await fetchWithCache(`admin-worksheets-${campusId || 'all'}-${ids.slice().sort().join(',')}`, () =>
-            withCampusIf(
-              supabase.from('worksheet_submissions')
-                // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
-                .select('user_id, worksheet_id, review_status, status, updated_at')
-                .in('user_id', ids)
-                .order('updated_at', { ascending: false })
-                .limit(2000),
-              campusId
-            ).then(unwrap)
+            fetchAllPages((from, to) =>
+              withCampusIf(
+                supabase.from('worksheet_submissions')
+                  // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
+                  .select('user_id, worksheet_id, review_status, status, updated_at')
+                  .in('user_id', ids)
+                  .order('updated_at', { ascending: false })
+                  .range(from, to),
+                campusId
+              )
+            )
           );
       const wsData = wsDataRaw as unknown as WorksheetSubmission[];
 

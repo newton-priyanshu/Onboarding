@@ -1476,7 +1476,7 @@ CREATE POLICY "Insert own submissions" ON public.worksheet_submissions
   FOR INSERT TO authenticated
   WITH CHECK (
     auth.uid() = user_id
-    AND review_status IN ('', 'pending_review')
+    AND review_status IN ('', 'pending_review', 'revision_submitted') -- resubmit: owner upserts revision_submitted in the revision round-trip
     AND reviewed_by IS NULL
     AND (
       worksheet_submissions.campus_id IS NULL

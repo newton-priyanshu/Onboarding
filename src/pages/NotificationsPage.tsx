@@ -146,9 +146,12 @@ export default function NotificationsPage() {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (silent = false) => {
     if (!userId) return;
-    setLoading(true);
+    // Live realtime events refetch silently — only the initial load and the
+    // manual Refresh button show the loading state, so a notification arriving
+    // while the page is open doesn't flash the whole list into a spinner.
+    if (!silent) setLoading(true);
     try {
       let query = supabase
         .from('notifications')
@@ -170,6 +173,33 @@ export default function NotificationsPage() {
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  // Live updates — event-driven, no polling. Requires the notifications table
+  // to be in the supabase_realtime publication (migration 20260730000002_notifications_realtime.sql).
+  // Refetch on any change so pagination/filters always reflect DB state.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`notifications-page-${userId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => { fetchNotifications(true); }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => { fetchNotifications(true); }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => { fetchNotifications(true); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, fetchNotifications]);
 
   // ── Filtering ────────────────────────────────────────────
   const filtered = notifications.filter(n => {
@@ -274,7 +304,7 @@ export default function NotificationsPage() {
               </p>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button onClick={fetchNotifications} disabled={loading} style={{
+              <button onClick={() => { fetchNotifications(); }} disabled={loading} style={{
                 fontFamily: t.body, fontSize: '0.65rem', fontWeight: 500, letterSpacing: '0.15em', textTransform: 'uppercase',
                 background: 'transparent', border: '1px solid ' + t.ch, color: t.ch, padding: '8px 16px', cursor: 'pointer',
               }}>

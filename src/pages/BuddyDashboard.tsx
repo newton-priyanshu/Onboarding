@@ -12,6 +12,8 @@ import { fetchWithCache, invalidateCacheByPrefix } from '../utils/queryCache';
 import { useWorksheetTemplate } from '../hooks';
 import EmptyState from '../components/EmptyState';
 import SendKudosDialog from '../components/SendKudosDialog';
+import type { GamificationProfile } from '../hooks/useGamification';
+import { levelFromXp } from '../config/gamification';
 
 interface SimpleInstructor {
   id: string;
@@ -52,6 +54,7 @@ export default function BuddyDashboard() {
   const { profile, user } = useAuth();
   const [myInstructors, setMyInstructors] = useState<SimpleInstructor[]>([]);
   const [allWorksheets, setAllWorksheets] = useState<WorksheetSubmission[]>([]);
+  const [gamificationByUser, setGamificationByUser] = useState<Record<string, GamificationProfile>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('pending');
@@ -79,18 +82,38 @@ export default function BuddyDashboard() {
       setMyInstructors(unique as SimpleInstructor[]);
       const ids = unique.map(a => a.id);
       if (ids.length > 0) {
-        const wsData = await fetchWithCache(`buddy-worksheets-${ids.slice().sort().join(',')}`, () =>
-          supabase.from('worksheet_submissions')
-            // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
-            .select('id, user_id, worksheet_id, review_status, status, updated_at, reviewer_name')
-            .in('user_id', ids)
-            .order('updated_at', { ascending: false })
-            .limit(200)
-            .then(unwrap)
-        , { ttl: 15_000 });
+        const [wsData, gamData] = await Promise.all([
+          fetchWithCache(`buddy-worksheets-${ids.slice().sort().join(',')}`, () =>
+            supabase.from('worksheet_submissions')
+              // review_history is heavy JSONB — fetched lazily per-worksheet on the review page, not in list view.
+              .select('id, user_id, worksheet_id, review_status, status, updated_at, reviewer_name')
+              .in('user_id', ids)
+              .order('updated_at', { ascending: false })
+              .limit(200)
+              .then(unwrap)
+          , { ttl: 15_000 }),
+          // Best-effort: gamification profiles for assigned joinees. If the
+          // gamification migration isn't applied yet, this resolves to {}.
+          (async () => {
+            try {
+              const { data, error } = await supabase
+                .from('gamification_profiles')
+                .select('*')
+                .in('user_id', ids);
+              if (error) return {} as Record<string, GamificationProfile>;
+              const map: Record<string, GamificationProfile> = {};
+              for (const row of (data || []) as GamificationProfile[]) map[row.user_id] = row;
+              return map;
+            } catch {
+              return {} as Record<string, GamificationProfile>;
+            }
+          })(),
+        ]);
         setAllWorksheets(wsData as unknown as WorksheetSubmission[]);
+        setGamificationByUser(gamData);
       } else {
         setAllWorksheets([]);
+        setGamificationByUser({});
       }
     } catch (err) {
       console.error('Failed to load buddy data:', err);
@@ -255,6 +278,7 @@ export default function BuddyDashboard() {
           <InstructorsTab
             myInstructors={myInstructors}
             allWorksheets={allWorksheets}
+            gamificationByUser={gamificationByUser}
             sendKudos={async (toUserId, message) => {
               const { error } = await supabase.from('kudos').insert({
                 from_user_id: user!.id,
@@ -335,9 +359,10 @@ function WorksheetQueueTab({ title, worksheets, instructors, getLink, activeTab,
   );
 }
 
-function InstructorsTab({ myInstructors, allWorksheets, sendKudos }: {
+function InstructorsTab({ myInstructors, allWorksheets, gamificationByUser, sendKudos }: {
   myInstructors: SimpleInstructor[];
   allWorksheets: WorksheetSubmission[];
+  gamificationByUser: Record<string, GamificationProfile>;
   sendKudos: (toUserId: string, message: string) => Promise<void>;
 }) {
   const [kudosTarget, setKudosTarget] = useState<SimpleInstructor | null>(null);
@@ -394,6 +419,9 @@ function InstructorsTab({ myInstructors, allWorksheets, sendKudos }: {
                 <UserCheck size={16} strokeWidth={1.5} style={{ color: t.ch, flexShrink: 0 }} />
                 <span style={{ fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500, color: t.ch, flex: 1 }}>{instr.full_name}</span>
                 <span style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg }}>{instr.email}</span>
+                {gamificationByUser[instr.id] && (
+                  <JoineeGamificationChip g={gamificationByUser[instr.id]!} />
+                )}
                 {pending.length > 0 && (
                   <span style={{ fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', padding: '2px 8px', border: '1px solid #D4AF37', color: '#D4AF37' }}>
                     {pending.length} pending
@@ -471,5 +499,29 @@ function InstructorsTab({ myInstructors, allWorksheets, sendKudos }: {
         />
       )}
     </div>
+  );
+}
+
+/** Compact Level · XP · streak chip for a joinee row (buddy/manager view). */
+function JoineeGamificationChip({ g }: { g: GamificationProfile }) {
+  const level = levelFromXp(g.total_xp);
+  return (
+    <span
+      title={`${g.total_xp} XP total · ${g.longest_streak} day best streak`}
+      style={{
+        fontFamily: t.body, fontSize: '0.55rem', fontWeight: 500,
+        letterSpacing: '0.08em',
+        padding: '3px 10px',
+        border: '1px solid var(--color-gold)',
+        color: 'var(--color-gold)',
+        background: 'rgba(212, 175, 55, 0.06)',
+        whiteSpace: 'nowrap',
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+      }}
+    >
+      <span style={{ fontWeight: 600 }}>L{level}</span>
+      <span style={{ opacity: 0.75 }}>{g.total_xp.toLocaleString()} XP</span>
+      {g.current_streak > 1 && <span style={{ color: '#E65100', borderColor: '#E65100' }}>🔥{g.current_streak}</span>}
+    </span>
   );
 }

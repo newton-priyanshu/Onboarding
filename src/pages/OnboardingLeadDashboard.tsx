@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabase';
-import { unwrap } from '../api/db';
+import { unwrap, fetchAllPages } from '../api/db';
 import { Users, Clock, RefreshCw, Shield, BadgeCheck, Eye, AlertCircle, LucideIcon } from 'lucide-react';
 import { PHASE_WORKSHEETS_MAP, getPhaseReviewStatus, type WorksheetSubmission, type UserProfile } from '../config/worksheetConfig';
 import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
@@ -69,12 +69,13 @@ export default function OnboardingLeadDashboard() {
       const wsDataRaw = ids.length === 0
         ? []
         : await fetchWithCache(`lead-worksheets-${ids.slice().sort().join(',')}`, () =>
-            supabase.from('worksheet_submissions')
-              .select('user_id, worksheet_id, review_status, status, updated_at')
-              .in('user_id', ids)
-              .order('updated_at', { ascending: false })
-              .limit(2000)
-              .then(unwrap)
+            fetchAllPages((from, to) =>
+              supabase.from('worksheet_submissions')
+                .select('user_id, worksheet_id, review_status, status, updated_at')
+                .in('user_id', ids)
+                .order('updated_at', { ascending: false })
+                .range(from, to)
+            )
           );
       const wsData = wsDataRaw as unknown as WorksheetSubmission[];
 

@@ -14,6 +14,12 @@ vi.mock('../../api/supabase', () => ({
   supabase: { from: mockFrom },
 }));
 
+// WorksheetReview uses useCampusPath for the post-action returnToList()
+// navigation (BUG-7) — return the path unchanged so tests stay router-local.
+vi.mock('../../utils/campusSlug', () => ({
+  useCampusPath: () => (path: string) => path,
+}));
+
 const userId = 'joinee-1';
 const worksheetId = 'p1_w1';
 

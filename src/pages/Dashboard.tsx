@@ -5,20 +5,22 @@ import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import {
   ArrowRight, BookOpen, Target, Sparkles, Lock,
-  CheckCircle2, Clock, AlertCircle, FileText, RefreshCw, type LucideIcon,
+  CheckCircle2, AlertCircle, RefreshCw, type LucideIcon,
   UserCheck, Shield, Trophy, Zap, Award,
 } from 'lucide-react';
 import { t } from '../config/theme';
 import { getWorksheetName, isPhaseApproved, getReviewerType, type WorksheetSubmission, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
 import { REVIEWER_STYLES } from '../config/worksheetConfig';
 import { useWorksheetTemplate } from '../hooks/useWorksheetTemplate';
-import { SUBMISSION_STATUS, REVIEW_STATUS } from '../constants/status';
+import { REVIEW_STATUS } from '../constants/status';
 import type { UserProfile } from '../types/supabase';
 import Skeleton, { SkeletonBlock, SkeletonCard } from '../components/Skeleton';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import ProgressRing from '../components/ProgressRing';
 import JourneyTimeline from '../components/JourneyTimeline';
 import { getDueDateInfo } from '../hooks/useDueDates';
+import { getWorksheetPath } from '../utils/worksheetHelpers';
+import { getWorksheetStatus as getWorksheetStatusInfo, type WorksheetStatusInfo } from '../utils/worksheetStatus';
 import { useAchievements } from '../hooks/useAchievements';
 import AchievementCard from '../components/AchievementCard';
 import { getMotivation } from '../config/motivations';
@@ -26,6 +28,11 @@ import { getEstimatedTime } from '../config/estimatedTimes';
 import { useKudos } from '../hooks/useKudos';
 import { useMilestones } from '../hooks/useMilestones';
 import KudosFeed from '../components/KudosFeed';
+import { useGamification } from '../hooks/useGamification';
+import GamificationStrip from '../components/GamificationStrip';
+import NextUpCard, { pickNextWorksheet } from '../components/NextUpCard';
+import AchievementUnlockBanner from '../components/AchievementUnlockBanner';
+import CertificateModal from '../components/CertificateModal';
 
 /** All unique Phase 1 worksheet IDs (FTP weeks + legacy) */
 const PHASE1_WS_IDS = [...new Set(PHASE_WORKSHEETS_MAP[1])];
@@ -48,13 +55,6 @@ const phases: PhaseInfo[] = [
 
 const ACCENT = t.gd; // gold — academic brand color
 
-interface StatusInfo {
-  status: string;
-  label: string;
-  color: string;
-  icon: LucideIcon | null;
-}
-
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export default function Dashboard() {
     try {
       const data = await supabase
         .from('worksheet_submissions')
-        .select('worksheet_id, review_status, status, updated_at')
+        .select('user_id, worksheet_id, review_status, status, updated_at')
         .eq('user_id', user.id)
         .limit(50)
         .then(unwrap);
@@ -124,16 +124,8 @@ export default function Dashboard() {
     else setLoading(false);
   }, [user?.id, loadSubmissions]);
 
-  function getWorksheetStatus(wsId: string): StatusInfo {
-    const sub = submissions.find((s: WorksheetSubmission) => s.worksheet_id === wsId);
-    if (!sub) return { status: 'not_started', label: 'Not Started', color: t.wg, icon: null };
-    if (sub.review_status === REVIEW_STATUS.APPROVED) return { status: 'approved', label: 'Reviewed', color: t.success, icon: CheckCircle2 };
-    if (sub.review_status === REVIEW_STATUS.BUDDY_APPROVED) return { status: 'buddy_approved', label: 'Buddy Approved', color: t.purple, icon: CheckCircle2 };
-    if (sub.review_status === REVIEW_STATUS.NEEDS_REVISION) return { status: 'needs_revision', label: 'Needs Revision', color: t.warning, icon: AlertCircle };
-    if (sub.review_status === REVIEW_STATUS.REVISION_SUBMITTED || sub.review_status === REVIEW_STATUS.PENDING_REVIEW) return { status: 'pending', label: 'Under Review', color: t.pending, icon: Clock };
-    const rawStatus = (sub.status as string) || '';
-    if (rawStatus === SUBMISSION_STATUS.SUBMITTED || rawStatus === 'Submitted') return { status: 'submitted', label: 'Submitted', color: t.pending, icon: Clock };
-    return { status: 'in_progress', label: 'In Progress', color: t.ch, icon: FileText };
+  function getWorksheetStatus(wsId: string): WorksheetStatusInfo {
+    return getWorksheetStatusInfo(submissions.find((s: WorksheetSubmission) => s.worksheet_id === wsId));
   }
 
   function getPhaseProgress(phaseWorksheets: string[]) {
@@ -155,7 +147,7 @@ export default function Dashboard() {
   const phase3Approved = isPhaseApproved(user?.id || '', 3, submissions);
 
   // ── Achievements ──
-  const { achievements } = useAchievements(user?.id || null, submissions);
+  const { achievements, newlyUnlocked } = useAchievements(user?.id || null, submissions);
   const unlockedAchievements = achievements.filter(a => a.unlocked);
   const lockedAchievements = achievements.filter(a => !a.unlocked);
 
@@ -166,6 +158,14 @@ export default function Dashboard() {
     achievements,
     receivedKudos,
   });
+
+  // ── Gamification (XP / level / streak / certificate) ──
+  const { profile: gamProfile, dbAvailable, certificate } = useGamification(user?.id || null, submissions);
+  const [showCertificate, setShowCertificate] = useState(false);
+
+  // Next worksheet to work on — the single clearest "what do I do now?" cue.
+  const nextUp = pickNextWorksheet(submissions);
+  const onboardingComplete = certificate != null;
 
   // ── Daily motivation ──
   const [motivation] = useState(getMotivation);
@@ -341,6 +341,24 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Achievement unlock celebration */}
+        <AchievementUnlockBanner newlyUnlocked={newlyUnlocked} />
+
+        {/* Gamification strip — level, XP, streak, achievements */}
+        {(gamProfile || submissions.length > 0) && (
+          <GamificationStrip
+            profile={gamProfile}
+            achievementsUnlocked={unlockedAchievements.length}
+            achievementsTotal={achievements.length}
+            showStreak={dbAvailable}
+          />
+        )}
+
+        {/* Next Up — the single most important cue for a joinee */}
+        {!onboardingComplete && (
+          <NextUpCard next={nextUp} submissions={submissions} template={template} />
+        )}
+
         {/* Continue Last Worksheet */}
         {submissions.length > 0 && (
           (() => {
@@ -348,12 +366,13 @@ export default function Dashboard() {
               .filter(s => s.review_status !== REVIEW_STATUS.APPROVED && s.review_status !== REVIEW_STATUS.BUDDY_APPROVED)
               .sort((a, b) => new Date(b.updated_at as string).getTime() - new Date(a.updated_at as string).getTime())[0];
             if (recentSub) {
-              // Parse phase number and worksheet number from worksheet_id (e.g., p2_w3 -> phase 2, worksheet 3)
+              // Build the correct route from the worksheet ID (handles FTP week
+              // sheets like w1_o1 → /week-1/worksheet/w1_o1 and legacy phase
+              // sheets like p2_w3 → /phase-2/worksheet-3).
               const wsId = recentSub.worksheet_id as string;
-              const phaseMatch = wsId.match(/^(\w*?)(\d)_w(\d+)$/);
-              const phaseNum = phaseMatch ? parseInt(phaseMatch[2]!, 10) : 1;
-              const wsNum = phaseMatch ? parseInt(phaseMatch[3]!, 10) : 1;
-              const recentPath = `/phase-${phaseNum}/worksheet-${wsNum}`;
+              const recentPath = getWorksheetPath(wsId);
+              // No joinee-facing page (e.g. gate checks) — skip the banner.
+              if (!recentPath) return null;
               return (
                 <div style={{
                   marginBottom: '2rem',
@@ -389,6 +408,66 @@ export default function Dashboard() {
             }
             return null;
           })()
+        )}
+
+        {/* Completion Certificate card */}
+        {onboardingComplete && certificate && (
+          <div
+            role="region"
+            aria-label="Onboarding complete — view your certificate"
+            style={{
+              marginBottom: '2.5rem',
+              padding: '1.5rem 1.75rem',
+              border: '1px solid var(--color-gold)',
+              background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.03))',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: '1rem',
+              animation: 'luxFadeIn 0.6s forwards',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '240px' }}>
+              <div style={{
+                width: '52px', height: '52px', flexShrink: 0,
+                border: '1px solid var(--color-gold)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(212, 175, 55, 0.1)',
+                fontSize: '1.5rem',
+              }} aria-hidden="true">🎓</div>
+              <div>
+                <span style={{
+                  fontFamily: t.body, fontSize: '0.55rem', fontWeight: 600,
+                  letterSpacing: '0.2em', textTransform: 'uppercase',
+                  color: 'var(--color-gold)', display: 'block', marginBottom: '2px',
+                }}>
+                  Onboarding Complete
+                </span>
+                <span style={{ fontFamily: t.heading, fontSize: '1.05rem', color: t.ch, display: 'block' }}>
+                  Welcome to the faculty!
+                </span>
+                <span style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg, display: 'block', marginTop: '2px' }}>
+                  Certificate № {certificate.certificate_number}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowCertificate(true)}
+              className="lux-btn lux-btn-primary"
+              style={{ flexShrink: 0 }}
+            >
+              <span className="gold-overlay" /><span className="btn-content">
+                View Certificate
+              </span>
+            </button>
+          </div>
+        )}
+
+        {showCertificate && certificate && (
+          <CertificateModal
+            certificate={certificate}
+            fullName={profile?.full_name || 'Faculty Member'}
+            campusName={null}
+            onClose={() => setShowCertificate(false)}
+          />
         )}
 
         {/* Your Support Team */}
@@ -737,29 +816,23 @@ export default function Dashboard() {
                         const StatusIcon = ws.icon;
                         const reviewerType = getReviewerType(wsId, template);
                         const reviewerStyle = REVIEWER_STYLES[reviewerType as keyof typeof REVIEWER_STYLES];
-                        // Build correct path per worksheet
-                        const wsNumMatch = wsId.match(/_w(\d+)$/);
-                        const wsNum = wsNumMatch ? wsNumMatch[1] : '';
-                        const phasePath = phase.num === 1
-                          ? `/phase-1/worksheet-${wsNum}`
-                          : `/phase-${phase.num}/worksheet-${wsId.replace('p' + phase.num + '_w', '')}`;
-                        return (
-                          <Link
-                            key={wsId}
-                            to={phasePath}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '12px',
-                              padding: '10px 0 10px 12px',
-                              borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
-                              textDecoration: 'none',
-                              fontFamily: t.body, fontSize: '0.8rem', color: t.ch,
-                              transition: 'color 200ms var(--ease-lux), opacity 200ms',
-                              opacity: 0,
-                              animation: `luxFadeIn 0.5s ${(idx * phase.worksheets.length + i) * 0.04 + 0.3}s forwards`,
-                            }}
-                            onMouseOver={e => { e.currentTarget.style.color = ACCENT; }}
-                            onMouseOut={e => { e.currentTarget.style.color = t.ch; }}
-                          >
+                        // Build the correct route from the worksheet ID. Gate
+                        // checks (gc1/gc2/gc3) have no joinee-facing page, so
+                        // they render as non-clickable rows (fixes the 404 on
+                        // /phase-1/worksheet- for FTP week sheets + gates).
+                        const wsPath = getWorksheetPath(wsId);
+                        const rowStyle = {
+                          display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: '10px 0 10px 12px',
+                          borderBottom: '1px solid rgba(26, 26, 26, 0.06)',
+                          textDecoration: 'none',
+                          fontFamily: t.body, fontSize: '0.8rem', color: t.ch,
+                          transition: 'color 200ms var(--ease-lux), opacity 200ms',
+                          opacity: 0,
+                          animation: `luxFadeIn 0.5s ${(idx * phase.worksheets.length + i) * 0.04 + 0.3}s forwards`,
+                        } as const;
+                        const rowChildren = (
+                          <>
                             {StatusIcon ? (
                               <StatusIcon size={12} strokeWidth={2} style={{ color: ws.color, flexShrink: 0 }} />
                             ) : (
@@ -785,6 +858,25 @@ export default function Dashboard() {
                             <span style={{ fontSize: '0.55rem', fontWeight: 500, letterSpacing: '0.1em', color: ws.color, whiteSpace: 'nowrap' }}>
                               {ws.label}
                             </span>
+                          </>
+                        );
+                        if (!wsPath) {
+                          return (
+                            <div key={wsId} role="listitem" aria-label={`${getWorksheetName(wsId, template)} — no page`}
+                              style={{ ...rowStyle, opacity: 0.55, cursor: 'default' }}>
+                              {rowChildren}
+                            </div>
+                          );
+                        }
+                        return (
+                          <Link
+                            key={wsId}
+                            to={wsPath}
+                            style={rowStyle}
+                            onMouseOver={e => { e.currentTarget.style.color = ACCENT; }}
+                            onMouseOut={e => { e.currentTarget.style.color = t.ch; }}
+                          >
+                            {rowChildren}
                           </Link>
                         );
                       })}

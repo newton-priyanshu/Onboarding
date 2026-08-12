@@ -2,12 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWorksheet } from '../hooks/useWorksheet';
 import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { Zap, type LucideIcon } from 'lucide-react';
 import {
   WorksheetHeader, WorksheetSection, WorksheetProgressBar, ActionBar, SubmittedView,
   ApprovedView, BuddyApprovedView, LoadingView, BackButton,
   ErrorAlert, ReviewFeedback, FieldGroup, FieldGrid,
 } from '../config/worksheetComponents';
+import { XP_RULES } from '../config/gamification';
 
 // ─── Props ──────────────────────────────────────────────
 
@@ -101,7 +102,15 @@ export default function WorksheetPage({
     );
   }
   if (isSubmitted) {
-    return <SubmittedView msg={submittedMsg} path={backTo} />;
+    // Submissions and revision re-submits both earn the same submit XP
+    // (mirrors the DB trigger).
+    return (
+      <SubmittedView
+        msg={submittedMsg}
+        path={backTo}
+        xpEarned={XP_RULES.submit}
+      />
+    );
   }
   if (!loaded) return <LoadingView />;
 
@@ -186,7 +195,7 @@ export default function WorksheetPage({
         {/* Spacer so content doesn't hide behind sticky footer */}
         <div className="ws-sticky-pad" />
 
-        {/* ── Sticky Footer: action bar ── */}
+        {/* ── Sticky Footer: action bar + XP reward hint ── */}
         <div className="ws-sticky-footer" style={{
           position: 'sticky',
           bottom: 0,
@@ -195,6 +204,32 @@ export default function WorksheetPage({
           boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
           paddingTop: '0.5rem',
         }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            paddingBottom: '0.6rem', flexWrap: 'wrap',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '0.6rem',
+              color: 'var(--color-warm-grey)', display: 'inline-flex', alignItems: 'center', gap: '5px',
+            }}>
+              <Zap size={11} strokeWidth={2} style={{ color: 'var(--color-gold)' }} />
+              <b style={{ color: 'var(--color-gold)', fontWeight: 500 }}>+{XP_RULES.submit} XP</b> on submit
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '0.6rem',
+              color: 'var(--color-warm-grey)', display: 'inline-flex', alignItems: 'center', gap: '5px',
+            }}>
+              <Zap size={11} strokeWidth={2} style={{ color: 'var(--color-purple)' }} />
+              <b style={{ color: 'var(--color-purple)', fontWeight: 500 }}>+{XP_RULES.buddy_approved} XP</b> on buddy approval
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '0.6rem',
+              color: 'var(--color-warm-grey)', display: 'inline-flex', alignItems: 'center', gap: '5px',
+            }}>
+              <Zap size={11} strokeWidth={2} style={{ color: 'var(--color-success)' }} />
+              <b style={{ color: 'var(--color-success)', fontWeight: 500 }}>+{XP_RULES.manager_approved} XP</b> on manager approval
+            </span>
+          </div>
           <ActionBar onCancel={() => navigate(backTo)} onSubmit={ws.handleSubmit} submitting={submitting} />
         </div>
       </div>

@@ -85,6 +85,19 @@ npm run lint      # ESLint over the whole repo
 `npm run build` type-checks with `tsc --noEmit` before bundling, so a type
 error fails the build, not just CI.
 
+### Testing
+
+- Unit/hook tests: `npm test` (Vitest + Testing Library)
+- **UI-level all-roles regression** (`npm run test:browser`): drives the app
+  through real Chromium as every role — sign-in, worksheet fill, buddy
+  approve/reject, the full rejection round-trips (buddy + manager H28),
+  manager phase approvals, super admin, and onboarding lead. See
+  [`docs/BROWSER_PASS.md`](./docs/BROWSER_PASS.md) for the full 13-step flow
+  and what each step guards. **API-level companion suite**
+  ([`docs/FULL_FLOW_TEST.md`](./docs/FULL_FLOW_TEST.md) /
+  `scripts/full-flow-test.mjs`): RLS/state-machine/negative checks, no
+  browser; see that doc for the full-flow vs browser-pass division of labor.
+
 ## Deployment
 
 This app deploys to **Vercel** as a static SPA:
@@ -148,4 +161,7 @@ has a clone).
 
 - [`docs/audit/2026-07-10/`](./docs/audit/2026-07-10/) — current production-readiness audit
 - [`docs/archive/`](./docs/archive/) — superseded/historical docs, kept for reference only (see its own README)
+- [`docs/BROWSER_PASS.md`](./docs/BROWSER_PASS.md) — the 13-step UI regression flow (`npm run test:browser`)
+- [`docs/FULL_FLOW_TEST.md`](./docs/FULL_FLOW_TEST.md) — API-level RLS/state-machine/negative suite (`scripts/full-flow-test.mjs`) + division of labor vs the browser pass
+- [`docs/E2E_BUG_REPORT.md`](./docs/E2E_BUG_REPORT.md) — dated bug report from the original full-flow run (BUG-1 … BUG-5)
 - [`db/`](./db) — schema, RLS, and seed SQL

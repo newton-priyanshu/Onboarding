@@ -701,28 +701,28 @@ Every Supabase query in the codebase must include `campus_id` filtering. There a
 
 ### 11.1 Migration Script
 
-**Create `scripts/migrate_to_multi_tenant.mjs`:**
-- [ ] Create default campus if not exists
-- [ ] Set `campus_id` on all existing `user_profiles` rows (assign to default campus)
-- [ ] Set `campus_id` on all existing `worksheet_submissions` rows
-- [ ] Set `campus_id` on all existing `notifications` rows
-- [ ] Create default onboarding template from hardcoded config
-- [ ] Assign default template to default campus
-- [ ] Create audit log entries for migration
-- [ ] Verify data integrity (no orphaned rows)
+**Create `scripts/migrate_to_multi_tenant.mjs`:** ✅ *(2026-08-06)*
+- [x] Create default campus if not exists
+- [x] Set `campus_id` on all existing `user_profiles` rows (assign to default campus)
+- [x] Set `campus_id` on all existing `worksheet_submissions` rows
+- [x] Set `campus_id` on all existing `notifications` rows
+- [x] Create default onboarding template from hardcoded config
+- [x] Assign default template to default campus
+- [x] Create audit log entries for migration
+- [x] Verify data integrity (no orphaned rows)
 
 ### 11.2 Backward Compatibility
 
-- [ ] Existing URLs redirect to `/default/...` (default campus slug)
-- [ ] `campus_id` allows NULL during migration window (RLS handles NULL as access-denied)
-- [ ] All existing API endpoints continue working with campus context
-- [ ] Session tokens without `campus_id` in JWT default to user's profile campus
+- [x] Existing URLs redirect to `/default/...` (default campus slug) — `LegacyRedirect` + smart 404 in `App.tsx`, route set in `utils/campusSlug.ts`
+- [x] `campus_id` allows NULL during migration window (RLS handles NULL as access-denied) — Phase 3 RLS policies allow NULL campus rows
+- [x] All existing API endpoints continue working with campus context — RLS-driven (Approach A), no query-level changes needed
+- [x] Session tokens without `campus_id` in JWT default to user's profile campus — `sync_role_to_app_metadata` trigger + `AuthContext` fallback
 
 ### 11.3 Environment Changes
 
-- [ ] Add `VITE_DEFAULT_CAMPUS_SLUG=default` to `.env`
-- [ ] Add migration flag: `VITE_MULTI_TENANT_ENABLED=false` during dev
-- [ ] Feature-flag approach: when disabled, behave like single-tenant (current behavior)
+- [x] Add `VITE_DEFAULT_CAMPUS_SLUG=default` to `.env` (see `.env.example`)
+- [x] Add migration flag: `VITE_MULTI_TENANT_ENABLED` to `.env` (see `.env.example`)
+- [ ] Feature-flag approach: when disabled, behave like single-tenant (current behavior) — env var documented; full single-tenant fallback mode not implemented (multi-tenant is the live default)
 
 ---
 
@@ -730,17 +730,19 @@ Every Supabase query in the codebase must include `campus_id` filtering. There a
 
 ### 12.1 Unit Tests
 
-- [ ] Campus context provider tests
-- [ ] RBAC permission checks
-- [ ] Template structure parsing
-- [ ] RLS policy validation (with test users)
-- [ ] Audit log creation
+- [x] Campus context provider tests — `src/context/__tests__/CampusContext.test.tsx` *(2026-08-06)*: URL slug / localStorage / default-slug resolution, `switchCampus`, error handling, URL-change re-resolution
+- [x] RBAC permission checks — `src/utils/__tests__/rbac.test.ts` *(2026-08-06)*: full role matrix, `super_admin` wildcard, `can`/`canAny`/`canAll`/`requirePermission`, role helpers
+- [x] Template structure parsing — `src/api/__tests__/templates.test.ts` *(2026-08-07)*: `parseTemplateStructure`, `validateTemplateStructure`, week/phase/gate/approval-chain/worksheet-info helpers, and `resolveReviewer` (test caught a real bug: the fallback map was dead code because `getWorksheetReviewer` always returns a truthy `'buddy'` — fixed)
+- [x] RLS policy validation (with test users) — `scripts/validate_rls_isolation.mjs` *(2026-08-06)*: live-DB script that provisions two-campus test users and asserts isolation
+- [x] Audit log creation — `src/api/__tests__/auditLogs.test.ts` *(2026-08-07)*: SQL-contract test locking the `audit_logs` table, the three creation triggers (`log_worksheet_review_action`, `log_profile_change`, `log_campus_change`), RLS insert/management policies, and consistent insert column sets
 
 ### 12.2 Integration Tests
 
-- [ ] Login with campus context
-- [ ] Cross-campus isolation (User A cannot see Campus B data)
-- [ ] Super Admin cross-campus access
+- [x] Login with campus context — `scripts/validate_rls_isolation.mjs` *(2026-08-06)*: signs users in and verifies their `campus_id` assignment
+- [x] Cross-campus isolation (User A cannot see Campus B data) — `scripts/validate_rls_isolation.mjs` + `src/api/__tests__/tenant.test.ts` (`validateCampusAccess`) + `src/utils/__tests__/campusSlug.test.ts` *(2026-08-06)*: profile reads, submissions, updates, forged inserts, notifications, `assert_campus_access` RPC
+- [x] Super Admin cross-campus access — `scripts/validate_rls_isolation.mjs` (service-role bypass checks) + `rbac.test.ts` (`super_admin` wildcard) *(2026-08-06)*
+- [x] Template-driven worksheet loading — `src/api/__tests__/templateDrivenWorksheetLoading.test.ts` *(2026-08-07)*: end-to-end integration (mocked supabase → `getCampusTemplate` → `worksheetConfigData` bridges `getPhaseWorksheetIds`/`getWorksheetName`/`getReviewerType`/`getWeekWorksheetIds`): template structure overrides hardcoded config, active→default→null template resolution, fallback to hardcoded config when template absent
+- [x] Campus admin user management (scoped) — `src/pages/__tests__/CampusUserManagement.test.tsx` *(2026-08-07)*: renders the page as `campus_admin` and asserts every `user_profiles` query is campus-scoped via `withCampusIf` (`.eq('campus_id', …)`), assignment updates are user-scoped, notifications fire, and the no-campus state renders without querying; live-DB RLS checks added to `scripts/validate_rls_isolation.mjs` step 5.6 (promote a test user to `campus_admin` via service key, verify own-campus read/update allowed but cross-campus read/update + `assert_campus_access` denied, then restore the role)
 - [ ] Template-driven worksheet loading
 - [ ] Campus admin user management (scoped)
 
@@ -759,7 +761,7 @@ Every Supabase query in the codebase must include `campus_id` filtering. There a
 
 ### 12.5 Regression Tests
 
-- [ ] All 287 existing tests pass with campus context
+- [x] All existing tests pass with campus context — full suite green (329 → 389 tests) *(2026-08-06)*
 - [ ] Existing single-campus flow works via `/default/` prefix
 - [ ] No existing functionality broken
 
@@ -842,6 +844,11 @@ Every Supabase query in the codebase must include `campus_id` filtering. There a
 | `src/hooks/useGateControl.ts` | 3 | Campus-aware gates |
 | `src/utils/queryCache.ts` | 1 | Add campus key prefix |
 | `src/constants/status.ts` | 4 | Add campus-related statuses |
+| `src/utils/__tests__/campusSlug.test.ts` | 10 | campusPath / useCampusPath tests |
+| `src/api/__tests__/tenant.test.ts` | 10 | Campus resolution + access validation tests |
+| `src/utils/__tests__/rbac.test.ts` | 10 | RBAC permission matrix tests |
+| `src/context/__tests__/CampusContext.test.tsx` | 10 | Campus provider tests |
+| `scripts/validate_rls_isolation.mjs` | 10 | Live-DB cross-campus RLS validation |
 | All worksheet components (40+) | 5 | Accept template via context |
 | All gate control components (8) | 5 | Accept template via context |
 

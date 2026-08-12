@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ACHIEVEMENTS, { type Achievement, type AchievementWithState } from '../config/achievements';
 import type { WorksheetSubmission } from '../config/worksheetConfig';
+import { supabase } from '../api/supabase';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -10,7 +11,8 @@ interface UseAchievementsResult {
   loading: boolean;
 }
 
-// ─── Storage helpers ────────────────────────────────────
+// ─── Storage helpers (localStorage fallback; DB is the source of truth
+//     once the gamification migration is applied) ──────────────────
 
 function getStorageKey(userId: string): string {
   return `achievements_${userId}`;
@@ -87,6 +89,9 @@ export function useAchievements(
       setNewlyUnlocked(newOnes);
       // Clear the "new" state after 5 seconds
       setTimeout(() => setNewlyUnlocked([]), 5000);
+
+      // Best-effort sync to the DB (no-op if the migration isn't applied yet).
+      void syncUnlocksToDb(newOnes.map(n => n.id));
     }
 
     // Track all unlocked for next comparison
@@ -96,9 +101,50 @@ export function useAchievements(
     setLoading(false);
   }, [userId, submissions]);
 
+  // Hydrate persisted unlock dates from the DB on mount (idempotent — merges
+  // over whatever localStorage already has).
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_achievements')
+          .select('achievement_id, unlocked_at')
+          .eq('user_id', userId);
+        if (error || !data || data.length === 0) return;
+        if (cancelled) return;
+
+        const stored = loadStorage(userId);
+        let changed = false;
+        for (const row of data as { achievement_id: string; unlocked_at: string }[]) {
+          if (!stored.unlocked[row.achievement_id]) {
+            stored.unlocked[row.achievement_id] = row.unlocked_at;
+            prevUnlockedRef.current.add(row.achievement_id);
+            changed = true;
+          }
+        }
+        if (changed) saveStorage(userId, stored);
+        // Re-run the check so DB-persisted unlocks show as unlocked immediately.
+        checkAchievements();
+      } catch { /* migration not applied / offline — localStorage covers us */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   useEffect(() => {
     checkAchievements();
   }, [checkAchievements]);
 
   return { achievements, newlyUnlocked, loading };
+}
+
+/** Fire-and-forget RPC sync — never blocks the UI, never throws. */
+async function syncUnlocksToDb(ids: string[]): Promise<void> {
+  try {
+    await supabase.rpc('sync_achievement_unlocks', { p_achievement_ids: ids });
+  } catch {
+    // Migration not applied or offline — localStorage already has the unlock.
+  }
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../api/supabase';
 import { unwrap } from '../api/db';
 import { useAuth } from '../context/AuthContext';
+import { useCampusPath } from '../utils/campusSlug';
 import { WORKSHEET_NAMES, getDeptPhaseMap, canAccessDeptPhase } from '../config/worksheetConfigData';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ClipboardList, Lock, AlertCircle, RefreshCw } from 'lucide-react';
@@ -36,6 +37,7 @@ const DEPT_COLORS: Record<string, string> = {
 export default function DepartmentPhasePage({ dept, phaseNum }: DeptPhasePageProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const campusPath = useCampusPath();
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [canAccess, setCanAccess] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -114,10 +116,10 @@ export default function DepartmentPhasePage({ dept, phaseNum }: DeptPhasePagePro
             Complete and get <strong>all worksheets in Phase {phaseNum - 1}</strong> approved before accessing {phaseTitle}.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate(`/${dept}`)} className="lux-btn lux-btn-primary">
+            <button onClick={() => navigate(campusPath(`/${dept}`))} className="lux-btn lux-btn-primary">
               <span className="gold-overlay" /><span className="btn-content">Go to Dashboard</span>
             </button>
-            <button onClick={() => navigate(`/${dept}/phase-${phaseNum - 1}`)} className="lux-btn lux-btn-secondary">
+            <button onClick={() => navigate(campusPath(`/${dept}/phase-${phaseNum - 1}`))} className="lux-btn lux-btn-secondary">
               Back to Phase {phaseNum - 1}
             </button>
           </div>
@@ -130,7 +132,7 @@ export default function DepartmentPhasePage({ dept, phaseNum }: DeptPhasePagePro
     <div className="lux-section">
       <div className="lux-container" style={{ maxWidth: '900px', margin: '0 auto' }}>
         {/* Back link */}
-        <Link to={`/${dept}`} style={{
+        <Link to={campusPath(`/${dept}`)} style={{
           display: 'inline-flex', alignItems: 'center', gap: '6px',
           padding: '6px 12px', marginBottom: '2rem',
           fontFamily: 'var(--font-body)', fontSize: '0.7rem',
@@ -170,7 +172,7 @@ export default function DepartmentPhasePage({ dept, phaseNum }: DeptPhasePagePro
           {wsIds.map((wsId, idx) => {
             const name = WORKSHEET_NAMES[wsId] || wsId;
             const isGate = wsId.includes('gc');
-            const routePath = `/${dept}/phase-${phaseNum}/worksheet/${wsId}`;
+            const routePath = campusPath(`/${dept}/phase-${phaseNum}/worksheet/${wsId}`);
 
             return (
               <Link

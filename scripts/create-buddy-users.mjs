@@ -61,7 +61,8 @@ const BUDDIES = [
   { name: 'deeksha_buddy', email: `deeksha.${TS}@newtonschool.co` },
 ];
 
-const PASSWORD = `Buddy${TS}!`; // e.g. BuddyA3FZ!
+// Standardized QA password (BUG-4) — every seed script uses Test123!.
+const PASSWORD = 'Test123!';
 
 // ─── Main ───────────────────────────────────────────────
 async function main() {

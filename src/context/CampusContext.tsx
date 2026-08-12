@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getCurrentCampusFromPath, getCampusBySlug, getActiveCampuses } from '../api/tenant';
+import { DEFAULT_CAMPUS_SLUG } from '../constants/campus';
 import type { Campus } from '../types/supabase';
 
 // ─── Types ──────────────────────────────────────────────
@@ -55,9 +56,9 @@ export function CampusProvider({ children }: { children: ReactNode }) {
         } catch { /* localStorage unavailable */ }
       }
 
-      // 3. Default to 'default' if still nothing
+      // 3. Default to the configured default campus slug if still nothing
       if (!slug) {
-        slug = 'default';
+        slug = DEFAULT_CAMPUS_SLUG;
       }
 
       // Store slug in state

@@ -1,4 +1,4 @@
-import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle, ChevronDown, type LucideIcon } from 'lucide-react';
+import { CheckCircle2, Send, ArrowLeft, Clock, AlertCircle, ChevronDown, Zap, type LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
 
@@ -60,6 +60,8 @@ interface StatusViewProps {
   msg: string;
   path: string;
   title?: string;
+  /** XP earned by this action (shown as a celebratory line) */
+  xpEarned?: number;
 }
 
 interface ApprovedViewProps {
@@ -222,17 +224,37 @@ export function ActionBar({ onCancel, onSubmit, submitting, submitSuccess, submi
 }
 
 /* ─── Submitted View ──────────────────────────────────── */
-export function SubmittedView({ msg, path, title = 'Worksheet Submitted' }: StatusViewProps) {
+export function SubmittedView({ msg, path, title = 'Worksheet Submitted', xpEarned }: StatusViewProps) {
   const navigate = useNavigate();
   return (
     <div className="lux-section" style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center' }}>
       <div className="lux-container" style={{ textAlign: 'center', maxWidth: '520px', margin: '0 auto' }}>
-        <div className="lux-line" style={{ margin: '0 auto 1.5rem' }} />
+        <div className="lux-line lux-line-gold" style={{ margin: '0 auto 1.5rem' }} />
         <h1 style={{ fontFamily: t.heading, fontSize: '2.5rem', fontWeight: 400, color: t.ch, marginBottom: '0.75rem' }}>
           {title}
         </h1>
-        <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '2rem', lineHeight: 1.6 }}>
+        <p style={{ fontFamily: t.body, fontSize: '0.9rem', color: t.wg, marginBottom: '1.25rem', lineHeight: 1.6 }}>
           {msg}
+        </p>
+        {xpEarned ? (
+          <p style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            fontFamily: t.body, fontSize: '0.85rem', fontWeight: 500,
+            color: 'var(--color-gold)',
+            padding: '10px 22px',
+            border: '1px solid var(--color-gold)',
+            background: 'rgba(212, 175, 55, 0.07)',
+            marginBottom: '2rem',
+            animation: 'luxFadeIn 0.6s 0.15s forwards',
+          }}>
+            <Zap size={15} strokeWidth={2} style={{ color: 'var(--color-gold)' }} />
+            +{xpEarned} XP earned
+          </p>
+        ) : (
+          <div style={{ height: '2rem', marginBottom: '2rem' }} />
+        )}
+        <p style={{ fontFamily: t.body, fontSize: '0.7rem', color: t.wg, marginBottom: '1.5rem', lineHeight: 1.6 }}>
+          Your buddy will review this worksheet. Approvals earn even more XP.
         </p>
         <button onClick={() => navigate(path)} className="lux-btn lux-btn-primary">
           <span className="gold-overlay" />

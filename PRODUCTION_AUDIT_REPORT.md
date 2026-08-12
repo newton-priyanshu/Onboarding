@@ -235,7 +235,7 @@ There is no separate backend API. The application uses:
 - **Component state**: `useState` / `useReducer` in individual pages
 - **Worksheet state**: `useWorksheet` hook (manages data loading, auto-save, submit)
 - **Auto-save**: `useAutoSave` hook (debounced 1.5s, conflict detection, retry logic)
-- **Notifications**: `useNotifications` hook (polls every 15s)
+- **Notifications**: `useNotifications` hook (Supabase Realtime — `postgres_changes` on INSERT/UPDATE/DELETE, no polling)
 - **No global state library**: No Redux, Zustand, or Jotai
 
 ### Routing
@@ -627,7 +627,7 @@ The application has **no custom backend API**. All data operations go directly f
 | P2 | **Week 1-4 page duplication** | 🟡 Medium | 4 nearly identical ~100-line pages with copy-pasted code (Week1.tsx, Week2.tsx, Week3.tsx, Week4.tsx) |
 | P3 | **ReviewContent.tsx ~1000 lines** | 🟡 Medium | Largest component — should be split into renderers, helpers, and config |
 | P4 | **useDueDates joins worksheetIds via `.join(',')` as useEffect dep** | 🟢 Low | Creates new string on every render — minor re-render overhead |
-| P5 | **Notification polling every 15s** | 🟢 Low | 4 requests/minute/user — fine at 100 users, but at 1000 users = 4000 requests/min to Supabase |
+| P5 | **Notification polling every 15s** | ✅ Resolved | Replaced with Supabase Realtime subscriptions — API calls drop to ~zero while idle |
 | P6 | **No image optimization** | 🟢 Low | No images to optimize (app is form-heavy, not media-heavy) |
 | P7 | **No React.memo usage** | 🟢 Low | Components re-render on parent state changes — minor overhead |
 | P8 | **worksheetConfigData.ts ~800 lines** | 🟢 Low | Large config file but all static data (no performance impact) |
@@ -652,8 +652,8 @@ The application has **no custom backend API**. All data operations go directly f
 
 | Priority | Recommendation | Impact |
 |----------|---------------|--------|
-| 1 | Add pagination/limit to worksheet queries (currently fetching ALL submissions) | Reduces DB load |
-| 2 | Increase notification poll interval or switch to Supabase Realtime subscriptions | Reduces API calls by 90%+ |
+| 1 | Add pagination/limit to worksheet queries (currently fetching ALL submissions) | ✅ Resolved — `fetchAllPages()` in `src/api/db.ts` (range-based paging); applied to Admin/Onboarding-Lead/Campus-Head dashboards which previously used fixed `.limit(1000–2000)` (silent truncation risk) |
+| 2 | ~~Increase notification poll interval or switch to Supabase Realtime subscriptions~~ | ✅ Done — Realtime `postgres_changes` subscriptions, zero idle API calls |
 | 3 | Add API response caching for static config data | Reduces redundant queries |
 | 4 | Implement connection pooling configuration | Improves concurrent connection handling |
 | 5 | Add rate limiting at the application level (Vercel middleware or Supabase) | Prevents abuse |
@@ -742,7 +742,7 @@ Since the application has **no custom backend API**, the "backend" consists of:
 |---|---------|----------|--------|
 | D1 | **No staging environment** | 🟡 Medium | Everything runs against the same Supabase project |
 | D2 | **No rollback strategy** | 🟡 Medium | Vercel deployments are instant but no canary/blue-green |
-| D3 | **No monitoring** | 🟡 Medium | No Sentry, Datadog, or application monitoring |
+| D3 | **No monitoring** | ✅ Resolved | Sentry error tracking wired via `src/utils/sentry.ts` (guarded init — enabled when `VITE_SENTRY_DSN` is set) — `ErrorBoundary.componentDidCatch` + `notifyError` report to Sentry; CSP updated for `*.ingest.sentry.io` |
 | D4 | **No uptime monitoring** | 🟢 Low | No status page or synthetic checks |
 | D5 | **No Docker containerization** | 🟢 Low | Not needed for static SPA + Supabase |
 | D6 | **No secrets management** | 🟢 Low | Vercel environment variables suffice |
@@ -768,7 +768,7 @@ Since the application has **no custom backend API**, the "backend" consists of:
 | # | Finding | Severity | Detail |
 |---|---------|----------|--------|
 | R1 | **No `beforeunload` guard for unsaved edits** | 🟡 Medium | Users can navigate away mid-edit and lose unsaved work |
-| R2 | **No offline support (PWA service worker)** | 🟡 Medium | If network drops, app is completely unusable |
+| R2 | **No offline support (PWA service worker)** | ✅ Resolved | `public/sw.js` registered in production (`main.tsx`) — precaches app shell, network-first navigations with offline fallback, stale-while-revalidate assets; `vercel.json` serves `sw.js` with `no-cache` |
 | R3 | **No form state recovery on crash** | 🟡 Medium | If browser crashes, autosave recovery depends on 1.5s debounce timing |
 | R4 | **Autosave conflict detection is last-write-wins** | 🟡 Medium | Concurrent edits from two tabs can silently overwrite each other |
 
@@ -780,9 +780,9 @@ Since the application has **no custom backend API**, the "backend" consists of:
 
 | # | Finding | Severity | Detail |
 |---|---------|----------|--------|
-| A1 | **No ARIA labels on icon-only buttons** | 🟡 Medium | Eye toggle on password fields has no aria-label |
+| A1 | **No ARIA labels on icon-only buttons** | ✅ Resolved | Password toggle buttons on `Login.tsx` / `Signup.tsx` now have `aria-label` (Show/Hide password) + `aria-pressed` |
 | A2 | **Low contrast on warm-grey text** | 🟡 Medium | `--color-warm-grey` may not meet WCAG AA contrast ratios on all backgrounds |
-| A3 | **No skip-to-content link** | 🟡 Medium | Keyboard users must tab through entire navbar to reach content |
+| A3 | **No skip-to-content link** | ✅ Resolved | `.skip-link` as first element in `AppLayout` → `#main-content` (`<main>` has `id` + `tabIndex={-1}`) |
 | A4 | **Focus indicators** | 🟢 Low | Custom input styles may not have visible focus rings |
 | A5 | **Form labels** | ✅ Good | All form inputs have `<label>` elements with `htmlFor` |
 | A6 | **Semantic HTML** | ✅ Good | Proper heading hierarchy, form elements, buttons |
@@ -806,9 +806,9 @@ Since the application has **no custom backend API**, the "backend" consists of:
 | 3 | Add `beforeunload` guard for worksheets with unsaved edits | `useWorksheet.ts` |
 | 4 | Add loading states to worksheet submit flow | All worksheet pages |
 | 5 | Fix AutoSave due-date calc console error | `useAutoSave.ts` |
-| 6 | Add pagination to worksheet queries for performance | Dashboard, Phase pages |
-| 7 | Increase notification poll interval or use Realtime subscriptions | `useNotifications.ts` |
-| 8 | Add error tracking (Sentry or equivalent) | `main.tsx` / `ErrorBoundary.tsx` |
+| 6 | Add pagination to worksheet queries for performance | ✅ Resolved — `fetchAllPages()` helper + applied at all bulk dashboard fetch sites | Dashboard, Phase pages |
+| 7 | ~~Increase notification poll interval or use Realtime subscriptions~~ | ✅ Done — `useNotifications.ts` + `NotificationsPage.tsx` use Realtime; `notifications` added to `supabase_realtime` publication |
+| 8 | Add error tracking (Sentry or equivalent) | ✅ Resolved — `@sentry/react` + guarded init in `main.tsx`, wired into `ErrorBoundary` & `notifyError` | `main.tsx` / `ErrorBoundary.tsx` |
 | 9 | Verify Supabase project has email SMTP configured | Supabase Dashboard |
 
 ### 🟢 Medium Priority
@@ -817,7 +817,7 @@ Since the application has **no custom backend API**, the "backend" consists of:
 |---|-------|----------|
 | 10 | Split `ReviewContent.tsx` into smaller files | `src/components/` |
 | 11 | Collapse Week 1-4 into parameterized route | `src/pages/` |
-| 12 | Add PWA service worker for offline support | `public/` + `src/` |
+| 12 | Add PWA service worker for offline support | ✅ Resolved — `public/sw.js` + registration in `main.tsx` (prod only) | `public/` + `src/` |
 | 13 | Add `aria-label` on icon-only buttons | Login/Signup password toggle |
 | 14 | Add skip-to-content link for keyboard users | `App.tsx` |
 | 15 | Improve warm-grey text contrast | `theme.ts` / CSS variables |

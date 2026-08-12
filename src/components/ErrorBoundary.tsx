@@ -1,6 +1,7 @@
 import { t } from '../config/theme';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { captureError } from '../utils/sentry';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -25,6 +26,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught:', error, errorInfo);
+    captureError(error, { componentStack: errorInfo.componentStack });
   }
 
   // Automatically reset when route/key changes (passed from parent via locationKey prop)
