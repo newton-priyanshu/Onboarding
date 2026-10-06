@@ -37,7 +37,7 @@ async function main() {
 
   // 3. Onboarding Lead
   console.log('3. Creating Onboarding Lead...');
-  const { data: obl, error: obe } = await supabase.auth.signUp({
+  const { error: obe } = await supabase.auth.signUp({
     email: `onboard_${TS}@newton.edu`,
     password: 'Onboard123!',
     options: { data: { full_name: 'Ravi Onboarding Lead', role: 'onboarding_lead' } }

@@ -1,19 +1,13 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { t } from '../config/theme';
-import { getWorksheetName, PHASE_WORKSHEETS_MAP } from '../config/worksheetConfig';
+import { getWorksheetName } from '../config/worksheetConfig';
 import type { OnboardingTemplate } from '../types/supabase';
 import { getEstimatedTime } from '../config/estimatedTimes';
 import { getWorksheetPath } from '../utils/worksheetHelpers';
 import { XP_RULES } from '../config/gamification';
 import { getWorksheetStatus as getStatusInfo } from '../utils/worksheetStatus';
-
-// ─── Props ──────────────────────────────────────────────
-
-export interface NextUpWorksheet {
-  worksheetId: string;
-  phaseNum: number;
-}
+import type { NextUpWorksheet } from '../utils/nextWorksheet';
 
 interface NextUpCardProps {
   /** Worksheet + phase to surface as the next action */
@@ -22,34 +16,6 @@ interface NextUpCardProps {
   template?: OnboardingTemplate | null;
   /** Optional extra CTA label (default 'Start Worksheet') */
   cta?: string;
-}
-
-/**
- * Picks the next worksheet to work on:
- *   - within the earliest incomplete phase (phase order 1 → 3)
- *   - the first sheet in that phase that isn't approved/buddy-approved
- * Falls back to null when everything is complete.
- */
-export function pickNextWorksheet(
-  submissions: Array<{ worksheet_id: string; review_status: string; status: string }>,
-  phaseMap: Record<number, string[]> = PHASE_WORKSHEETS_MAP,
-): NextUpWorksheet | null {
-  for (const phaseNum of [1, 2, 3] as const) {
-    const wsIds = phaseMap[phaseNum] || [];
-    if (wsIds.length === 0) continue;
-    const phaseDone = wsIds.every(id => {
-      const s = submissions.find(x => x.worksheet_id === id);
-      return s && (s.review_status === 'approved' || s.review_status === 'buddy_approved');
-    });
-    if (phaseDone) continue;
-    // First sheet in this phase not yet done
-    for (const wsId of wsIds) {
-      const s = submissions.find(x => x.worksheet_id === wsId);
-      const done = s && (s.review_status === 'approved' || s.review_status === 'buddy_approved');
-      if (!done) return { worksheetId: wsId, phaseNum };
-    }
-  }
-  return null;
 }
 
 // ─── Component ──────────────────────────────────────────

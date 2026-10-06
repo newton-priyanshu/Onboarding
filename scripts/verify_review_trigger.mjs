@@ -46,8 +46,8 @@ const CHECK_QUERY = `
 export async function verifyReviewTrigger({ pat, apiUrl = MANAGEMENT_API, print = true } = {}) {
   if (!pat) throw new Error('SUPABASE_PAT is required');
 
-  let fnDef = '';
-  let triggerExists = false;
+  let fnDef;
+  let triggerExists;
 
   try {
     const response = await fetch(apiUrl, {

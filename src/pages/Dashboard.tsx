@@ -30,7 +30,8 @@ import { useMilestones } from '../hooks/useMilestones';
 import KudosFeed from '../components/KudosFeed';
 import { useGamification } from '../hooks/useGamification';
 import GamificationStrip from '../components/GamificationStrip';
-import NextUpCard, { pickNextWorksheet } from '../components/NextUpCard';
+import NextUpCard from '../components/NextUpCard';
+import { pickNextWorksheet } from '../utils/nextWorksheet';
 import AchievementUnlockBanner from '../components/AchievementUnlockBanner';
 import CertificateModal from '../components/CertificateModal';
 

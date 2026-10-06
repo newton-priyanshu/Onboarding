@@ -126,7 +126,7 @@ export default function Breadcrumbs() {
     currentPath = currentPath === '/' ? `/${seg}` : `${currentPath}/${seg}`;
 
     // Determine label
-    let label = '';
+    let label: string;
 
     // Check route labels map
     const routeKey = segments.slice(0, i + 1).join('/');

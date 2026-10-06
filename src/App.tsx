@@ -16,23 +16,23 @@ import PhaseAccessGuard from './components/PhaseAccessGuard';
 import WeekAccessGuard from './components/WeekAccessGuard';
 import CampusRouteLayout from './components/CampusRouteLayout';
 import { ToastProvider } from './components/Toast';
-import Dashboard from './pages/Dashboard';
-import Phase1 from './pages/Phase1';
-import Phase2 from './pages/Phase2';
-import Phase3 from './pages/Phase3';
-import WeekPage from './pages/WeekPage';
-import Assessment from './pages/Assessment';
-import Stakeholders from './pages/Stakeholders';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import AuthCallback from './pages/AuthCallback';
-import NotFound from './pages/NotFound';
-import SelectCampus from './pages/SelectCampus';
-import DepartmentPhasePage from './pages/DepartmentPhasePage';
-import DeptDashboard from './pages/DeptDashboard';
-import CampusHeadDashboard from './pages/CampusHeadDashboard';
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Phase1 = lazy(() => import('./pages/Phase1'));
+const Phase2 = lazy(() => import('./pages/Phase2'));
+const Phase3 = lazy(() => import('./pages/Phase3'));
+const WeekPage = lazy(() => import('./pages/WeekPage'));
+const Assessment = lazy(() => import('./pages/Assessment'));
+const Stakeholders = lazy(() => import('./pages/Stakeholders'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const SelectCampus = lazy(() => import('./pages/SelectCampus'));
+const DepartmentPhasePage = lazy(() => import('./pages/DepartmentPhasePage'));
+const DeptDashboard = lazy(() => import('./pages/DeptDashboard'));
+const CampusHeadDashboard = lazy(() => import('./pages/CampusHeadDashboard'));
 
 // Lazy-loaded heavy pages (admin/buddy/review routes)
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
@@ -254,6 +254,7 @@ function AppRoutes() {
 
   return (
     <ErrorBoundary locationKey={location.key}>
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         {/* ─── Auth Routes (flat — no campus prefix) ─── */}
         <Route path="/login" element={<Login />} />
@@ -385,6 +386,7 @@ function AppRoutes() {
         {/* 404 catch-all — also handles nested legacy URLs (e.g. /week-2/worksheet/x) */}
         <Route path="*" element={<LegacyRouteFallback />} />
       </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

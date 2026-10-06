@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Trophy, Flame, Medal, RefreshCw } from 'lucide-react';
 import { t } from '../config/theme';
 import { supabase } from '../api/supabase';
@@ -29,7 +29,7 @@ export default function LeaderboardPanel({ limit = 10 }: { limit?: number }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -54,9 +54,9 @@ export default function LeaderboardPanel({ limit = 10 }: { limit?: number }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [limit]);
 
-  useEffect(() => { load(); }, [limit]);
+  useEffect(() => { void load(); }, [load]);
 
   const medalColors = ['#D4AF37', '#9E9E9E', '#CD7F32'];
 

@@ -209,7 +209,7 @@ export default function SuperAdminDashboard() {
         });
 
         setUserProgress(progress);
-      } catch (err) {
+      } catch {
         if (!cancelled) setError('Failed to load dashboard data');
       } finally {
         if (!cancelled) setIsLoading(false);

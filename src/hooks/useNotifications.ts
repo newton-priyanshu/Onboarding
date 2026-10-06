@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { supabase } from '../api/supabase';
 
 // ─── Types ──────────────────────────────────────────────
@@ -65,7 +65,7 @@ export function useNotifications(
   const mountedRef = useRef(true);
   // Unique per hook instance — the navbar mounts the bell twice (desktop + mobile),
   // and two channels sharing a name on one socket would conflict.
-  const channelSuffixRef = useRef(`sub-${Math.random().toString(36).slice(2, 8)}`);
+  const channelSuffix = useId();
   const userId = (user as { id?: string } | null)?.id;
 
   const fetchNotifications = useCallback(async () => {
@@ -113,7 +113,7 @@ export function useNotifications(
     // no polling. Requires the `notifications` table to be in the
     // `supabase_realtime` publication (migration 20260730000002_notifications_realtime.sql).
     const channel = supabase
-      .channel(`notifications-realtime-${userId}-${channelSuffixRef.current}`)
+      .channel(`notifications-realtime-${userId}-${channelSuffix}`)
       .on(
         'postgres_changes',
         {

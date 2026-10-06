@@ -88,7 +88,7 @@ export default function SelectCampus() {
             setSelectedCampusId(activeCampuses[0].id);
           }
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Unable to load campuses. Please try again.');
         }
@@ -144,7 +144,7 @@ export default function SelectCampus() {
       if (updateError) throw updateError;
 
       // Hard-reload to / so AuthContext re-fetches profile
-      window.location.href = '/';
+      window.location.assign('/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : (err as { message?: string })?.message || 'Failed to save selection.';
       setError(msg);
