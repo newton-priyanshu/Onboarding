@@ -190,7 +190,7 @@ export default function PlatformAnalytics() {
           totalCompletedSubmissions: totalCompleted,
           avgCompletionDays: totalCampusesWithDays > 0 ? Math.round((totalDays / totalCampusesWithDays) * 10) / 10 : null,
         });
-      } catch (err) {
+      } catch {
         if (!cancelled) setError('Failed to load analytics data');
       } finally {
         if (!cancelled) setIsLoading(false);

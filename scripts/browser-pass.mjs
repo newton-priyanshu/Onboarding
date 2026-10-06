@@ -339,7 +339,7 @@ async function main() {
     {
       const page = await context.newPage();
       const errors = collectPageErrors(page);
-      const url = await loginViaUI(page, joinee.email);
+      await loginViaUI(page, joinee.email);
       await page.goto(`${APP_URL}/default/phase-1/worksheet-1`, { waitUntil: 'networkidle' }).catch(() => {});
       // The worksheet should render either a form or a submitted view — but
       // never an approve button for the owner.
@@ -348,7 +348,7 @@ async function main() {
       const bad = filterBenign(errors);
       check('joinee worksheet console clean', bad.length === 0, bad.slice(0, 3).join(' | '));
       // BUG-3 regression: the broken links ended in /worksheet- (empty id).
-      const hasRealWsId = !page.url().endsWith('worksheet-') && /\/worksheet-[^\/]+$/.test(page.url());
+      const hasRealWsId = !page.url().endsWith('worksheet-') && /\/worksheet-[^/]+$/.test(page.url());
       check('worksheet URL has a real worksheet id', hasRealWsId, page.url());
       await page.close();
     }
@@ -670,7 +670,7 @@ async function main() {
     {
       const page = await context.newPage();
       const errors = collectPageErrors(page);
-      const url = await loginViaUI(page, superAdmin.email);
+      await loginViaUI(page, superAdmin.email);
       await page.goto(`${APP_URL}/super-admin/campuses`, { waitUntil: 'networkidle' }).catch(() => {});
       check('super admin campuses page opens', !page.url().includes('/404'), page.url());
       // CampusManagement renders each campus by name (no table) — assert the

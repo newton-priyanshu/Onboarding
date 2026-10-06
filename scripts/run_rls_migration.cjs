@@ -46,8 +46,6 @@ function splitSqlStatements(sql) {
   for (let i = 0; i < sql.length; i++) {
     const ch = sql[i];
     const next = sql[i + 1] || '';
-    const prev = sql[i - 1] || '';
-
     // Track line comments
     if (!inDollarQuote && !inSingleQuote && ch === '-' && next === '-') {
       inLineComment = true;

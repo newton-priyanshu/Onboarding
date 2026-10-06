@@ -91,7 +91,6 @@ const WORKSHEET_DEFAULTS = {
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-const ALL_WORKSHEET_IDS = Object.keys(WORKSHEET_DEFAULTS);
 const PHASES = {
   p1: { ids: ['p1_w1','p1_w2','p1_w3','p1_w4','p1_w5','p1_w6','p1_w7','p1_w8','gc1'], phase: 'phase-1' },
   p2: { ids: ['p2_w1','p2_w2','p2_w3','p2_w4','gc2'], phase: 'phase-2' },
@@ -234,8 +233,6 @@ async function main() {
   const vikram  = createdUsers['vikram.qa@newton.edu'];
   const neha    = createdUsers['neha.qa@newton.edu'];
   const priya   = createdUsers['priya.qa@newton.edu'];
-  const ravi    = createdUsers['ravi.qa@newton.edu'];
-
   // Step 2: Assign buddies and managers
   console.log('📋 Step 2: Assigning buddies & managers...\n');
   if (arjun && neha) await assignBuddy('arjun.qa@newton.edu', 'neha.qa@newton.edu');

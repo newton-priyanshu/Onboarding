@@ -99,7 +99,7 @@ async function main() {
 
   // Step 1: Sign up via Supabase Auth
   console.log(`📋 Step 1: Creating auth user ${SUPER_ADMIN.email}...`);
-  const { status, ok, data } = await supabasePost('/auth/v1/signup', {
+  const { status, data } = await supabasePost('/auth/v1/signup', {
     email: SUPER_ADMIN.email,
     password: SUPER_ADMIN.password,
     data: { full_name: SUPER_ADMIN.fullName },
